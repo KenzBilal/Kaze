@@ -1,12 +1,17 @@
 package com.watchlater.data.repository
 
+import com.watchlater.data.local.EpisodeProgress
+import com.watchlater.data.local.EpisodeProgressDao
 import com.watchlater.data.local.WatchItemDao
 import com.watchlater.model.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import androidx.sqlite.db.SimpleSQLiteQuery
 
-class WatchItemRepository(private val dao: WatchItemDao) {
+class WatchItemRepository(
+    private val dao: WatchItemDao,
+    private val episodeProgressDao: EpisodeProgressDao
+) {
 
     fun getToWatchItems(sortFilter: SortFilterState): Flow<List<WatchItem>> =
         dao.getItemsViaQuery(buildQuery(false, sortFilter))
@@ -39,13 +44,24 @@ class WatchItemRepository(private val dao: WatchItemDao) {
     fun getSeriesInProgress(): Flow<List<WatchItem>> = dao.getSeriesInProgress()
     fun getRecentlyAdded(limit: Int = 5): Flow<List<WatchItem>> = dao.getRecentlyAdded(limit)
 
-    /** Returns a one-shot snapshot of all items (used for backup export). */
+    /** One-shot snapshot of all items for backup export. */
     suspend fun getAllItemsSnapshot(): List<WatchItem> =
         dao.getAllItems().first()
 
-    suspend fun restoreItems(items: List<WatchItem>) {
-        dao.deleteAll()
-        dao.insertAll(items)
+    /** All episode progress for a given item — used for backup export. */
+    suspend fun getEpisodeProgressSnapshot(watchItemId: Long): List<EpisodeProgress> =
+        episodeProgressDao.getAll(watchItemId)
+
+    /**
+     * Atomically replaces all watch_items.
+     * Returns a map of (old index → new DB id) for episode progress remapping.
+     */
+    suspend fun restoreItems(items: List<WatchItem>): List<Long> =
+        dao.replaceAll(items)
+
+    /** Restores episode progress rows after a backup import. */
+    suspend fun restoreEpisodeProgress(list: List<EpisodeProgress>) {
+        episodeProgressDao.insertAll(list)
     }
 
     // ── Sorting & Filtering via SQLite ─────────────────────────────────────

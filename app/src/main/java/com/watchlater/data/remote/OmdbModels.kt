@@ -48,12 +48,8 @@ data class OmdbEpisodeItem(
 data class OmdbResult(
     val displayTitle: String,
     val displayYear: Int,
-    val mediaType: String,      // "movie" or "tv"
+    val mediaType: String,   // "movie" or "tv"
     val posterUrl: String?,
-    val genreIds: List<Int> = emptyList(),
     val omdbId: String = "",
     val omdbGenre: String = ""
 )
-
-// ── (kept empty for compat) ────────────────────────────────────────────────
-val TMDB_GENRE_MAP: Map<Int, String> = emptyMap()

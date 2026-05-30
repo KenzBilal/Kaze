@@ -39,10 +39,10 @@ class HomeViewModel(
         _toWatchItems, _watchedItems, _sortFilterState
     ) { toWatch, watched, sortFilter ->
         HomeUiState(
-            toWatchItems = toWatch ?: emptyList(),
-            watchedItems = watched ?: emptyList(),
+            toWatchItems    = toWatch ?: emptyList(),
+            watchedItems    = watched ?: emptyList(),
             sortFilterState = sortFilter,
-            isLoading = toWatch == null || watched == null
+            isLoading       = toWatch == null || watched == null
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
 
@@ -55,8 +55,14 @@ class HomeViewModel(
         }
     }
 
+    // BUG-01 fix: release BroadcastReceiver when ViewModel is cleared
+    override fun onCleared() {
+        super.onCleared()
+        updateManager.release()
+    }
+
     fun downloadUpdate() = updateManager.downloadUpdate()
-    fun installUpdate() = updateManager.installApk()
+    fun installUpdate()  = updateManager.installApk()
 
     fun updateSort(sort: SortOption) {
         _sortFilterState.update { it.copy(sort = sort) }
@@ -69,7 +75,6 @@ class HomeViewModel(
     fun toggleWatched(item: WatchItem) {
         viewModelScope.launch {
             val updated = if (!item.isWatched && item.type == MediaType.SERIES) {
-                // Mark series as watched: keep progress as-is for record
                 item.copy(isWatched = true, lastUpdated = System.currentTimeMillis())
             } else {
                 item.copy(isWatched = !item.isWatched, lastUpdated = System.currentTimeMillis())

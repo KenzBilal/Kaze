@@ -12,18 +12,20 @@ import java.util.concurrent.TimeUnit
 class OmdbRepository {
 
     val api: OmdbApi by lazy {
-        val logging = HttpLoggingInterceptor { Log.d("OmdbRepo", it) }
-            .apply { level = HttpLoggingInterceptor.Level.BASIC }
-
-        val client = OkHttpClient.Builder()
-            .addInterceptor(logging)
+        val clientBuilder = OkHttpClient.Builder()
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(15, TimeUnit.SECONDS)
-            .build()
+
+        // S2 fix: only log in debug builds — API key is part of the URL
+        if (BuildConfig.DEBUG) {
+            val logging = HttpLoggingInterceptor { Log.d("OmdbRepo", it) }
+                .apply { level = HttpLoggingInterceptor.Level.BASIC }
+            clientBuilder.addInterceptor(logging)
+        }
 
         Retrofit.Builder()
             .baseUrl("https://www.omdbapi.com/")
-            .client(client)
+            .client(clientBuilder.build())
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(OmdbApi::class.java)
@@ -36,7 +38,6 @@ class OmdbRepository {
         if (!hasApiKey || query.isBlank()) return emptyList()
         return try {
             val response = api.search(query = query, apiKey = apiKey)
-            Log.d("OmdbRepo", "Search '$query' → response=${response.response} error=${response.error}")
             if (response.response != "True" || response.results == null) return emptyList()
             response.results
                 .filter { it.type == "movie" || it.type == "series" }
@@ -50,34 +51,36 @@ class OmdbRepository {
                         omdbId       = item.imdbId
                     )
                 }
-        } catch (e: CancellationException) {
-            Log.d("OmdbRepo", "Search '$query' cancelled"); throw e
+        } catch (e: CancellationException) { throw e
         } catch (e: Exception) {
-            Log.e("OmdbRepo", "Search '$query' failed: ${e.javaClass.simpleName}: ${e.message}")
+            if (BuildConfig.DEBUG) Log.e("OmdbRepo", "Search '$query' failed: ${e.message}")
             throw e
         }
     }
 
-    suspend fun fetchGenre(omdbId: String): String {
-        if (!hasApiKey || omdbId.isBlank()) return ""
+    /**
+     * A3 fix: Consolidated fetchGenre + fetchTotalSeasons into a single network call.
+     * Returns a Pair of (genres string, totalSeasons int).
+     */
+    suspend fun fetchDetail(omdbId: String): Pair<String, Int> {
+        if (!hasApiKey || omdbId.isBlank()) return "" to 0
         return try {
             val detail = api.getDetail(imdbId = omdbId, apiKey = apiKey)
-            detail.genre?.takeIf { it != "N/A" } ?: ""
-        } catch (e: CancellationException) { throw e
-        } catch (e: Exception) { "" }
-    }
-
-    /** Returns total seasons for a series, or 0 on failure */
-    suspend fun fetchTotalSeasons(imdbId: String): Int {
-        if (!hasApiKey || imdbId.isBlank()) return 0
-        return try {
-            val detail = api.getDetail(imdbId = imdbId, apiKey = apiKey)
-            detail.totalSeasons?.toIntOrNull() ?: 0
+            val genres = detail.genre?.takeIf { it != "N/A" } ?: ""
+            val seasons = detail.totalSeasons?.toIntOrNull() ?: 0
+            genres to seasons
         } catch (e: CancellationException) { throw e
         } catch (e: Exception) {
-            Log.e("OmdbRepo", "fetchTotalSeasons failed: ${e.message}"); 0
+            if (BuildConfig.DEBUG) Log.e("OmdbRepo", "fetchDetail failed: ${e.message}")
+            "" to 0
         }
     }
+
+    /** Returns genres string — single call wrapper over fetchDetail */
+    suspend fun fetchGenre(omdbId: String): String = fetchDetail(omdbId).first
+
+    /** Returns total seasons for a series, or 0 on failure */
+    suspend fun fetchTotalSeasons(imdbId: String): Int = fetchDetail(imdbId).second
 
     /** Returns episode list for one season */
     suspend fun fetchSeason(imdbId: String, season: Int): OmdbSeasonResponse? {
@@ -87,7 +90,8 @@ class OmdbRepository {
             if (result.response == "True") result else null
         } catch (e: CancellationException) { throw e
         } catch (e: Exception) {
-            Log.e("OmdbRepo", "fetchSeason $season failed: ${e.message}"); null
+            if (BuildConfig.DEBUG) Log.e("OmdbRepo", "fetchSeason $season failed: ${e.message}")
+            null
         }
     }
 }

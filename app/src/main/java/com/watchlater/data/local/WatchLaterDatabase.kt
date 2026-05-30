@@ -1,12 +1,12 @@
 package com.watchlater.data.local
 
-import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import android.content.Context
 import com.watchlater.model.WatchItem
 
 @Database(
@@ -16,7 +16,7 @@ import com.watchlater.model.WatchItem
         SeasonEpisode::class,
         EpisodeProgress::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -41,10 +41,8 @@ abstract class WatchLaterDatabase : RoomDatabase() {
         /** v2 → v3: add imdbId to watch_items + new series/episode tables */
         val MIGRATION_2_3 = object : Migration(2, 3) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                // Add imdbId to existing watch_items
                 db.execSQL("ALTER TABLE watch_items ADD COLUMN imdbId TEXT NOT NULL DEFAULT ''")
 
-                // Series metadata cache
                 db.execSQL("""
                     CREATE TABLE IF NOT EXISTS series_cache (
                         imdbId TEXT NOT NULL PRIMARY KEY,
@@ -54,7 +52,6 @@ abstract class WatchLaterDatabase : RoomDatabase() {
                     )
                 """.trimIndent())
 
-                // Episode list cache per season
                 db.execSQL("""
                     CREATE TABLE IF NOT EXISTS season_episodes (
                         imdbId TEXT NOT NULL,
@@ -68,7 +65,6 @@ abstract class WatchLaterDatabase : RoomDatabase() {
                     )
                 """.trimIndent())
 
-                // User's per-episode watch progress
                 db.execSQL("""
                     CREATE TABLE IF NOT EXISTS episode_progress (
                         watchItemId INTEGER NOT NULL,
@@ -82,6 +78,15 @@ abstract class WatchLaterDatabase : RoomDatabase() {
             }
         }
 
+        /** v3 → v4: add indexes for query performance */
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_watch_items_isWatched ON watch_items (isWatched)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_watch_items_type ON watch_items (type)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_watch_items_dateAdded ON watch_items (dateAdded)")
+            }
+        }
+
         @Volatile
         private var INSTANCE: WatchLaterDatabase? = null
 
@@ -92,7 +97,7 @@ abstract class WatchLaterDatabase : RoomDatabase() {
                     WatchLaterDatabase::class.java,
                     DATABASE_NAME
                 )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                 .build()
                 INSTANCE = instance
                 instance

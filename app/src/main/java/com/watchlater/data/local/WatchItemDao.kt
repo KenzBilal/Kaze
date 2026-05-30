@@ -19,6 +19,9 @@ interface WatchItemDao {
     @Query("SELECT * FROM watch_items WHERE id = :id")
     suspend fun getItemById(id: Long): WatchItem?
 
+    @Query("SELECT * FROM watch_items WHERE id = :id")
+    suspend fun getItemByIdNow(id: Long): WatchItem?
+
     @Query("""
         SELECT * FROM watch_items 
         WHERE title LIKE '%' || :query || '%' 
@@ -62,8 +65,15 @@ interface WatchItemDao {
     fun getRecentlyAdded(limit: Int = 5): Flow<List<WatchItem>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(items: List<WatchItem>)
+    suspend fun insertAll(items: List<WatchItem>): List<Long>
 
     @Query("DELETE FROM watch_items")
     suspend fun deleteAll()
+
+    /** Atomic restore: wipe + re-insert in one transaction */
+    @Transaction
+    suspend fun replaceAll(items: List<WatchItem>): List<Long> {
+        deleteAll()
+        return insertAll(items)
+    }
 }

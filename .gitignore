@@ -1,1 +1,20 @@
+*.iml
+.gradle
+/local.properties
+/.idea
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# Signing
 kaze-release.jks
+*.jks
+*.keystore
+
+# Release APK binaries — should not be committed to source control
+*.apk
+
+# Generated schemas directory is intentionally NOT ignored (Room migration tracking)

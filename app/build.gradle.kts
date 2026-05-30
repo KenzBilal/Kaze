@@ -3,7 +3,6 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -14,13 +13,12 @@ android {
         applicationId = "com.watchlater"
         minSdk = 24
         targetSdk = 35
-        versionCode = 10
-        versionName = "1.3.6"
+        versionCode = 11
+        versionName = "1.4.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // OMDB API key — get free key at omdbapi.com/apikey.aspx
-        buildConfigField("String", "TMDB_API_KEY", "\"${project.findProperty("tmdb.api.key") ?: ""}\"")
         buildConfigField("String", "OMDB_API_KEY", "\"${project.findProperty("omdb.api.key") ?: ""}\"")
         buildConfigField("String", "UPDATE_JSON_URL", "\"https://gist.githubusercontent.com/KenzBilal/7c19255da1430800f0030ba3c6e99765/raw/update.json\"")
     }
@@ -106,7 +104,6 @@ dependencies {
     ksp(libs.androidx.room.compiler)
 
     implementation(libs.kotlinx.coroutines.android)
-    implementation(libs.kotlinx.serialization.json)
     implementation(libs.gson)
     implementation(libs.androidx.splashscreen)
     implementation(libs.retrofit)

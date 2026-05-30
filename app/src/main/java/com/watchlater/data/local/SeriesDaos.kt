@@ -44,6 +44,12 @@ interface EpisodeProgressDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(progress: EpisodeProgress)
 
+    /** Batch upsert in a single transaction — used by markSeason/markAll */
+    @Transaction
+    suspend fun upsertAll(list: List<EpisodeProgress>) {
+        list.forEach { upsert(it) }
+    }
+
     @Query("SELECT * FROM episode_progress WHERE watchItemId = :watchItemId ORDER BY season ASC, episodeNumber ASC")
     fun observeAll(watchItemId: Long): Flow<List<EpisodeProgress>>
 
@@ -53,6 +59,12 @@ interface EpisodeProgressDao {
     @Query("SELECT * FROM episode_progress WHERE watchItemId = :watchItemId AND season = :season AND episodeNumber = :ep LIMIT 1")
     suspend fun get(watchItemId: Long, season: Int, ep: Int): EpisodeProgress?
 
+    @Query("SELECT * FROM episode_progress WHERE watchItemId = :watchItemId ORDER BY season ASC, episodeNumber ASC")
+    suspend fun getAll(watchItemId: Long): List<EpisodeProgress>
+
     @Query("DELETE FROM episode_progress WHERE watchItemId = :watchItemId")
     suspend fun deleteAll(watchItemId: Long)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(list: List<EpisodeProgress>)
 }

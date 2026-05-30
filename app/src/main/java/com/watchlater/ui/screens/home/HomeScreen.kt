@@ -143,7 +143,13 @@ fun HomeScreen(
     val updateState by viewModel.updateState.collectAsStateWithLifecycle()
     val updateInfo by viewModel.updateInfo.collectAsStateWithLifecycle()
 
-    var hideDownloadDialog by remember(updateState) { mutableStateOf(false) }
+    var hideDownloadDialog by remember { mutableStateOf(false) }
+    // Reset hide flag only when a new download starts (user taps Update Now again)
+    LaunchedEffect(updateState) {
+        if (updateState == com.watchlater.updater.UpdateState.AVAILABLE) {
+            hideDownloadDialog = false
+        }
+    }
 
     if (updateState == com.watchlater.updater.UpdateState.AVAILABLE && updateInfo != null) {
         AlertDialog(

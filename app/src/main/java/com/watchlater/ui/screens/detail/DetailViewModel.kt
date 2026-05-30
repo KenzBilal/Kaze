@@ -26,7 +26,7 @@ data class DetailUiState(
     val seasonEpisodes: List<EpisodeUiItem> = emptyList(),
     val isLoadingEpisodes: Boolean = false,
     val isMarkingAllWatched: Boolean = false,
-    val markAllProgress: Int = 0,       // which season currently being marked
+    val markAllProgress: Int = 0,
     val currentSeason: Int = 1,
     val currentEpisode: Int = 1,
     // UX feedback
@@ -105,7 +105,6 @@ class DetailViewModel(
 
         viewModelScope.launch {
             if (!currentlyWatched) {
-                // Validate before marking watched
                 val result = seriesRepository.validateEpisodeMarkable(item.id, item.imdbId, season)
                 if (result is EpisodeValidationResult.Blocked) {
                     _uiState.update { it.copy(toastMessage = result.reason) }
@@ -113,7 +112,6 @@ class DetailViewModel(
                 }
             }
 
-            // Optimistic update — flip in UI immediately
             val newWatched = !currentlyWatched
             _uiState.update { state ->
                 state.copy(
@@ -124,10 +122,7 @@ class DetailViewModel(
                 )
             }
 
-            // Persist to DB (background — UI already updated)
             seriesRepository.setEpisodeWatched(item.id, season, episodeNumber, newWatched)
-
-            // Auto-advance position if marking watched
             if (newWatched) autoAdvancePosition(item)
         }
     }
@@ -138,30 +133,28 @@ class DetailViewModel(
         val item   = _uiState.value.item ?: return
         val season = _uiState.value.selectedSeason
 
-        // Validate: previous seasons must be complete first
         viewModelScope.launch {
             val validation = seriesRepository.validateEpisodeMarkable(item.id, item.imdbId, season)
             if (validation is EpisodeValidationResult.Blocked) {
                 _uiState.update { it.copy(toastMessage = validation.reason) }
                 return@launch
             }
-            // Optimistic update
+            // BUG-08 fix: check whether the season actually had data before optimistic update
+            val success = seriesRepository.markSeasonWatched(item.id, item.imdbId, season)
+            if (!success) {
+                _uiState.update { it.copy(toastMessage = "Could not load Season $season episode data. Check your connection.") }
+                return@launch
+            }
             _uiState.update { state ->
                 state.copy(seasonEpisodes = state.seasonEpisodes.map { it.copy(isWatched = true) })
             }
-            seriesRepository.markSeasonWatched(item.id, item.imdbId, season)
             autoAdvancePosition(item)
             _uiState.update { it.copy(toastMessage = "Season $season marked as watched ✓") }
         }
     }
 
-    fun showMarkAllSeriesDialog() {
-        _uiState.update { it.copy(showMarkAllSeriesDialog = true) }
-    }
-
-    fun dismissMarkAllSeriesDialog() {
-        _uiState.update { it.copy(showMarkAllSeriesDialog = false) }
-    }
+    fun showMarkAllSeriesDialog()    { _uiState.update { it.copy(showMarkAllSeriesDialog = true) } }
+    fun dismissMarkAllSeriesDialog() { _uiState.update { it.copy(showMarkAllSeriesDialog = false) } }
 
     fun markAllSeriesWatched() {
         val item  = _uiState.value.item ?: return
@@ -177,7 +170,6 @@ class DetailViewModel(
                     _uiState.update { it.copy(markAllProgress = current) }
                 }
             )
-            // Reload current season and set watched flag
             loadSeasonEpisodes(item, _uiState.value.selectedSeason)
             val updated = item.copy(isWatched = true, lastUpdated = System.currentTimeMillis())
             repository.updateItem(updated)
@@ -185,7 +177,8 @@ class DetailViewModel(
                 it.copy(
                     isMarkingAllWatched = false,
                     isWatched           = true,
-                    toastMessage        = "All ${total} seasons marked as watched ✓"
+                    item                = updated,
+                    toastMessage        = "All $total seasons marked as watched ✓"
                 )
             }
         }
@@ -193,23 +186,36 @@ class DetailViewModel(
 
     // ── Auto-advance position ──────────────────────────────────────────────
 
+    /**
+     * BUG-05 fix: when all episodes are watched (next == null), compute the final
+     * position from the last season's last episode — not from the currently displayed
+     * season's episodes in the UI state.
+     */
     private suspend fun autoAdvancePosition(item: WatchItem) {
         val total = _uiState.value.totalSeasons
         val next  = seriesRepository.nextUnwatched(item.id, item.imdbId, total)
+
+        val (targetSeason, targetEpisode) = if (next != null) {
+            next.first to next.second
+        } else {
+            // All watched: find the real last episode of the last season
+            val last = seriesRepository.lastEpisodeOfSeries(item.imdbId, total)
+            (last?.first ?: total) to (last?.second ?: item.episode ?: 1)
+        }
+
         val updated = item.copy(
-            season      = next?.first ?: _uiState.value.totalSeasons,
-            episode     = next?.second ?: (
-                _uiState.value.seasonEpisodes.lastOrNull()?.episodeNumber ?: item.episode
-            ),
+            season      = targetSeason,
+            episode     = targetEpisode,
             isWatched   = next == null,
             lastUpdated = System.currentTimeMillis()
         )
         repository.updateItem(updated)
         _uiState.update {
             it.copy(
-                currentSeason  = updated.season ?: 1,
-                currentEpisode = updated.episode ?: 1,
-                isWatched      = updated.isWatched
+                currentSeason  = targetSeason,
+                currentEpisode = targetEpisode,
+                isWatched      = updated.isWatched,
+                item           = updated
             )
         }
     }
@@ -218,20 +224,24 @@ class DetailViewModel(
 
     fun onRatingChange(rating: Float) { _uiState.update { it.copy(rating = rating) } }
 
+    /**
+     * BUG-07 fix: toggleWatched now also syncs item.isWatched in the state so that
+     * saveItem() always writes the correct value regardless of read source.
+     */
     fun toggleWatched() {
-        val item      = _uiState.value.item ?: return
+        val item       = _uiState.value.item ?: return
         val nowWatched = !_uiState.value.isWatched
-        _uiState.update { it.copy(isWatched = nowWatched) }
+        // Sync BOTH the convenience flag and the embedded item
+        _uiState.update { it.copy(isWatched = nowWatched, item = item.copy(isWatched = nowWatched)) }
 
-        // For series: show dialog to mark all episodes
         if (nowWatched && item.type == MediaType.SERIES && item.imdbId.isNotBlank()
             && _uiState.value.totalSeasons > 0) {
             _uiState.update { it.copy(showMarkAllSeriesDialog = true) }
         }
     }
 
-    fun clearToast() { _uiState.update { it.copy(toastMessage = null) } }
-    fun showDeleteDialog()   { _uiState.update { it.copy(showDeleteDialog = true) } }
+    fun clearToast()      { _uiState.update { it.copy(toastMessage = null) } }
+    fun showDeleteDialog()    { _uiState.update { it.copy(showDeleteDialog = true) } }
     fun dismissDeleteDialog() { _uiState.update { it.copy(showDeleteDialog = false) } }
 
     fun saveItem(onSuccess: (() -> Unit)? = null) {

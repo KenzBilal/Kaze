@@ -93,10 +93,11 @@ fun SearchScreen(
                             )
                         }
                         items(results, key = { it.id }) { item ->
+                            // Toggle is disabled in search — navigate to detail to change watched state
                             WatchItemCard(
-                                item = item,
-                                onClick = { onItemClick(item.id) },
-                                onToggleWatched = {}  // read-only in search
+                                item            = item,
+                                onClick         = { onItemClick(item.id) },
+                                onToggleWatched = { onItemClick(item.id) }
                             )
                         }
                     }

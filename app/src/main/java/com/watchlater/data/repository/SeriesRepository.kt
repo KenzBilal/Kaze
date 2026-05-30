@@ -49,7 +49,7 @@ class SeriesRepository(
         return total
     }
 
-    // ── Season fetching (shared helper) ───────────────────────────────────
+    // ── Season fetching ────────────────────────────────────────────────────
 
     private suspend fun fetchAndCacheSeasonIfNeeded(imdbId: String, season: Int): List<SeasonEpisode> {
         val cachedAt = seasonEpisodeDao.getCachedAt(imdbId, season)
@@ -98,9 +98,11 @@ class SeriesRepository(
     // ── Validation ─────────────────────────────────────────────────────────
 
     /**
-     * Returns [EpisodeValidationResult.Allowed] if the episode can be marked watched.
-     * Returns [EpisodeValidationResult.Blocked] with a user-friendly message if a
-     * previous season is not fully watched yet.
+     * Validates whether an episode in [targetSeason] can be marked watched.
+     *
+     * FIX (BUG-04): If a previous season is NOT cached we now attempt to fetch it.
+     * If the fetch fails (offline / no imdbId), we return Blocked rather than silently
+     * bypassing enforcement — this prevents users from skipping seasons offline.
      */
     suspend fun validateEpisodeMarkable(
         watchItemId: Long,
@@ -109,8 +111,14 @@ class SeriesRepository(
     ): EpisodeValidationResult {
         if (targetSeason <= 1) return EpisodeValidationResult.Allowed
         for (prevSeason in 1 until targetSeason) {
-            val episodes = seasonEpisodeDao.getSeason(imdbId, prevSeason)
-            if (episodes.isEmpty()) continue // not cached — give benefit of the doubt
+            // Fetch and cache if needed so we always validate against real data
+            val episodes = fetchAndCacheSeasonIfNeeded(imdbId, prevSeason)
+            if (episodes.isEmpty()) {
+                // Cache fetch failed (offline / invalid imdbId) — block to be safe
+                return EpisodeValidationResult.Blocked(
+                    "Cannot verify Season $prevSeason progress. Check your connection and try again."
+                )
+            }
             val progress = episodeProgressDao.getSeason(watchItemId, prevSeason)
                 .associateBy { it.episodeNumber }
             val watched = episodes.count { progress[it.episodeNumber]?.isWatched == true }
@@ -129,7 +137,6 @@ class SeriesRepository(
     fun observeProgress(watchItemId: Long): Flow<List<EpisodeProgress>> =
         episodeProgressDao.observeAll(watchItemId)
 
-    /** Explicit set (not toggle) — used by optimistic UI updates */
     suspend fun setEpisodeWatched(
         watchItemId: Long,
         season: Int,
@@ -147,19 +154,26 @@ class SeriesRepository(
         )
     }
 
-    /** Legacy toggle — kept for back-compat */
     suspend fun toggleEpisode(watchItemId: Long, season: Int, episodeNumber: Int): Boolean {
-        val current = episodeProgressDao.get(watchItemId, season, episodeNumber)
+        val current    = episodeProgressDao.get(watchItemId, season, episodeNumber)
         val nowWatched = !(current?.isWatched ?: false)
         setEpisodeWatched(watchItemId, season, episodeNumber, nowWatched)
         return nowWatched
     }
 
-    suspend fun markSeasonWatched(watchItemId: Long, imdbId: String, season: Int) {
-        val episodes = seasonEpisodeDao.getSeason(imdbId, season)
+    /**
+     * Marks all episodes in a season as watched in a single transaction.
+     *
+     * FIX (BUG-08): Returns false and leaves DB unchanged if season is not cached
+     * (or fetch failed) so callers can show a meaningful error.
+     * FIX (P2): Uses upsertAll() @Transaction instead of N individual upsert() calls.
+     */
+    suspend fun markSeasonWatched(watchItemId: Long, imdbId: String, season: Int): Boolean {
+        val episodes = fetchAndCacheSeasonIfNeeded(imdbId, season)
+        if (episodes.isEmpty()) return false   // offline / not found — tell caller
         val now = System.currentTimeMillis()
-        episodes.forEach { ep ->
-            episodeProgressDao.upsert(
+        episodeProgressDao.upsertAll(
+            episodes.map { ep ->
                 EpisodeProgress(
                     watchItemId   = watchItemId,
                     season        = season,
@@ -167,13 +181,14 @@ class SeriesRepository(
                     isWatched     = true,
                     watchedAt     = now
                 )
-            )
-        }
+            }
+        )
+        return true
     }
 
     /**
      * Marks every episode of every season as watched.
-     * Fetches and caches season data if not already present.
+     * FIX (P3): Uses upsertAll() @Transaction per season instead of N individual upserts.
      */
     suspend fun markAllSeriesWatched(
         watchItemId: Long,
@@ -185,15 +200,17 @@ class SeriesRepository(
         for (season in 1..totalSeasons) {
             onProgress(season, totalSeasons)
             val episodes = fetchAndCacheSeasonIfNeeded(imdbId, season)
-            episodes.forEach { ep ->
-                episodeProgressDao.upsert(
-                    EpisodeProgress(
-                        watchItemId   = watchItemId,
-                        season        = season,
-                        episodeNumber = ep.episodeNumber,
-                        isWatched     = true,
-                        watchedAt     = now
-                    )
+            if (episodes.isNotEmpty()) {
+                episodeProgressDao.upsertAll(
+                    episodes.map { ep ->
+                        EpisodeProgress(
+                            watchItemId   = watchItemId,
+                            season        = season,
+                            episodeNumber = ep.episodeNumber,
+                            isWatched     = true,
+                            watchedAt     = now
+                        )
+                    }
                 )
             }
             Log.d("SeriesRepo", "Marked S$season fully watched (${episodes.size} eps)")
@@ -214,6 +231,17 @@ class SeriesRepository(
             if (next != null) return Pair(next.season, next.episodeNumber)
         }
         return null
+    }
+
+    /**
+     * Returns the last episode of the last season — used by auto-advance when series
+     * is fully watched (BUG-05 fix: don't rely on currently displayed season).
+     */
+    suspend fun lastEpisodeOfSeries(imdbId: String, totalSeasons: Int): Pair<Int, Int>? {
+        if (totalSeasons <= 0) return null
+        val episodes = seasonEpisodeDao.getSeason(imdbId, totalSeasons)
+        val last = episodes.maxByOrNull { it.episodeNumber } ?: return null
+        return Pair(totalSeasons, last.episodeNumber)
     }
 
     suspend fun deleteProgress(watchItemId: Long) {

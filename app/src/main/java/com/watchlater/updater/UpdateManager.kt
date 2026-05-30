@@ -20,12 +20,14 @@ import org.json.JSONObject
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
+import java.security.MessageDigest
 
 data class UpdateInfo(
     val versionCode: Int,
     val versionName: String,
     val apkUrl: String,
-    val releaseNotes: String
+    val releaseNotes: String,
+    val sha256: String = ""   // hex SHA-256 of APK — optional, verified if present
 )
 
 enum class UpdateState {
@@ -42,11 +44,25 @@ class UpdateManager(private val context: Context) {
 
     private var downloadId: Long = -1L
     private val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+    private var receiverRegistered = false
 
     private val downloadReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
+        override fun onReceive(ctx: Context?, intent: Intent?) {
             val id = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
             if (id == downloadId) {
+                // BUG-06 fix: verify SHA-256 before triggering install
+                val expectedHash = _updateInfo.value?.sha256.orEmpty()
+                val apkFile = File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "update.apk")
+                if (expectedHash.isNotBlank() && apkFile.exists()) {
+                    val actual = sha256Hex(apkFile)
+                    if (!actual.equals(expectedHash, ignoreCase = true)) {
+                        Log.e("UpdateManager", "SHA-256 mismatch! expected=$expectedHash actual=$actual")
+                        apkFile.delete()
+                        _updateState.value = UpdateState.ERROR
+                        return
+                    }
+                    Log.d("UpdateManager", "SHA-256 verified OK")
+                }
                 _updateState.value = UpdateState.READY_TO_INSTALL
                 installApk()
             }
@@ -58,7 +74,21 @@ class UpdateManager(private val context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             context.registerReceiver(downloadReceiver, filter, Context.RECEIVER_EXPORTED)
         } else {
+            @Suppress("UnspecifiedRegisterReceiverFlag")
             context.registerReceiver(downloadReceiver, filter)
+        }
+        receiverRegistered = true
+    }
+
+    /** Call from ViewModel.onCleared() to prevent BroadcastReceiver leak (BUG-01 fix). */
+    fun release() {
+        if (receiverRegistered) {
+            try {
+                context.unregisterReceiver(downloadReceiver)
+            } catch (e: IllegalArgumentException) {
+                Log.w("UpdateManager", "Receiver already unregistered")
+            }
+            receiverRegistered = false
         }
     }
 
@@ -72,16 +102,15 @@ class UpdateManager(private val context: Context) {
                 val connection = url.openConnection() as HttpURLConnection
                 try {
                     connection.connectTimeout = 5000
-                    connection.readTimeout = 5000
-
+                    connection.readTimeout    = 5000
                     val jsonStr = connection.inputStream.bufferedReader().readText()
-                    val json = JSONObject(jsonStr)
-
+                    val json    = JSONObject(jsonStr)
                     UpdateInfo(
-                        versionCode = json.getInt("versionCode"),
-                        versionName = json.getString("versionName"),
-                        apkUrl = json.getString("apkUrl"),
-                        releaseNotes = json.optString("releaseNotes", "")
+                        versionCode  = json.getInt("versionCode"),
+                        versionName  = json.getString("versionName"),
+                        apkUrl       = json.getString("apkUrl"),
+                        releaseNotes = json.optString("releaseNotes", ""),
+                        sha256       = json.optString("sha256", "")
                     )
                 } finally {
                     connection.disconnect()
@@ -95,7 +124,7 @@ class UpdateManager(private val context: Context) {
                 _updateState.value = UpdateState.UP_TO_DATE
             }
         } catch (e: Exception) {
-            Log.e("UpdateManager", "Failed to check for updates", e)
+            if (BuildConfig.DEBUG) Log.e("UpdateManager", "Failed to check for updates", e)
             _updateState.value = UpdateState.ERROR
         }
     }
@@ -105,7 +134,6 @@ class UpdateManager(private val context: Context) {
         _updateState.value = UpdateState.DOWNLOADING
 
         try {
-            // Remove old APK if exists
             val destination = File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "update.apk")
             if (destination.exists()) destination.delete()
 
@@ -118,7 +146,7 @@ class UpdateManager(private val context: Context) {
 
             downloadId = downloadManager.enqueue(request)
         } catch (e: Exception) {
-            Log.e("UpdateManager", "Failed to start download", e)
+            if (BuildConfig.DEBUG) Log.e("UpdateManager", "Failed to start download", e)
             _updateState.value = UpdateState.ERROR
         }
     }
@@ -128,7 +156,7 @@ class UpdateManager(private val context: Context) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 if (!context.packageManager.canRequestPackageInstalls()) {
                     val intent = Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
-                        data = Uri.parse("package:${context.packageName}")
+                        data  = Uri.parse("package:${context.packageName}")
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK
                     }
                     context.startActivity(intent)
@@ -155,8 +183,22 @@ class UpdateManager(private val context: Context) {
 
             context.startActivity(intent)
         } catch (e: Exception) {
-            Log.e("UpdateManager", "Failed to install APK", e)
+            if (BuildConfig.DEBUG) Log.e("UpdateManager", "Failed to install APK", e)
             _updateState.value = UpdateState.ERROR
         }
+    }
+
+    // ── SHA-256 helper ─────────────────────────────────────────────────────
+
+    private fun sha256Hex(file: File): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        file.inputStream().use { stream ->
+            val buffer = ByteArray(8192)
+            var read: Int
+            while (stream.read(buffer).also { read = it } != -1) {
+                digest.update(buffer, 0, read)
+            }
+        }
+        return digest.digest().joinToString("") { "%02x".format(it) }
     }
 }
