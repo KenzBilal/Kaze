@@ -87,7 +87,7 @@ fun DetailScreen(
                     },
                     colors  = ButtonDefaults.buttonColors(containerColor = WatchedGreen, contentColor = Background)
                 ) {
-                    Text("Yes, mark all")
+                    Text("Yes, mark all", color = Color.Unspecified)
                 }
             },
             dismissButton = {
@@ -158,7 +158,7 @@ fun DetailScreen(
                         if (uiState.isSaving) {
                             CircularProgressIndicator(color = Background, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
                         } else {
-                            Text("Save Changes", fontWeight = FontWeight.SemiBold)
+                            Text("Save Changes", fontWeight = FontWeight.SemiBold, color = Color.Unspecified)
                         }
                     }
                 }
@@ -341,7 +341,7 @@ private fun SeriesEpisodeSection(
                 FilterChip(
                     selected  = isSelected,
                     onClick   = { onSeasonSelect(season) },
-                    label     = { Text("Season $season", fontSize = 13.sp) },
+                    label     = { Text("Season $season", fontSize = 13.sp, color = Color.Unspecified) },
                     colors    = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = AccentBlue,
                         selectedLabelColor     = Background,

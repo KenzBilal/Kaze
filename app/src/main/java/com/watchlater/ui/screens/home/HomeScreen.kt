@@ -164,7 +164,7 @@ fun HomeScreen(
                     onClick = { viewModel.downloadUpdate() },
                     colors = ButtonDefaults.buttonColors(containerColor = AccentBlue, contentColor = Background)
                 ) {
-                    Text("Update Now")
+                    Text("Update Now", color = Color.Unspecified)
                 }
             },
             dismissButton = {

@@ -122,6 +122,7 @@ fun AppContent(app: WatchLaterApp) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(bottom = padding.calculateBottomPadding())
         ) {
             WatchLaterNavGraph(navController = navController, app = app)
         }
