@@ -1,0 +1,4 @@
+#Sat May 30 14:59:45 IST 2026
+base.0=/home/kenz/Projects/apps/WatchLater/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+path.0=classes.dex
+renamed.0=classes.dex

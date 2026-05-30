@@ -25,6 +25,18 @@ android {
         buildConfigField("String", "UPDATE_JSON_URL", "\"https://gist.githubusercontent.com/KenzBilal/7c19255da1430800f0030ba3c6e99765/raw/update.json\"")
     }
 
+    signingConfigs {
+        create("release") {
+            val keystorePath = System.getenv("KEYSTORE_PATH")
+            if (keystorePath != null) {
+                storeFile = file(keystorePath)
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KEY_ALIAS")
+                keyPassword = System.getenv("KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -33,11 +45,13 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
         }
         debug {
             isDebuggable = true
         }
     }
+
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
