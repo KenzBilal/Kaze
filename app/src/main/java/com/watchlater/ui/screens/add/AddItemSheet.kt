@@ -129,11 +129,11 @@ fun AddItemSheet(
                 ) {
                     uiState.searchResults.forEachIndexed { index, result ->
                         if (index > 0) SubtleDivider(modifier = Modifier.padding(horizontal = 12.dp))
-                        TmdbSuggestionRow(
+                        OmdbSuggestionRow(
                             result = result,
                             onClick = {
                                 keyboard?.hide()
-                                viewModel.selectTmdbResult(result)
+                                viewModel.selectOmdbResult(result)
                             }
                         )
                     }
@@ -268,8 +268,8 @@ fun AddItemSheet(
 }
 
 @Composable
-private fun TmdbSuggestionRow(
-    result: com.watchlater.data.remote.TmdbResult,
+private fun OmdbSuggestionRow(
+    result: com.watchlater.data.remote.OmdbResult,
     onClick: () -> Unit
 ) {
     Row(

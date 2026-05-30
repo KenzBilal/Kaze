@@ -51,7 +51,7 @@ fun WatchLaterNavGraph(
         // ── Home ──────────────────────────────────────────────────────────
         composable(Screen.Home.route) {
             val homeVm: HomeViewModel = viewModel(factory = HomeViewModel.Factory(repo, app.container.updateManager))
-            val addVm:  AddItemViewModel = viewModel(factory = AddItemViewModel.Factory(repo, app.container.tmdbRepository))
+            val addVm:  AddItemViewModel = viewModel(factory = AddItemViewModel.Factory(repo, app.container.omdbRepository))
             var showAddSheet by remember { mutableStateOf(false) }
             val addSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 

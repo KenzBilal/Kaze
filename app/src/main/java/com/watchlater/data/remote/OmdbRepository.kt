@@ -9,7 +9,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
-class TmdbRepository {
+class OmdbRepository {
 
     val api: OmdbApi by lazy {
         val logging = HttpLoggingInterceptor { Log.d("OmdbRepo", it) }
@@ -32,7 +32,7 @@ class TmdbRepository {
     val hasApiKey: Boolean get() = BuildConfig.OMDB_API_KEY.isNotBlank()
     val apiKey: String get() = BuildConfig.OMDB_API_KEY
 
-    suspend fun search(query: String): List<TmdbResult> {
+    suspend fun search(query: String): List<OmdbResult> {
         if (!hasApiKey || query.isBlank()) return emptyList()
         return try {
             val response = api.search(query = query, apiKey = apiKey)
@@ -42,7 +42,7 @@ class TmdbRepository {
                 .filter { it.type == "movie" || it.type == "series" }
                 .take(8)
                 .map { item ->
-                    TmdbResult(
+                    OmdbResult(
                         displayTitle = item.title,
                         displayYear  = item.year.take(4).toIntOrNull() ?: 0,
                         mediaType    = if (item.type == "series") "tv" else "movie",
@@ -54,7 +54,7 @@ class TmdbRepository {
             Log.d("OmdbRepo", "Search '$query' cancelled"); throw e
         } catch (e: Exception) {
             Log.e("OmdbRepo", "Search '$query' failed: ${e.javaClass.simpleName}: ${e.message}")
-            emptyList()
+            throw e
         }
     }
 

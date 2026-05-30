@@ -7,7 +7,7 @@ import com.watchlater.data.local.SeasonEpisode
 import com.watchlater.data.local.SeasonEpisodeDao
 import com.watchlater.data.local.SeriesCache
 import com.watchlater.data.local.SeriesCacheDao
-import com.watchlater.data.remote.TmdbRepository
+import com.watchlater.data.remote.OmdbRepository
 import kotlinx.coroutines.flow.Flow
 
 private const val CACHE_TTL_MS = 30L * 24 * 60 * 60 * 1000 // 30 days
@@ -31,7 +31,7 @@ class SeriesRepository(
     private val seriesCacheDao: SeriesCacheDao,
     private val seasonEpisodeDao: SeasonEpisodeDao,
     private val episodeProgressDao: EpisodeProgressDao,
-    private val omdbRepository: TmdbRepository
+    private val omdbRepository: OmdbRepository
 ) {
 
     // ── Series metadata ────────────────────────────────────────────────────

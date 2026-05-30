@@ -52,11 +52,22 @@ class BackupManager(
     suspend fun exportToUri(uri: android.net.Uri): BackupResult = withContext(Dispatchers.IO) {
         try {
             val items = repository.getAllItemsSnapshot()
-            val payload = BackupPayload(items = items.map { it.toBackup() })
-            val json = gson.toJson(payload)
-
             context.contentResolver.openOutputStream(uri)?.use { stream ->
-                stream.write(json.toByteArray())
+                val writer = com.google.gson.stream.JsonWriter(stream.writer())
+                writer.setIndent("  ")
+                writer.beginObject()
+                writer.name("version").value(1)
+                writer.name("exportedAt").value(System.currentTimeMillis())
+                writer.name("items")
+                writer.beginArray()
+
+                for (item in items) {
+                    gson.toJson(item.toBackup(), WatchItemBackup::class.java, writer)
+                }
+
+                writer.endArray()
+                writer.endObject()
+                writer.flush()
             } ?: throw Exception("Could not open output stream")
 
             BackupResult.Success("Backup saved successfully")

@@ -45,7 +45,7 @@ data class OmdbEpisodeItem(
 
 // ── Shared Search Result (used by AddItemViewModel + AddItemSheet) ─────────
 
-data class TmdbResult(
+data class OmdbResult(
     val displayTitle: String,
     val displayYear: Int,
     val mediaType: String,      // "movie" or "tv"

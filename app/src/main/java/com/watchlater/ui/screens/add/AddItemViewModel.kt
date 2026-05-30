@@ -7,8 +7,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
-import com.watchlater.data.remote.TmdbRepository
-import com.watchlater.data.remote.TmdbResult
+import com.watchlater.data.remote.OmdbRepository
+import com.watchlater.data.remote.OmdbResult
 import com.watchlater.data.repository.WatchItemRepository
 import com.watchlater.model.MediaType
 import com.watchlater.model.WatchItem
@@ -31,14 +31,14 @@ data class AddItemUiState(
     val yearError: String? = null,
     val isSaving: Boolean = false,
     val saved: Boolean = false,
-    val searchResults: List<TmdbResult> = emptyList(),
+    val searchResults: List<OmdbResult> = emptyList(),
     val isSearching: Boolean = false,
     val showSuggestions: Boolean = false
 )
 
 class AddItemViewModel(
     private val repository: WatchItemRepository,
-    private val tmdbRepository: TmdbRepository,
+    private val omdbRepository: OmdbRepository,
     private val savedState: SavedStateHandle
 ) : ViewModel() {
 
@@ -59,19 +59,27 @@ class AddItemViewModel(
         savedState["title"] = value
         _uiState.update { it.copy(title = value, titleError = null) }
         searchJob?.cancel()
-        Log.d("AddItemVM", "onTitleChange: '${value}' len=${value.length} hasKey=${tmdbRepository.hasApiKey}")
-        if (value.length >= 2 && tmdbRepository.hasApiKey) {
+        Log.d("AddItemVM", "onTitleChange: '${value}' len=${value.length} hasKey=${omdbRepository.hasApiKey}")
+        if (value.length >= 2 && omdbRepository.hasApiKey) {
             searchJob = viewModelScope.launch {
                 delay(400)
-                _uiState.update { it.copy(isSearching = true, showSuggestions = true) }
+                _uiState.update { it.copy(isSearching = true, showSuggestions = true, titleError = null) }
                 try {
-                    val results = tmdbRepository.search(value)
+                    val results = omdbRepository.search(value)
                     Log.d("AddItemVM", "Results: ${results.size}")
                     _uiState.update {
                         it.copy(
                             searchResults   = results,
                             isSearching     = false,
                             showSuggestions = results.isNotEmpty()
+                        )
+                    }
+                } catch (e: Exception) {
+                    _uiState.update {
+                        it.copy(
+                            isSearching     = false,
+                            showSuggestions = false,
+                            titleError      = "Network error: check connection"
                         )
                     }
                 } finally {
@@ -97,7 +105,7 @@ class AddItemViewModel(
         _uiState.update { it.copy(showSuggestions = false) }
     }
 
-    fun selectTmdbResult(result: TmdbResult) {
+    fun selectOmdbResult(result: OmdbResult) {
         val mediaType = if (result.mediaType == "tv") MediaType.SERIES else MediaType.MOVIE
         val year = result.displayYear.takeIf { it > 0 }?.toString() ?: ""
 
@@ -122,7 +130,7 @@ class AddItemViewModel(
         // Fetch genre async
         if (result.omdbId.isNotBlank()) {
             viewModelScope.launch {
-                val genre = tmdbRepository.fetchGenre(result.omdbId)
+                val genre = omdbRepository.fetchGenre(result.omdbId)
                 if (genre.isNotBlank()) {
                     savedState["genres"] = genre
                     _uiState.update { it.copy(genres = genre) }
@@ -171,12 +179,12 @@ class AddItemViewModel(
 
     class Factory(
         private val repository: WatchItemRepository,
-        private val tmdbRepository: TmdbRepository
+        private val omdbRepository: OmdbRepository
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
             val savedState = extras.createSavedStateHandle()
-            return AddItemViewModel(repository, tmdbRepository, savedState) as T
+            return AddItemViewModel(repository, omdbRepository, savedState) as T
         }
     }
 }

@@ -67,8 +67,8 @@ class WatchItemRepository(private val dao: WatchItemDao) {
         val orderClause = when (state.sort) {
             SortOption.DATE_ADDED_DESC -> "dateAdded DESC"
             SortOption.DATE_ADDED_ASC  -> "dateAdded ASC"
-            SortOption.TITLE_ASC       -> "LOWER(title) ASC"
-            SortOption.TITLE_DESC      -> "LOWER(title) DESC"
+            SortOption.TITLE_ASC       -> "title COLLATE NOCASE ASC"
+            SortOption.TITLE_DESC      -> "title COLLATE NOCASE DESC"
             SortOption.YEAR_DESC       -> "year DESC"
             SortOption.YEAR_ASC        -> "year ASC"
             SortOption.RATING_DESC     -> "rating DESC"

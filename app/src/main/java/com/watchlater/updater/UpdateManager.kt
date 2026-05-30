@@ -70,18 +70,22 @@ class UpdateManager(private val context: Context) {
             val info = withContext(Dispatchers.IO) {
                 val url = URL(BuildConfig.UPDATE_JSON_URL)
                 val connection = url.openConnection() as HttpURLConnection
-                connection.connectTimeout = 5000
-                connection.readTimeout = 5000
+                try {
+                    connection.connectTimeout = 5000
+                    connection.readTimeout = 5000
 
-                val jsonStr = connection.inputStream.bufferedReader().readText()
-                val json = JSONObject(jsonStr)
+                    val jsonStr = connection.inputStream.bufferedReader().readText()
+                    val json = JSONObject(jsonStr)
 
-                UpdateInfo(
-                    versionCode = json.getInt("versionCode"),
-                    versionName = json.getString("versionName"),
-                    apkUrl = json.getString("apkUrl"),
-                    releaseNotes = json.optString("releaseNotes", "")
-                )
+                    UpdateInfo(
+                        versionCode = json.getInt("versionCode"),
+                        versionName = json.getString("versionName"),
+                        apkUrl = json.getString("apkUrl"),
+                        releaseNotes = json.optString("releaseNotes", "")
+                    )
+                } finally {
+                    connection.disconnect()
+                }
             }
 
             _updateInfo.value = info
@@ -121,6 +125,17 @@ class UpdateManager(private val context: Context) {
 
     fun installApk() {
         try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                if (!context.packageManager.canRequestPackageInstalls()) {
+                    val intent = Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                        data = Uri.parse("package:${context.packageName}")
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                    context.startActivity(intent)
+                    return
+                }
+            }
+
             val file = File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "update.apk")
             if (!file.exists()) {
                 _updateState.value = UpdateState.ERROR

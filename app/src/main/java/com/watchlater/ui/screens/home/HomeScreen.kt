@@ -143,6 +143,8 @@ fun HomeScreen(
     val updateState by viewModel.updateState.collectAsStateWithLifecycle()
     val updateInfo by viewModel.updateInfo.collectAsStateWithLifecycle()
 
+    var hideDownloadDialog by remember(updateState) { mutableStateOf(false) }
+
     if (updateState == com.watchlater.updater.UpdateState.AVAILABLE && updateInfo != null) {
         AlertDialog(
             onDismissRequest = { /* Force them to dismiss via a button if we wanted, or allow dismiss */ },
@@ -173,11 +175,11 @@ fun HomeScreen(
         )
     }
 
-    if (updateState == com.watchlater.updater.UpdateState.DOWNLOADING) {
+    if (updateState == com.watchlater.updater.UpdateState.DOWNLOADING && !hideDownloadDialog) {
         // Simple overlay or toast indicating downloading
         // We'll show an AlertDialog so user knows it's happening
         AlertDialog(
-            onDismissRequest = {},
+            onDismissRequest = { hideDownloadDialog = true },
             containerColor = SurfaceContainer,
             title = { Text("Downloading Update", color = TextPrimary) },
             text = {
@@ -186,7 +188,12 @@ fun HomeScreen(
                     Text("Please wait...", color = TextSecondary)
                 }
             },
-            confirmButton = {}
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { hideDownloadDialog = true }) {
+                    Text("Hide", color = TextSecondary)
+                }
+            }
         )
     }
 }
