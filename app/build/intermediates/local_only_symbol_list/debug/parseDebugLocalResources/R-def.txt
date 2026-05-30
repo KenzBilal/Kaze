@@ -1,0 +1,15 @@
+R_DEF: Internal format may change without notice
+local
+color accent_blue
+color background
+color surface_container
+drawable ic_launcher_foreground
+drawable ic_splash_logo
+mipmap ic_launcher
+mipmap ic_launcher_foreground
+mipmap ic_launcher_round
+string app_name
+style Theme.WatchLater
+style Theme.WatchLater.Splash
+xml file_paths
+xml filepaths

@@ -1,0 +1,20 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.watchlater.app-mergeDebugResources-63:/values-v31/values-v31.xml",
+            "map": [
+                {
+                    "source": "/home/kenz/.gradle/caches/8.9/transforms/3ae29fb1c1ec2400b49b0a7c09da644e/transformed/core-splashscreen-1.0.1/res/values-v31/values-v31.xml",
+                    "from": {
+                        "startLines": "2,9",
+                        "startColumns": "4,4",
+                        "startOffsets": "55,473",
+                        "endLines": "8,13",
+                        "endColumns": "12,12",
+                        "endOffsets": "468,697"
+                    }
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,174 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.watchlater"
+4    android:versionCode="3"
+5    android:versionName="1.2.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="24"
+9        android:targetSdkVersion="35" />
+10
+11    <uses-permission android:name="android.permission.INTERNET" />
+11-->/home/kenz/Projects/apps/WatchLater/app/src/main/AndroidManifest.xml:4:5-67
+11-->/home/kenz/Projects/apps/WatchLater/app/src/main/AndroidManifest.xml:4:22-64
+12    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+12-->/home/kenz/Projects/apps/WatchLater/app/src/main/AndroidManifest.xml:5:5-83
+12-->/home/kenz/Projects/apps/WatchLater/app/src/main/AndroidManifest.xml:5:22-80
+13    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+13-->/home/kenz/Projects/apps/WatchLater/app/src/main/AndroidManifest.xml:6:5-77
+13-->/home/kenz/Projects/apps/WatchLater/app/src/main/AndroidManifest.xml:6:22-74
+14
+15    <permission
+15-->[androidx.core:core:1.15.0] /home/kenz/.gradle/caches/8.9/transforms/13dc183146b5c554d3187faf3029b639/transformed/core-1.15.0/AndroidManifest.xml:22:5-24:47
+16        android:name="com.watchlater.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+16-->[androidx.core:core:1.15.0] /home/kenz/.gradle/caches/8.9/transforms/13dc183146b5c554d3187faf3029b639/transformed/core-1.15.0/AndroidManifest.xml:23:9-81
+17        android:protectionLevel="signature" />
+17-->[androidx.core:core:1.15.0] /home/kenz/.gradle/caches/8.9/transforms/13dc183146b5c554d3187faf3029b639/transformed/core-1.15.0/AndroidManifest.xml:24:9-44
+18
+19    <uses-permission android:name="com.watchlater.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+19-->[androidx.core:core:1.15.0] /home/kenz/.gradle/caches/8.9/transforms/13dc183146b5c554d3187faf3029b639/transformed/core-1.15.0/AndroidManifest.xml:26:5-97
+19-->[androidx.core:core:1.15.0] /home/kenz/.gradle/caches/8.9/transforms/13dc183146b5c554d3187faf3029b639/transformed/core-1.15.0/AndroidManifest.xml:26:22-94
+20
+21    <application
+21-->/home/kenz/Projects/apps/WatchLater/app/src/main/AndroidManifest.xml:8:5-38:19
+22        android:name="com.watchlater.WatchLaterApp"
+22-->/home/kenz/Projects/apps/WatchLater/app/src/main/AndroidManifest.xml:9:9-38
+23        android:allowBackup="true"
+23-->/home/kenz/Projects/apps/WatchLater/app/src/main/AndroidManifest.xml:10:9-35
+24        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+24-->[androidx.core:core:1.15.0] /home/kenz/.gradle/caches/8.9/transforms/13dc183146b5c554d3187faf3029b639/transformed/core-1.15.0/AndroidManifest.xml:28:18-86
+25        android:debuggable="true"
+26        android:extractNativeLibs="false"
+27        android:icon="@mipmap/ic_launcher"
+27-->/home/kenz/Projects/apps/WatchLater/app/src/main/AndroidManifest.xml:11:9-43
+28        android:label="@string/app_name"
+28-->/home/kenz/Projects/apps/WatchLater/app/src/main/AndroidManifest.xml:13:9-41
+29        android:roundIcon="@mipmap/ic_launcher_round"
+29-->/home/kenz/Projects/apps/WatchLater/app/src/main/AndroidManifest.xml:12:9-54
+30        android:supportsRtl="true"
+30-->/home/kenz/Projects/apps/WatchLater/app/src/main/AndroidManifest.xml:14:9-35
+31        android:theme="@style/Theme.WatchLater" >
+31-->/home/kenz/Projects/apps/WatchLater/app/src/main/AndroidManifest.xml:15:9-48
+32        <activity
+32-->/home/kenz/Projects/apps/WatchLater/app/src/main/AndroidManifest.xml:17:9-26:20
+33            android:name="com.watchlater.MainActivity"
+33-->/home/kenz/Projects/apps/WatchLater/app/src/main/AndroidManifest.xml:18:13-41
+34            android:exported="true"
+34-->/home/kenz/Projects/apps/WatchLater/app/src/main/AndroidManifest.xml:19:13-36
+35            android:theme="@style/Theme.WatchLater.Splash"
+35-->/home/kenz/Projects/apps/WatchLater/app/src/main/AndroidManifest.xml:21:13-59
+36            android:windowSoftInputMode="adjustResize" >
+36-->/home/kenz/Projects/apps/WatchLater/app/src/main/AndroidManifest.xml:20:13-55
+37            <intent-filter>
+37-->/home/kenz/Projects/apps/WatchLater/app/src/main/AndroidManifest.xml:22:13-25:29
+38                <action android:name="android.intent.action.MAIN" />
+38-->/home/kenz/Projects/apps/WatchLater/app/src/main/AndroidManifest.xml:23:17-69
+38-->/home/kenz/Projects/apps/WatchLater/app/src/main/AndroidManifest.xml:23:25-66
+39
+40                <category android:name="android.intent.category.LAUNCHER" />
+40-->/home/kenz/Projects/apps/WatchLater/app/src/main/AndroidManifest.xml:24:17-77
+40-->/home/kenz/Projects/apps/WatchLater/app/src/main/AndroidManifest.xml:24:27-74
+41            </intent-filter>
+42        </activity>
+43
+44        <provider
+45            android:name="androidx.core.content.FileProvider"
+45-->/home/kenz/Projects/apps/WatchLater/app/src/main/AndroidManifest.xml:29:13-62
+46            android:authorities="com.watchlater.fileprovider"
+46-->/home/kenz/Projects/apps/WatchLater/app/src/main/AndroidManifest.xml:30:13-64
+47            android:exported="false"
+47-->/home/kenz/Projects/apps/WatchLater/app/src/main/AndroidManifest.xml:31:13-37
+48            android:grantUriPermissions="true" >
+48-->/home/kenz/Projects/apps/WatchLater/app/src/main/AndroidManifest.xml:32:13-47
+49            <meta-data
+49-->/home/kenz/Projects/apps/WatchLater/app/src/main/AndroidManifest.xml:33:13-35:53
+50                android:name="android.support.FILE_PROVIDER_PATHS"
+50-->/home/kenz/Projects/apps/WatchLater/app/src/main/AndroidManifest.xml:34:17-67
+51                android:resource="@xml/filepaths" />
+51-->/home/kenz/Projects/apps/WatchLater/app/src/main/AndroidManifest.xml:35:17-50
+52        </provider>
+53
+54        <activity
+54-->[androidx.compose.ui:ui-tooling-android:1.7.6] /home/kenz/.gradle/caches/8.9/transforms/ecc18936c364cc56c9b70f300a9aa283/transformed/ui-tooling-release/AndroidManifest.xml:23:9-25:39
+55            android:name="androidx.compose.ui.tooling.PreviewActivity"
+55-->[androidx.compose.ui:ui-tooling-android:1.7.6] /home/kenz/.gradle/caches/8.9/transforms/ecc18936c364cc56c9b70f300a9aa283/transformed/ui-tooling-release/AndroidManifest.xml:24:13-71
+56            android:exported="true" />
+56-->[androidx.compose.ui:ui-tooling-android:1.7.6] /home/kenz/.gradle/caches/8.9/transforms/ecc18936c364cc56c9b70f300a9aa283/transformed/ui-tooling-release/AndroidManifest.xml:25:13-36
+57
+58        <provider
+58-->[androidx.emoji2:emoji2:1.3.0] /home/kenz/.gradle/caches/8.9/transforms/d7f9e48a72e676e34db9f6e62b16d4e1/transformed/emoji2-1.3.0/AndroidManifest.xml:24:9-32:20
+59            android:name="androidx.startup.InitializationProvider"
+59-->[androidx.emoji2:emoji2:1.3.0] /home/kenz/.gradle/caches/8.9/transforms/d7f9e48a72e676e34db9f6e62b16d4e1/transformed/emoji2-1.3.0/AndroidManifest.xml:25:13-67
+60            android:authorities="com.watchlater.androidx-startup"
+60-->[androidx.emoji2:emoji2:1.3.0] /home/kenz/.gradle/caches/8.9/transforms/d7f9e48a72e676e34db9f6e62b16d4e1/transformed/emoji2-1.3.0/AndroidManifest.xml:26:13-68
+61            android:exported="false" >
+61-->[androidx.emoji2:emoji2:1.3.0] /home/kenz/.gradle/caches/8.9/transforms/d7f9e48a72e676e34db9f6e62b16d4e1/transformed/emoji2-1.3.0/AndroidManifest.xml:27:13-37
+62            <meta-data
+62-->[androidx.emoji2:emoji2:1.3.0] /home/kenz/.gradle/caches/8.9/transforms/d7f9e48a72e676e34db9f6e62b16d4e1/transformed/emoji2-1.3.0/AndroidManifest.xml:29:13-31:52
+63                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+63-->[androidx.emoji2:emoji2:1.3.0] /home/kenz/.gradle/caches/8.9/transforms/d7f9e48a72e676e34db9f6e62b16d4e1/transformed/emoji2-1.3.0/AndroidManifest.xml:30:17-75
+64                android:value="androidx.startup" />
+64-->[androidx.emoji2:emoji2:1.3.0] /home/kenz/.gradle/caches/8.9/transforms/d7f9e48a72e676e34db9f6e62b16d4e1/transformed/emoji2-1.3.0/AndroidManifest.xml:31:17-49
+65            <meta-data
+65-->[androidx.lifecycle:lifecycle-process:2.8.7] /home/kenz/.gradle/caches/8.9/transforms/c31554931a5d5b76609a4e86c0592c11/transformed/lifecycle-process-2.8.7/AndroidManifest.xml:29:13-31:52
+66                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+66-->[androidx.lifecycle:lifecycle-process:2.8.7] /home/kenz/.gradle/caches/8.9/transforms/c31554931a5d5b76609a4e86c0592c11/transformed/lifecycle-process-2.8.7/AndroidManifest.xml:30:17-78
+67                android:value="androidx.startup" />
+67-->[androidx.lifecycle:lifecycle-process:2.8.7] /home/kenz/.gradle/caches/8.9/transforms/c31554931a5d5b76609a4e86c0592c11/transformed/lifecycle-process-2.8.7/AndroidManifest.xml:31:17-49
+68            <meta-data
+68-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/kenz/.gradle/caches/8.9/transforms/9ba4e230df3f5b239978c63c3ba07969/transformed/profileinstaller-1.4.0/AndroidManifest.xml:29:13-31:52
+69                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+69-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/kenz/.gradle/caches/8.9/transforms/9ba4e230df3f5b239978c63c3ba07969/transformed/profileinstaller-1.4.0/AndroidManifest.xml:30:17-85
+70                android:value="androidx.startup" />
+70-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/kenz/.gradle/caches/8.9/transforms/9ba4e230df3f5b239978c63c3ba07969/transformed/profileinstaller-1.4.0/AndroidManifest.xml:31:17-49
+71        </provider>
+72
+73        <service
+73-->[androidx.room:room-runtime:2.6.1] /home/kenz/.gradle/caches/8.9/transforms/8f46643a9b491a3e4ba28111c1415226/transformed/room-runtime-2.6.1/AndroidManifest.xml:24:9-28:63
+74            android:name="androidx.room.MultiInstanceInvalidationService"
+74-->[androidx.room:room-runtime:2.6.1] /home/kenz/.gradle/caches/8.9/transforms/8f46643a9b491a3e4ba28111c1415226/transformed/room-runtime-2.6.1/AndroidManifest.xml:25:13-74
+75            android:directBootAware="true"
+75-->[androidx.room:room-runtime:2.6.1] /home/kenz/.gradle/caches/8.9/transforms/8f46643a9b491a3e4ba28111c1415226/transformed/room-runtime-2.6.1/AndroidManifest.xml:26:13-43
+76            android:exported="false" />
+76-->[androidx.room:room-runtime:2.6.1] /home/kenz/.gradle/caches/8.9/transforms/8f46643a9b491a3e4ba28111c1415226/transformed/room-runtime-2.6.1/AndroidManifest.xml:27:13-37
+77
+78        <receiver
+78-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/kenz/.gradle/caches/8.9/transforms/9ba4e230df3f5b239978c63c3ba07969/transformed/profileinstaller-1.4.0/AndroidManifest.xml:34:9-52:20
+79            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+79-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/kenz/.gradle/caches/8.9/transforms/9ba4e230df3f5b239978c63c3ba07969/transformed/profileinstaller-1.4.0/AndroidManifest.xml:35:13-76
+80            android:directBootAware="false"
+80-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/kenz/.gradle/caches/8.9/transforms/9ba4e230df3f5b239978c63c3ba07969/transformed/profileinstaller-1.4.0/AndroidManifest.xml:36:13-44
+81            android:enabled="true"
+81-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/kenz/.gradle/caches/8.9/transforms/9ba4e230df3f5b239978c63c3ba07969/transformed/profileinstaller-1.4.0/AndroidManifest.xml:37:13-35
+82            android:exported="true"
+82-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/kenz/.gradle/caches/8.9/transforms/9ba4e230df3f5b239978c63c3ba07969/transformed/profileinstaller-1.4.0/AndroidManifest.xml:38:13-36
+83            android:permission="android.permission.DUMP" >
+83-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/kenz/.gradle/caches/8.9/transforms/9ba4e230df3f5b239978c63c3ba07969/transformed/profileinstaller-1.4.0/AndroidManifest.xml:39:13-57
+84            <intent-filter>
+84-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/kenz/.gradle/caches/8.9/transforms/9ba4e230df3f5b239978c63c3ba07969/transformed/profileinstaller-1.4.0/AndroidManifest.xml:40:13-42:29
+85                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+85-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/kenz/.gradle/caches/8.9/transforms/9ba4e230df3f5b239978c63c3ba07969/transformed/profileinstaller-1.4.0/AndroidManifest.xml:41:17-91
+85-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/kenz/.gradle/caches/8.9/transforms/9ba4e230df3f5b239978c63c3ba07969/transformed/profileinstaller-1.4.0/AndroidManifest.xml:41:25-88
+86            </intent-filter>
+87            <intent-filter>
+87-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/kenz/.gradle/caches/8.9/transforms/9ba4e230df3f5b239978c63c3ba07969/transformed/profileinstaller-1.4.0/AndroidManifest.xml:43:13-45:29
+88                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+88-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/kenz/.gradle/caches/8.9/transforms/9ba4e230df3f5b239978c63c3ba07969/transformed/profileinstaller-1.4.0/AndroidManifest.xml:44:17-85
+88-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/kenz/.gradle/caches/8.9/transforms/9ba4e230df3f5b239978c63c3ba07969/transformed/profileinstaller-1.4.0/AndroidManifest.xml:44:25-82
+89            </intent-filter>
+90            <intent-filter>
+90-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/kenz/.gradle/caches/8.9/transforms/9ba4e230df3f5b239978c63c3ba07969/transformed/profileinstaller-1.4.0/AndroidManifest.xml:46:13-48:29
+91                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+91-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/kenz/.gradle/caches/8.9/transforms/9ba4e230df3f5b239978c63c3ba07969/transformed/profileinstaller-1.4.0/AndroidManifest.xml:47:17-88
+91-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/kenz/.gradle/caches/8.9/transforms/9ba4e230df3f5b239978c63c3ba07969/transformed/profileinstaller-1.4.0/AndroidManifest.xml:47:25-85
+92            </intent-filter>
+93            <intent-filter>
+93-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/kenz/.gradle/caches/8.9/transforms/9ba4e230df3f5b239978c63c3ba07969/transformed/profileinstaller-1.4.0/AndroidManifest.xml:49:13-51:29
+94                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+94-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/kenz/.gradle/caches/8.9/transforms/9ba4e230df3f5b239978c63c3ba07969/transformed/profileinstaller-1.4.0/AndroidManifest.xml:50:17-95
+94-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/kenz/.gradle/caches/8.9/transforms/9ba4e230df3f5b239978c63c3ba07969/transformed/profileinstaller-1.4.0/AndroidManifest.xml:50:25-92
+95            </intent-filter>
+96        </receiver>
+97    </application>
+98
+99</manifest>
