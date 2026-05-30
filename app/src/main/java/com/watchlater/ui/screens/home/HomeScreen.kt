@@ -45,7 +45,7 @@ fun HomeScreen(
             FloatingActionButton(
                 onClick = onAddClick,
                 containerColor = AccentBlue,
-                contentColor = Color.White,
+                contentColor = Background,
                 elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 4.dp)
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Add item", modifier = Modifier.size(24.dp))
@@ -160,9 +160,9 @@ fun HomeScreen(
             confirmButton = {
                 Button(
                     onClick = { viewModel.downloadUpdate() },
-                    colors = ButtonDefaults.buttonColors(containerColor = AccentBlue)
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentBlue, contentColor = Background)
                 ) {
-                    Text("Update Now", color = Color.White)
+                    Text("Update Now")
                 }
             },
             dismissButton = {

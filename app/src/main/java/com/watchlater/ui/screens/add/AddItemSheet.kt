@@ -247,14 +247,14 @@ fun AddItemSheet(
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = AccentBlue,
-                    contentColor = White,
+                    contentColor = Background,
                     disabledContainerColor = AccentBlueDim
                 ),
                 shape = MaterialTheme.shapes.medium
             ) {
                 if (uiState.isSaving) {
                     CircularProgressIndicator(
-                        color = White,
+                        color = Background,
                         strokeWidth = 2.dp,
                         modifier = Modifier.size(20.dp)
                     )

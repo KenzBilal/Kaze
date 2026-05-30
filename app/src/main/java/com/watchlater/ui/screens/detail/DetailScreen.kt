@@ -81,9 +81,14 @@ fun DetailScreen(
             },
             confirmButton = {
                 Button(
-                    onClick = viewModel::markAllSeriesWatched,
-                    colors  = ButtonDefaults.buttonColors(containerColor = WatchedGreen)
-                ) { Text("Mark All Watched", color = Color.White) }
+                    onClick = {
+                        viewModel.markAllSeasonsWatched()
+                        viewModel.dismissMarkAllSeriesDialog()
+                    },
+                    colors  = ButtonDefaults.buttonColors(containerColor = WatchedGreen, contentColor = Background)
+                ) {
+                    Text("Yes, mark all")
+                }
             },
             dismissButton = {
                 TextButton(onClick = viewModel::dismissMarkAllSeriesDialog) {
@@ -147,11 +152,11 @@ fun DetailScreen(
                         onClick  = { viewModel.saveItem() },
                         enabled  = !uiState.isSaving && !uiState.isLoading,
                         modifier = Modifier.fillMaxWidth().height(52.dp),
-                        colors   = ButtonDefaults.buttonColors(containerColor = AccentBlue, contentColor = Color.White),
+                        colors   = ButtonDefaults.buttonColors(containerColor = AccentBlue, contentColor = Background),
                         shape    = MaterialTheme.shapes.medium
                     ) {
                         if (uiState.isSaving) {
-                            CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
+                            CircularProgressIndicator(color = Background, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
                         } else {
                             Text("Save Changes", fontWeight = FontWeight.SemiBold)
                         }
@@ -339,7 +344,7 @@ private fun SeriesEpisodeSection(
                     label     = { Text("Season $season", fontSize = 13.sp) },
                     colors    = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = AccentBlue,
-                        selectedLabelColor     = Color.White,
+                        selectedLabelColor     = Background,
                         containerColor         = SurfaceElevated,
                         labelColor             = TextSecondary
                     ),
