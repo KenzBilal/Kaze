@@ -11,8 +11,11 @@ import com.watchlater.model.WatchItem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+import androidx.annotation.Keep
+
 // ─── Backup data classes ────────────────────────────────────────────────────
 
+@Keep
 data class BackupPayload(
     val version: Int = 2,
     val exportedAt: Long = System.currentTimeMillis(),
@@ -23,6 +26,7 @@ data class BackupPayload(
 /**
  * BUG-02 fix: posterUrl, genres, and imdbId are now included in the backup.
  */
+@Keep
 data class WatchItemBackup(
     val title: String,
     val year: Int,
@@ -43,6 +47,7 @@ data class WatchItemBackup(
  * BUG-03 fix: Episode progress is exported/imported using imdbId as the stable key
  * so that it survives the autoincrement ID reassignment on restore.
  */
+@Keep
 data class EpisodeProgressBackup(
     val imdbId: String,         // stable foreign key — not the DB autoincrement id
     val season: Int,

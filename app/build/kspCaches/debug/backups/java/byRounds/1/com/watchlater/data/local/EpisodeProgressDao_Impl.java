@@ -7,6 +7,7 @@ import androidx.annotation.Nullable;
 import androidx.room.CoroutinesRoom;
 import androidx.room.EntityInsertionAdapter;
 import androidx.room.RoomDatabase;
+import androidx.room.RoomDatabaseKt;
 import androidx.room.RoomSQLiteQuery;
 import androidx.room.SharedSQLiteStatement;
 import androidx.room.util.CursorUtil;
@@ -88,6 +89,31 @@ public final class EpisodeProgressDao_Impl implements EpisodeProgressDao {
         }
       }
     }, $completion);
+  }
+
+  @Override
+  public Object insertAll(final List<EpisodeProgress> list,
+      final Continuation<? super Unit> $completion) {
+    return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
+      @Override
+      @NonNull
+      public Unit call() throws Exception {
+        __db.beginTransaction();
+        try {
+          __insertionAdapterOfEpisodeProgress.insert(list);
+          __db.setTransactionSuccessful();
+          return Unit.INSTANCE;
+        } finally {
+          __db.endTransaction();
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
+  public Object upsertAll(final List<EpisodeProgress> list,
+      final Continuation<? super Unit> $completion) {
+    return RoomDatabaseKt.withTransaction(__db, (__cont) -> EpisodeProgressDao.DefaultImpls.upsertAll(EpisodeProgressDao_Impl.this, list, __cont), $completion);
   }
 
   @Override
@@ -263,6 +289,56 @@ public final class EpisodeProgressDao_Impl implements EpisodeProgressDao {
             _result = new EpisodeProgress(_tmpWatchItemId,_tmpSeason,_tmpEpisodeNumber,_tmpIsWatched,_tmpWatchedAt);
           } else {
             _result = null;
+          }
+          return _result;
+        } finally {
+          _cursor.close();
+          _statement.release();
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
+  public Object getAll(final long watchItemId,
+      final Continuation<? super List<EpisodeProgress>> $completion) {
+    final String _sql = "SELECT * FROM episode_progress WHERE watchItemId = ? ORDER BY season ASC, episodeNumber ASC";
+    final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 1);
+    int _argIndex = 1;
+    _statement.bindLong(_argIndex, watchItemId);
+    final CancellationSignal _cancellationSignal = DBUtil.createCancellationSignal();
+    return CoroutinesRoom.execute(__db, false, _cancellationSignal, new Callable<List<EpisodeProgress>>() {
+      @Override
+      @NonNull
+      public List<EpisodeProgress> call() throws Exception {
+        final Cursor _cursor = DBUtil.query(__db, _statement, false, null);
+        try {
+          final int _cursorIndexOfWatchItemId = CursorUtil.getColumnIndexOrThrow(_cursor, "watchItemId");
+          final int _cursorIndexOfSeason = CursorUtil.getColumnIndexOrThrow(_cursor, "season");
+          final int _cursorIndexOfEpisodeNumber = CursorUtil.getColumnIndexOrThrow(_cursor, "episodeNumber");
+          final int _cursorIndexOfIsWatched = CursorUtil.getColumnIndexOrThrow(_cursor, "isWatched");
+          final int _cursorIndexOfWatchedAt = CursorUtil.getColumnIndexOrThrow(_cursor, "watchedAt");
+          final List<EpisodeProgress> _result = new ArrayList<EpisodeProgress>(_cursor.getCount());
+          while (_cursor.moveToNext()) {
+            final EpisodeProgress _item;
+            final long _tmpWatchItemId;
+            _tmpWatchItemId = _cursor.getLong(_cursorIndexOfWatchItemId);
+            final int _tmpSeason;
+            _tmpSeason = _cursor.getInt(_cursorIndexOfSeason);
+            final int _tmpEpisodeNumber;
+            _tmpEpisodeNumber = _cursor.getInt(_cursorIndexOfEpisodeNumber);
+            final boolean _tmpIsWatched;
+            final int _tmp;
+            _tmp = _cursor.getInt(_cursorIndexOfIsWatched);
+            _tmpIsWatched = _tmp != 0;
+            final Long _tmpWatchedAt;
+            if (_cursor.isNull(_cursorIndexOfWatchedAt)) {
+              _tmpWatchedAt = null;
+            } else {
+              _tmpWatchedAt = _cursor.getLong(_cursorIndexOfWatchedAt);
+            }
+            _item = new EpisodeProgress(_tmpWatchItemId,_tmpSeason,_tmpEpisodeNumber,_tmpIsWatched,_tmpWatchedAt);
+            _result.add(_item);
           }
           return _result;
         } finally {

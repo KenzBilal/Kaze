@@ -11,5 +11,4 @@ mipmap ic_launcher_round
 string app_name
 style Theme.WatchLater
 style Theme.WatchLater.Splash
-xml file_paths
 xml filepaths

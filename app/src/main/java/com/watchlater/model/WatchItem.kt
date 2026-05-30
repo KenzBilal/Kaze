@@ -1,11 +1,22 @@
 package com.watchlater.model
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
+import androidx.annotation.Keep
+
+@Keep
 enum class MediaType { MOVIE, SERIES }
 
-@Entity(tableName = "watch_items")
+@Entity(
+    tableName = "watch_items",
+    indices = [
+        Index(value = ["isWatched"]),
+        Index(value = ["type"]),
+        Index(value = ["dateAdded"])
+    ]
+)
 data class WatchItem(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,

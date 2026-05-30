@@ -55,12 +55,6 @@ class HomeViewModel(
         }
     }
 
-    // BUG-01 fix: release BroadcastReceiver when ViewModel is cleared
-    override fun onCleared() {
-        super.onCleared()
-        updateManager.release()
-    }
-
     fun downloadUpdate() = updateManager.downloadUpdate()
     fun installUpdate()  = updateManager.installApk()
 

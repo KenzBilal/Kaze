@@ -16,6 +16,7 @@ import java.lang.Override;
 import java.lang.String;
 import java.lang.SuppressWarnings;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -37,15 +38,18 @@ public final class WatchLaterDatabase_Impl extends WatchLaterDatabase {
   @Override
   @NonNull
   protected SupportSQLiteOpenHelper createOpenHelper(@NonNull final DatabaseConfiguration config) {
-    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(3) {
+    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(4) {
       @Override
       public void createAllTables(@NonNull final SupportSQLiteDatabase db) {
         db.execSQL("CREATE TABLE IF NOT EXISTS `watch_items` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT NOT NULL, `year` INTEGER NOT NULL, `type` TEXT NOT NULL, `isWatched` INTEGER NOT NULL, `rating` REAL NOT NULL, `season` INTEGER, `episode` INTEGER, `notes` TEXT NOT NULL, `posterUrl` TEXT, `genres` TEXT NOT NULL, `imdbId` TEXT NOT NULL, `dateAdded` INTEGER NOT NULL, `lastUpdated` INTEGER NOT NULL)");
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_watch_items_isWatched` ON `watch_items` (`isWatched`)");
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_watch_items_type` ON `watch_items` (`type`)");
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_watch_items_dateAdded` ON `watch_items` (`dateAdded`)");
         db.execSQL("CREATE TABLE IF NOT EXISTS `series_cache` (`imdbId` TEXT NOT NULL, `title` TEXT NOT NULL, `totalSeasons` INTEGER NOT NULL, `cachedAt` INTEGER NOT NULL, PRIMARY KEY(`imdbId`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS `season_episodes` (`imdbId` TEXT NOT NULL, `season` INTEGER NOT NULL, `episodeNumber` INTEGER NOT NULL, `title` TEXT NOT NULL, `released` TEXT NOT NULL, `imdbRating` TEXT NOT NULL, `cachedAt` INTEGER NOT NULL, PRIMARY KEY(`imdbId`, `season`, `episodeNumber`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS `episode_progress` (`watchItemId` INTEGER NOT NULL, `season` INTEGER NOT NULL, `episodeNumber` INTEGER NOT NULL, `isWatched` INTEGER NOT NULL, `watchedAt` INTEGER, PRIMARY KEY(`watchItemId`, `season`, `episodeNumber`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)");
-        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '5080d4b5078a5f92709677b952186b54')");
+        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '47cb7e01876b9cafb1fdfccc30d5b89d')");
       }
 
       @Override
@@ -113,7 +117,10 @@ public final class WatchLaterDatabase_Impl extends WatchLaterDatabase {
         _columnsWatchItems.put("dateAdded", new TableInfo.Column("dateAdded", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsWatchItems.put("lastUpdated", new TableInfo.Column("lastUpdated", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         final HashSet<TableInfo.ForeignKey> _foreignKeysWatchItems = new HashSet<TableInfo.ForeignKey>(0);
-        final HashSet<TableInfo.Index> _indicesWatchItems = new HashSet<TableInfo.Index>(0);
+        final HashSet<TableInfo.Index> _indicesWatchItems = new HashSet<TableInfo.Index>(3);
+        _indicesWatchItems.add(new TableInfo.Index("index_watch_items_isWatched", false, Arrays.asList("isWatched"), Arrays.asList("ASC")));
+        _indicesWatchItems.add(new TableInfo.Index("index_watch_items_type", false, Arrays.asList("type"), Arrays.asList("ASC")));
+        _indicesWatchItems.add(new TableInfo.Index("index_watch_items_dateAdded", false, Arrays.asList("dateAdded"), Arrays.asList("ASC")));
         final TableInfo _infoWatchItems = new TableInfo("watch_items", _columnsWatchItems, _foreignKeysWatchItems, _indicesWatchItems);
         final TableInfo _existingWatchItems = TableInfo.read(db, "watch_items");
         if (!_infoWatchItems.equals(_existingWatchItems)) {
@@ -169,7 +176,7 @@ public final class WatchLaterDatabase_Impl extends WatchLaterDatabase {
         }
         return new RoomOpenHelper.ValidationResult(true, null);
       }
-    }, "5080d4b5078a5f92709677b952186b54", "b3bf0c447d1bc2c9c9f2fa3e6681ebc3");
+    }, "47cb7e01876b9cafb1fdfccc30d5b89d", "1902596f1e90611650fa13ad993fc45f");
     final SupportSQLiteOpenHelper.Configuration _sqliteConfig = SupportSQLiteOpenHelper.Configuration.builder(config.context).name(config.name).callback(_openCallback).build();
     final SupportSQLiteOpenHelper _helper = config.sqliteOpenHelperFactory.create(_sqliteConfig);
     return _helper;

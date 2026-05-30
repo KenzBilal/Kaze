@@ -8,6 +8,7 @@ import androidx.room.CoroutinesRoom;
 import androidx.room.EntityDeletionOrUpdateAdapter;
 import androidx.room.EntityInsertionAdapter;
 import androidx.room.RoomDatabase;
+import androidx.room.RoomDatabaseKt;
 import androidx.room.RoomSQLiteQuery;
 import androidx.room.SharedSQLiteStatement;
 import androidx.room.util.CursorUtil;
@@ -184,16 +185,16 @@ public final class WatchItemDao_Impl implements WatchItemDao {
 
   @Override
   public Object insertAll(final List<WatchItem> items,
-      final Continuation<? super Unit> $completion) {
-    return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
+      final Continuation<? super List<Long>> $completion) {
+    return CoroutinesRoom.execute(__db, true, new Callable<List<Long>>() {
       @Override
       @NonNull
-      public Unit call() throws Exception {
+      public List<Long> call() throws Exception {
         __db.beginTransaction();
         try {
-          __insertionAdapterOfWatchItem.insert(items);
+          final List<Long> _result = __insertionAdapterOfWatchItem.insertAndReturnIdsList(items);
           __db.setTransactionSuccessful();
-          return Unit.INSTANCE;
+          return _result;
         } finally {
           __db.endTransaction();
         }
@@ -235,6 +236,12 @@ public final class WatchItemDao_Impl implements WatchItemDao {
         }
       }
     }, $completion);
+  }
+
+  @Override
+  public Object replaceAll(final List<WatchItem> items,
+      final Continuation<? super List<Long>> $completion) {
+    return RoomDatabaseKt.withTransaction(__db, (__cont) -> WatchItemDao.DefaultImpls.replaceAll(WatchItemDao_Impl.this, items, __cont), $completion);
   }
 
   @Override
@@ -463,6 +470,92 @@ public final class WatchItemDao_Impl implements WatchItemDao {
 
   @Override
   public Object getItemById(final long id, final Continuation<? super WatchItem> $completion) {
+    final String _sql = "SELECT * FROM watch_items WHERE id = ?";
+    final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 1);
+    int _argIndex = 1;
+    _statement.bindLong(_argIndex, id);
+    final CancellationSignal _cancellationSignal = DBUtil.createCancellationSignal();
+    return CoroutinesRoom.execute(__db, false, _cancellationSignal, new Callable<WatchItem>() {
+      @Override
+      @Nullable
+      public WatchItem call() throws Exception {
+        final Cursor _cursor = DBUtil.query(__db, _statement, false, null);
+        try {
+          final int _cursorIndexOfId = CursorUtil.getColumnIndexOrThrow(_cursor, "id");
+          final int _cursorIndexOfTitle = CursorUtil.getColumnIndexOrThrow(_cursor, "title");
+          final int _cursorIndexOfYear = CursorUtil.getColumnIndexOrThrow(_cursor, "year");
+          final int _cursorIndexOfType = CursorUtil.getColumnIndexOrThrow(_cursor, "type");
+          final int _cursorIndexOfIsWatched = CursorUtil.getColumnIndexOrThrow(_cursor, "isWatched");
+          final int _cursorIndexOfRating = CursorUtil.getColumnIndexOrThrow(_cursor, "rating");
+          final int _cursorIndexOfSeason = CursorUtil.getColumnIndexOrThrow(_cursor, "season");
+          final int _cursorIndexOfEpisode = CursorUtil.getColumnIndexOrThrow(_cursor, "episode");
+          final int _cursorIndexOfNotes = CursorUtil.getColumnIndexOrThrow(_cursor, "notes");
+          final int _cursorIndexOfPosterUrl = CursorUtil.getColumnIndexOrThrow(_cursor, "posterUrl");
+          final int _cursorIndexOfGenres = CursorUtil.getColumnIndexOrThrow(_cursor, "genres");
+          final int _cursorIndexOfImdbId = CursorUtil.getColumnIndexOrThrow(_cursor, "imdbId");
+          final int _cursorIndexOfDateAdded = CursorUtil.getColumnIndexOrThrow(_cursor, "dateAdded");
+          final int _cursorIndexOfLastUpdated = CursorUtil.getColumnIndexOrThrow(_cursor, "lastUpdated");
+          final WatchItem _result;
+          if (_cursor.moveToFirst()) {
+            final long _tmpId;
+            _tmpId = _cursor.getLong(_cursorIndexOfId);
+            final String _tmpTitle;
+            _tmpTitle = _cursor.getString(_cursorIndexOfTitle);
+            final int _tmpYear;
+            _tmpYear = _cursor.getInt(_cursorIndexOfYear);
+            final MediaType _tmpType;
+            final String _tmp;
+            _tmp = _cursor.getString(_cursorIndexOfType);
+            _tmpType = __converters.toMediaType(_tmp);
+            final boolean _tmpIsWatched;
+            final int _tmp_1;
+            _tmp_1 = _cursor.getInt(_cursorIndexOfIsWatched);
+            _tmpIsWatched = _tmp_1 != 0;
+            final float _tmpRating;
+            _tmpRating = _cursor.getFloat(_cursorIndexOfRating);
+            final Integer _tmpSeason;
+            if (_cursor.isNull(_cursorIndexOfSeason)) {
+              _tmpSeason = null;
+            } else {
+              _tmpSeason = _cursor.getInt(_cursorIndexOfSeason);
+            }
+            final Integer _tmpEpisode;
+            if (_cursor.isNull(_cursorIndexOfEpisode)) {
+              _tmpEpisode = null;
+            } else {
+              _tmpEpisode = _cursor.getInt(_cursorIndexOfEpisode);
+            }
+            final String _tmpNotes;
+            _tmpNotes = _cursor.getString(_cursorIndexOfNotes);
+            final String _tmpPosterUrl;
+            if (_cursor.isNull(_cursorIndexOfPosterUrl)) {
+              _tmpPosterUrl = null;
+            } else {
+              _tmpPosterUrl = _cursor.getString(_cursorIndexOfPosterUrl);
+            }
+            final String _tmpGenres;
+            _tmpGenres = _cursor.getString(_cursorIndexOfGenres);
+            final String _tmpImdbId;
+            _tmpImdbId = _cursor.getString(_cursorIndexOfImdbId);
+            final long _tmpDateAdded;
+            _tmpDateAdded = _cursor.getLong(_cursorIndexOfDateAdded);
+            final long _tmpLastUpdated;
+            _tmpLastUpdated = _cursor.getLong(_cursorIndexOfLastUpdated);
+            _result = new WatchItem(_tmpId,_tmpTitle,_tmpYear,_tmpType,_tmpIsWatched,_tmpRating,_tmpSeason,_tmpEpisode,_tmpNotes,_tmpPosterUrl,_tmpGenres,_tmpImdbId,_tmpDateAdded,_tmpLastUpdated);
+          } else {
+            _result = null;
+          }
+          return _result;
+        } finally {
+          _cursor.close();
+          _statement.release();
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
+  public Object getItemByIdNow(final long id, final Continuation<? super WatchItem> $completion) {
     final String _sql = "SELECT * FROM watch_items WHERE id = ?";
     final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 1);
     int _argIndex = 1;

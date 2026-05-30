@@ -44,12 +44,11 @@ class UpdateManager(private val context: Context) {
 
     private var downloadId: Long = -1L
     private val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-    private var receiverRegistered = false
 
     private val downloadReceiver = object : BroadcastReceiver() {
         override fun onReceive(ctx: Context?, intent: Intent?) {
-            val id = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
-            if (id == downloadId) {
+            val id = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L) ?: -1L
+            if (id != -1L && id == downloadId) {
                 // BUG-06 fix: verify SHA-256 before triggering install
                 val expectedHash = _updateInfo.value?.sha256.orEmpty()
                 val apkFile = File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "update.apk")
@@ -77,20 +76,9 @@ class UpdateManager(private val context: Context) {
             @Suppress("UnspecifiedRegisterReceiverFlag")
             context.registerReceiver(downloadReceiver, filter)
         }
-        receiverRegistered = true
     }
 
-    /** Call from ViewModel.onCleared() to prevent BroadcastReceiver leak (BUG-01 fix). */
-    fun release() {
-        if (receiverRegistered) {
-            try {
-                context.unregisterReceiver(downloadReceiver)
-            } catch (e: IllegalArgumentException) {
-                Log.w("UpdateManager", "Receiver already unregistered")
-            }
-            receiverRegistered = false
-        }
-    }
+
 
     suspend fun checkForUpdates() {
         if (BuildConfig.UPDATE_JSON_URL.isBlank()) return

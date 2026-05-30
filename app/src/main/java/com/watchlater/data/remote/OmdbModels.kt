@@ -1,15 +1,18 @@
 package com.watchlater.data.remote
 
+import androidx.annotation.Keep
 import com.google.gson.annotations.SerializedName
 
 // ── OMDB Search Response ───────────────────────────────────────────────────
 
+@Keep
 data class OmdbSearchResponse(
     @SerializedName("Search")   val results: List<OmdbSearchItem>? = null,
     @SerializedName("Response") val response: String = "False",
     @SerializedName("Error")    val error: String? = null
 )
 
+@Keep
 data class OmdbSearchItem(
     @SerializedName("Title")  val title: String,
     @SerializedName("Year")   val year: String,
@@ -20,6 +23,7 @@ data class OmdbSearchItem(
 
 // ── OMDB Detail / Series Info Response ────────────────────────────────────
 
+@Keep
 data class OmdbDetailResponse(
     @SerializedName("Genre")        val genre: String?,
     @SerializedName("totalSeasons") val totalSeasons: String?,  // "5" or null
@@ -28,6 +32,7 @@ data class OmdbDetailResponse(
 
 // ── OMDB Season Response ───────────────────────────────────────────────────
 
+@Keep
 data class OmdbSeasonResponse(
     @SerializedName("Season")       val season: String?,
     @SerializedName("totalSeasons") val totalSeasons: String?,
@@ -35,6 +40,7 @@ data class OmdbSeasonResponse(
     @SerializedName("Response")     val response: String = "False"
 )
 
+@Keep
 data class OmdbEpisodeItem(
     @SerializedName("Title")      val title: String,
     @SerializedName("Released")   val released: String,    // "2008-01-20" or "N/A"
@@ -45,6 +51,7 @@ data class OmdbEpisodeItem(
 
 // ── Shared Search Result (used by AddItemViewModel + AddItemSheet) ─────────
 
+@Keep
 data class OmdbResult(
     val displayTitle: String,
     val displayYear: Int,
