@@ -82,7 +82,7 @@ fun DetailScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        viewModel.markAllSeasonsWatched()
+                        viewModel.markAllSeriesWatched()
                         viewModel.dismissMarkAllSeriesDialog()
                     },
                     colors  = ButtonDefaults.buttonColors(containerColor = WatchedGreen, contentColor = Background)
