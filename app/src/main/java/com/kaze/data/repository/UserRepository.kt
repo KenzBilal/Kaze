@@ -93,20 +93,31 @@ class UserRepository(private val context: Context) {
 
         return withContext(Dispatchers.IO) {
             try {
+                // First check if user exists to login instead of create
+                val existingUsers = SupabaseApi.client.from("users")
+                    .select { filter { eq("username", trimmed) } }
+                    .decodeList<SupabaseUser>()
+
+                if (existingUsers.isNotEmpty()) {
+                    // Account recovery: login to existing username
+                    saveLocalUser(existingUsers.first().id, trimmed)
+                    return@withContext CreateUserResult(success = true)
+                }
+
+                // If not exists, create new
                 val newId = UUID.randomUUID().toString()
                 val user = SupabaseUser(id = newId, username = trimmed)
                 SupabaseApi.client.from("users").insert(user)
+                
                 saveLocalUser(newId, trimmed)
                 CreateUserResult(success = true)
             } catch (e: Exception) {
                 val msg = when {
                     e.message?.contains("unique", ignoreCase = true) == true ->
                         "Username \"$trimmed\" is already taken. Try another."
-                    e.message?.contains("check", ignoreCase = true) == true ->
-                        "Username doesn't meet the requirements."
-                    else -> "Connection error. Please check your internet and try again."
+                    else -> "Network error. Please try again."
                 }
-                CreateUserResult(success = false, errorMessage = msg)
+                CreateUserResult(false, msg)
             }
         }
     }

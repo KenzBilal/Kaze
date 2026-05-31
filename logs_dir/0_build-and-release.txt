@@ -1,0 +1,314 @@
+﻿2026-05-31T08:29:38.5950788Z Current runner version: '2.334.0'
+2026-05-31T08:29:38.5984178Z ##[group]Runner Image Provisioner
+2026-05-31T08:29:38.5985754Z Hosted Compute Agent
+2026-05-31T08:29:38.5986893Z Version: 20260520.533
+2026-05-31T08:29:38.5988077Z Commit: 189110e25284a9812c124fd27b339e2fb4f2f9db
+2026-05-31T08:29:38.5989449Z Build Date: 2026-05-20T17:44:04Z
+2026-05-31T08:29:38.5990659Z Worker ID: {cb5542ca-adc5-4df9-ab70-c05be08d9ce8}
+2026-05-31T08:29:38.5991908Z Azure Region: centralus
+2026-05-31T08:29:38.5993480Z ##[endgroup]
+2026-05-31T08:29:38.5996159Z ##[group]Operating System
+2026-05-31T08:29:38.5997436Z Ubuntu
+2026-05-31T08:29:38.5998383Z 24.04.4
+2026-05-31T08:29:38.5999336Z LTS
+2026-05-31T08:29:38.6000209Z ##[endgroup]
+2026-05-31T08:29:38.6001312Z ##[group]Runner Image
+2026-05-31T08:29:38.6002442Z Image: ubuntu-24.04
+2026-05-31T08:29:38.6003457Z Version: 20260525.161.1
+2026-05-31T08:29:38.6005994Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260525.161/images/ubuntu/Ubuntu2404-Readme.md
+2026-05-31T08:29:38.6008724Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260525.161
+2026-05-31T08:29:38.6010435Z ##[endgroup]
+2026-05-31T08:29:38.6012392Z ##[group]GITHUB_TOKEN Permissions
+2026-05-31T08:29:38.6015593Z Contents: write
+2026-05-31T08:29:38.6016781Z Metadata: read
+2026-05-31T08:29:38.6017782Z ##[endgroup]
+2026-05-31T08:29:38.6020708Z Secret source: Actions
+2026-05-31T08:29:38.6022203Z Prepare workflow directory
+2026-05-31T08:29:38.6363022Z Prepare all required actions
+2026-05-31T08:29:38.6400987Z Getting action download info
+2026-05-31T08:29:39.0927791Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+2026-05-31T08:29:39.2209115Z Download action repository 'actions/setup-java@v3' (SHA:17f84c3641ba7b8f6deff6309fc4c864478f5d62)
+2026-05-31T08:29:39.7562543Z Download action repository 'softprops/action-gh-release@v2' (SHA:3bb12739c298aeb8a4eeaf626c5b8d85266b0e65)
+2026-05-31T08:29:40.1764822Z Complete job name: build-and-release
+2026-05-31T08:29:40.2669886Z ##[group]Run actions/checkout@v4
+2026-05-31T08:29:40.2671392Z with:
+2026-05-31T08:29:40.2672402Z   repository: KenzBilal/Kaze
+2026-05-31T08:29:40.2683439Z   token: ***
+2026-05-31T08:29:40.2684436Z   ssh-strict: true
+2026-05-31T08:29:40.2685644Z   ssh-user: git
+2026-05-31T08:29:40.2686691Z   persist-credentials: true
+2026-05-31T08:29:40.2687813Z   clean: true
+2026-05-31T08:29:40.2688870Z   sparse-checkout-cone-mode: true
+2026-05-31T08:29:40.2690079Z   fetch-depth: 1
+2026-05-31T08:29:40.2691113Z   fetch-tags: false
+2026-05-31T08:29:40.2692152Z   show-progress: true
+2026-05-31T08:29:40.2693193Z   lfs: false
+2026-05-31T08:29:40.2694162Z   submodules: false
+2026-05-31T08:29:40.2695324Z   set-safe-directory: true
+2026-05-31T08:29:40.2696710Z ##[endgroup]
+2026-05-31T08:29:40.3843091Z Syncing repository: KenzBilal/Kaze
+2026-05-31T08:29:40.3846551Z ##[group]Getting Git version info
+2026-05-31T08:29:40.3847972Z Working directory is '/home/runner/work/Kaze/Kaze'
+2026-05-31T08:29:40.3850341Z [command]/usr/bin/git version
+2026-05-31T08:29:40.3874225Z git version 2.54.0
+2026-05-31T08:29:40.3900405Z ##[endgroup]
+2026-05-31T08:29:40.3916324Z Temporarily overriding HOME='/home/runner/work/_temp/c2ed98bb-41fa-45e9-9e96-5f43fe1349fe' before making global git config changes
+2026-05-31T08:29:40.3920902Z Adding repository directory to the temporary git global config as a safe directory
+2026-05-31T08:29:40.3930495Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Kaze/Kaze
+2026-05-31T08:29:40.3973838Z Deleting the contents of '/home/runner/work/Kaze/Kaze'
+2026-05-31T08:29:40.3977816Z ##[group]Initializing the repository
+2026-05-31T08:29:40.3982780Z [command]/usr/bin/git init /home/runner/work/Kaze/Kaze
+2026-05-31T08:29:40.4065324Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-05-31T08:29:40.4068026Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-05-31T08:29:40.4071162Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-05-31T08:29:40.4074116Z hint: call:
+2026-05-31T08:29:40.4075812Z hint:
+2026-05-31T08:29:40.4077496Z hint: 	git config --global init.defaultBranch <name>
+2026-05-31T08:29:40.4079618Z hint:
+2026-05-31T08:29:40.4081698Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-05-31T08:29:40.4085485Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-05-31T08:29:40.4087970Z hint:
+2026-05-31T08:29:40.4088955Z hint: 	git branch -m <name>
+2026-05-31T08:29:40.4090026Z hint:
+2026-05-31T08:29:40.4091397Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-05-31T08:29:40.4094252Z Initialized empty Git repository in /home/runner/work/Kaze/Kaze/.git/
+2026-05-31T08:29:40.4098832Z [command]/usr/bin/git remote add origin https://github.com/KenzBilal/Kaze
+2026-05-31T08:29:40.4121411Z ##[endgroup]
+2026-05-31T08:29:40.4123958Z ##[group]Disabling automatic garbage collection
+2026-05-31T08:29:40.4126583Z [command]/usr/bin/git config --local gc.auto 0
+2026-05-31T08:29:40.4156511Z ##[endgroup]
+2026-05-31T08:29:40.4158950Z ##[group]Setting up auth
+2026-05-31T08:29:40.4163851Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-05-31T08:29:40.4200835Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-05-31T08:29:40.4513665Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-05-31T08:29:40.4544024Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-05-31T08:29:40.4771536Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-05-31T08:29:40.4802622Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-05-31T08:29:40.5042144Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-05-31T08:29:40.5078111Z ##[endgroup]
+2026-05-31T08:29:40.5079802Z ##[group]Fetching the repository
+2026-05-31T08:29:40.5086877Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +bcc08fa3f393f242478a7ca35fdd8732a82b4e58:refs/tags/v2.0.0
+2026-05-31T08:29:44.8815025Z From https://github.com/KenzBilal/Kaze
+2026-05-31T08:29:44.8816808Z  * [new ref]         bcc08fa3f393f242478a7ca35fdd8732a82b4e58 -> v2.0.0
+2026-05-31T08:29:44.8846470Z ##[endgroup]
+2026-05-31T08:29:44.8847230Z ##[group]Determining the checkout info
+2026-05-31T08:29:44.8848355Z ##[endgroup]
+2026-05-31T08:29:44.8853919Z [command]/usr/bin/git sparse-checkout disable
+2026-05-31T08:29:44.8897701Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-05-31T08:29:44.8924012Z ##[group]Checking out the ref
+2026-05-31T08:29:44.8928135Z [command]/usr/bin/git checkout --progress --force refs/tags/v2.0.0
+2026-05-31T08:29:45.9005653Z Updating files:  72% (2653/3650)
+2026-05-31T08:29:45.9026751Z Updating files:  73% (2665/3650)
+2026-05-31T08:29:45.9058861Z Updating files:  74% (2701/3650)
+2026-05-31T08:29:45.9076996Z Updating files:  75% (2738/3650)
+2026-05-31T08:29:45.9092727Z Updating files:  76% (2774/3650)
+2026-05-31T08:29:45.9113469Z Updating files:  77% (2811/3650)
+2026-05-31T08:29:45.9279949Z Updating files:  78% (2847/3650)
+2026-05-31T08:29:45.9314207Z Updating files:  79% (2884/3650)
+2026-05-31T08:29:46.0500435Z Updating files:  80% (2920/3650)
+2026-05-31T08:29:46.0526383Z Updating files:  81% (2957/3650)
+2026-05-31T08:29:46.0548708Z Updating files:  82% (2993/3650)
+2026-05-31T08:29:46.0580720Z Updating files:  83% (3030/3650)
+2026-05-31T08:29:46.0600816Z Updating files:  84% (3066/3650)
+2026-05-31T08:29:46.0628228Z Updating files:  85% (3103/3650)
+2026-05-31T08:29:46.0646410Z Updating files:  86% (3139/3650)
+2026-05-31T08:29:46.0667076Z Updating files:  87% (3176/3650)
+2026-05-31T08:29:46.0691044Z Updating files:  88% (3212/3650)
+2026-05-31T08:29:46.0709715Z Updating files:  89% (3249/3650)
+2026-05-31T08:29:46.0730519Z Updating files:  90% (3285/3650)
+2026-05-31T08:29:46.0758670Z Updating files:  91% (3322/3650)
+2026-05-31T08:29:46.0778833Z Updating files:  92% (3358/3650)
+2026-05-31T08:29:46.0796823Z Updating files:  93% (3395/3650)
+2026-05-31T08:29:46.0816556Z Updating files:  94% (3431/3650)
+2026-05-31T08:29:46.0836121Z Updating files:  95% (3468/3650)
+2026-05-31T08:29:46.0858834Z Updating files:  96% (3504/3650)
+2026-05-31T08:29:46.0877780Z Updating files:  97% (3541/3650)
+2026-05-31T08:29:46.0906598Z Updating files:  98% (3577/3650)
+2026-05-31T08:29:46.0938374Z Updating files:  99% (3614/3650)
+2026-05-31T08:29:46.0938799Z Updating files: 100% (3650/3650)
+2026-05-31T08:29:46.0939234Z Updating files: 100% (3650/3650), done.
+2026-05-31T08:29:46.0992113Z Note: switching to 'refs/tags/v2.0.0'.
+2026-05-31T08:29:46.0992636Z 
+2026-05-31T08:29:46.0993092Z You are in 'detached HEAD' state. You can look around, make experimental
+2026-05-31T08:29:46.0993675Z changes and commit them, and you can discard any commits you make in this
+2026-05-31T08:29:46.0994206Z state without impacting any branches by switching back to a branch.
+2026-05-31T08:29:46.0994510Z 
+2026-05-31T08:29:46.0995005Z If you want to create a new branch to retain commits you create, you may
+2026-05-31T08:29:46.0995742Z do so (now or later) by using -c with the switch command. Example:
+2026-05-31T08:29:46.0996168Z 
+2026-05-31T08:29:46.0996356Z   git switch -c <new-branch-name>
+2026-05-31T08:29:46.0996554Z 
+2026-05-31T08:29:46.0996689Z Or undo this operation with:
+2026-05-31T08:29:46.0996877Z 
+2026-05-31T08:29:46.0996993Z   git switch -
+2026-05-31T08:29:46.0997140Z 
+2026-05-31T08:29:46.0997369Z Turn off this advice by setting config variable advice.detachedHead to false
+2026-05-31T08:29:46.0997959Z 
+2026-05-31T08:29:46.0998844Z HEAD is now at bcc08fa feat: v2.0.0 — social platform, FCM push notifications, com.*** package
+2026-05-31T08:29:46.1094273Z ##[endgroup]
+2026-05-31T08:29:46.1099415Z [command]/usr/bin/git log -1 --format=%H
+2026-05-31T08:29:46.1121726Z bcc08fa3f393f242478a7ca35fdd8732a82b4e58
+2026-05-31T08:29:46.1376865Z ##[group]Run actions/setup-java@v3
+2026-05-31T08:29:46.1377219Z with:
+2026-05-31T08:29:46.1377476Z   java-version: 17
+2026-05-31T08:29:46.1377745Z   distribution: temurin
+2026-05-31T08:29:46.1378008Z   cache: gradle
+2026-05-31T08:29:46.1378264Z   java-package: jdk
+2026-05-31T08:29:46.1378522Z   check-latest: false
+2026-05-31T08:29:46.1378785Z   server-id: github
+2026-05-31T08:29:46.1379040Z   server-username: GITHUB_ACTOR
+2026-05-31T08:29:46.1379335Z   server-password: GITHUB_TOKEN
+2026-05-31T08:29:46.1379624Z   overwrite-settings: true
+2026-05-31T08:29:46.1379891Z   job-status: success
+2026-05-31T08:29:46.1383002Z   token: ***
+2026-05-31T08:29:46.1383253Z ##[endgroup]
+2026-05-31T08:29:46.3351968Z ##[group]Installed distributions
+2026-05-31T08:29:46.3577941Z Resolved Java 17.0.19+10 from tool-cache
+2026-05-31T08:29:46.3578416Z Setting Java 17.0.19+10 as the default
+2026-05-31T08:29:46.3592107Z Creating toolchains.xml for JDK version 17 from temurin
+2026-05-31T08:29:46.3663949Z Writing to /home/runner/.m2/toolchains.xml
+2026-05-31T08:29:46.3664406Z 
+2026-05-31T08:29:46.3664876Z Java configuration:
+2026-05-31T08:29:46.3665811Z   Distribution: temurin
+2026-05-31T08:29:46.3666256Z   Version: 17.0.19+10
+2026-05-31T08:29:46.3667101Z   Path: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.19-10/x64
+2026-05-31T08:29:46.3667597Z 
+2026-05-31T08:29:46.3668107Z ##[endgroup]
+2026-05-31T08:29:46.3689588Z Creating settings.xml with server-id: github
+2026-05-31T08:29:46.3697888Z Writing to /home/runner/.m2/settings.xml
+2026-05-31T08:29:47.1335467Z gradle cache is not found
+2026-05-31T08:29:47.1496725Z ##[group]Run chmod +x gradlew
+2026-05-31T08:29:47.1497112Z [36;1mchmod +x gradlew[0m
+2026-05-31T08:29:47.1531157Z shell: /usr/bin/bash -e {0}
+2026-05-31T08:29:47.1531456Z env:
+2026-05-31T08:29:47.1531812Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.19-10/x64
+2026-05-31T08:29:47.1532353Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.19-10/x64
+2026-05-31T08:29:47.1532760Z ##[endgroup]
+2026-05-31T08:29:47.1681756Z ##[group]Run echo "***" | base64 -d > ***-release.jks
+2026-05-31T08:29:47.1699656Z [36;1mecho "***" | base64 -d > ***-release.jks[0m
+2026-05-31T08:29:47.1725805Z shell: /usr/bin/bash -e {0}
+2026-05-31T08:29:47.1726090Z env:
+2026-05-31T08:29:47.1726444Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.19-10/x64
+2026-05-31T08:29:47.1726969Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.19-10/x64
+2026-05-31T08:29:47.1727381Z ##[endgroup]
+2026-05-31T08:29:47.1842096Z ##[group]Run echo "tmdb.api.key=${TMDB_API_KEY}" >> gradle.properties
+2026-05-31T08:29:47.1842610Z [36;1mecho "tmdb.api.key=${TMDB_API_KEY}" >> gradle.properties[0m
+2026-05-31T08:29:47.1843072Z [36;1mecho "omdb.api.key=${OMDB_API_KEY}" >> gradle.properties[0m
+2026-05-31T08:29:47.1868993Z shell: /usr/bin/bash -e {0}
+2026-05-31T08:29:47.1869279Z env:
+2026-05-31T08:29:47.1869630Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.19-10/x64
+2026-05-31T08:29:47.1870164Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.19-10/x64
+2026-05-31T08:29:47.1871929Z   TMDB_API_KEY: ***
+2026-05-31T08:29:47.1872206Z   OMDB_API_KEY: ***
+2026-05-31T08:29:47.1872456Z ##[endgroup]
+2026-05-31T08:29:47.1946048Z ##[group]Run ./gradlew assembleRelease
+2026-05-31T08:29:47.1946405Z [36;1m./gradlew assembleRelease[0m
+2026-05-31T08:29:47.1972102Z shell: /usr/bin/bash -e {0}
+2026-05-31T08:29:47.1972381Z env:
+2026-05-31T08:29:47.1972731Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.19-10/x64
+2026-05-31T08:29:47.1973267Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.19-10/x64
+2026-05-31T08:29:47.1973837Z   KEYSTORE_PATH: /home/runner/work/Kaze/Kaze/***-release.jks
+2026-05-31T08:29:47.1974231Z   KEYSTORE_PASSWORD: ***
+2026-05-31T08:29:47.1974514Z   KEY_ALIAS: ***
+2026-05-31T08:29:47.1975013Z   KEY_PASSWORD: ***
+2026-05-31T08:29:47.1975286Z ##[endgroup]
+2026-05-31T08:29:47.6311439Z Downloading https://services.gradle.org/distributions/gradle-8.9-bin.zip
+2026-05-31T08:29:50.0575247Z ............10%.............20%.............30%.............40%.............50%.............60%.............70%.............80%.............90%.............100%
+2026-05-31T08:29:51.3462497Z 
+2026-05-31T08:29:51.3464297Z Welcome to Gradle 8.9!
+2026-05-31T08:29:51.3465809Z 
+2026-05-31T08:29:51.3466047Z Here are the highlights of this release:
+2026-05-31T08:29:51.3467082Z  - Enhanced Error and Warning Messages
+2026-05-31T08:29:51.3468320Z  - IDE Integration Improvements
+2026-05-31T08:29:51.3469136Z  - Daemon JVM Information
+2026-05-31T08:29:51.3469418Z 
+2026-05-31T08:29:51.3471598Z For more details see https://docs.gradle.org/8.9/release-notes.html
+2026-05-31T08:29:51.3472280Z 
+2026-05-31T08:29:51.5455670Z Starting a Gradle Daemon (subsequent builds will be faster)
+2026-05-31T08:29:54.3466593Z Calculating task graph as no cached configuration is available for tasks: assembleRelease
+2026-05-31T08:31:44.4490055Z > Task :app:preBuild UP-TO-DATE
+2026-05-31T08:31:44.5508731Z > Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+2026-05-31T08:31:44.5509917Z > Task :app:preReleaseBuild UP-TO-DATE
+2026-05-31T08:31:44.5510688Z > Task :app:processReleaseGoogleServices
+2026-05-31T08:31:44.6458197Z > Task :app:extractProguardFiles
+2026-05-31T08:31:44.6466343Z > Task :app:generateReleaseBuildConfig
+2026-05-31T08:31:44.6467092Z > Task :app:generateReleaseResValues
+2026-05-31T08:31:44.6467797Z > Task :app:buildKotlinToolingMetadata
+2026-05-31T08:31:44.6468542Z > Task :app:createReleaseCompatibleScreenManifests
+2026-05-31T08:31:44.6469401Z > Task :app:extractDeepLinksRelease
+2026-05-31T08:31:44.6492209Z > Task :app:generateReleaseResources
+2026-05-31T08:31:48.0481733Z > Task :app:mapReleaseSourceSetPaths
+2026-05-31T08:31:48.2488365Z > Task :app:packageReleaseResources
+2026-05-31T08:31:48.2541230Z > Task :app:checkReleaseAarMetadata
+2026-05-31T08:31:49.0466065Z > Task :app:processReleaseMainManifest
+2026-05-31T08:31:49.2479505Z > Task :app:processReleaseManifest
+2026-05-31T08:31:49.2480453Z > Task :app:parseReleaseLocalResources
+2026-05-31T08:31:49.2505641Z > Task :app:processReleaseManifestForPackage
+2026-05-31T08:31:49.2528306Z > Task :app:mergeReleaseJniLibFolders
+2026-05-31T08:31:52.0465613Z > Task :app:javaPreCompileRelease
+2026-05-31T08:31:52.5459900Z > Task :app:checkReleaseDuplicateClasses
+2026-05-31T08:31:52.5485251Z > Task :app:mergeReleaseStartupProfile
+2026-05-31T08:31:52.5515133Z > Task :app:mergeReleaseArtProfile
+2026-05-31T08:31:52.5540684Z > Task :app:mergeReleaseShaders
+2026-05-31T08:31:52.5555280Z > Task :app:compileReleaseShaders NO-SOURCE
+2026-05-31T08:31:52.5586490Z > Task :app:generateReleaseAssets UP-TO-DATE
+2026-05-31T08:31:52.7453830Z > Task :app:extractReleaseVersionControlInfo
+2026-05-31T08:31:52.7535520Z > Task :app:mergeReleaseNativeLibs
+2026-05-31T08:31:52.9475295Z 
+2026-05-31T08:31:52.9483647Z > Task :app:stripReleaseDebugSymbols
+2026-05-31T08:31:52.9556090Z Unable to strip the following libraries, packaging them as they are: libandroidx.graphics.path.so.
+2026-05-31T08:31:52.9556854Z 
+2026-05-31T08:31:52.9557055Z > Task :app:mergeReleaseAssets
+2026-05-31T08:31:52.9557535Z > Task :app:compressReleaseAssets
+2026-05-31T08:31:52.9558446Z > Task :app:validateSigningRelease
+2026-05-31T08:31:52.9558943Z > Task :app:writeReleaseAppMetadata
+2026-05-31T08:31:52.9559476Z > Task :app:extractReleaseNativeSymbolTables
+2026-05-31T08:31:52.9560035Z > Task :app:collectReleaseDependencies
+2026-05-31T08:31:52.9560624Z > Task :app:mergeReleaseNativeDebugMetadata NO-SOURCE
+2026-05-31T08:31:53.0454188Z > Task :app:writeReleaseSigningConfigVersions
+2026-05-31T08:31:53.1453999Z > Task :app:sdkReleaseDependencyData
+2026-05-31T08:31:53.9473550Z > Task :app:mergeReleaseResources
+2026-05-31T08:31:54.6475668Z > Task :app:processReleaseResources
+2026-05-31T08:31:54.9455312Z > Task :app:convertLinkedResourcesToProtoRelease
+2026-05-31T08:32:10.7475780Z > Task :app:kspReleaseKotlin
+2026-05-31T08:32:19.7487583Z e: file:///home/runner/work/Kaze/Kaze/app/src/main/java/com/***/ui/screens/discover/DiscoverScreen.kt:104:41 Unresolved reference 'ExperimentalFoundationApi'.
+2026-05-31T08:32:19.7489625Z e: file:///home/runner/work/Kaze/Kaze/app/src/main/java/com/***/ui/screens/discover/DiscoverScreen.kt:104:41 Annotation argument must be a compile-time constant.
+2026-05-31T08:32:19.7490629Z 
+2026-05-31T08:32:19.7522198Z > Task :app:compileReleaseKotlin FAILED
+2026-05-31T08:32:19.8458820Z 
+2026-05-31T08:32:19.8461682Z 37 actionable tasks: 37 executed
+2026-05-31T08:32:19.8462609Z FAILURE: Build failed with an exception.
+2026-05-31T08:32:19.8463137Z Configuration cache entry stored.
+2026-05-31T08:32:19.8463660Z 
+2026-05-31T08:32:19.8463956Z * What went wrong:
+2026-05-31T08:32:19.8464459Z Execution failed for task ':app:compileReleaseKotlin'.
+2026-05-31T08:32:19.8465675Z > A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+2026-05-31T08:32:19.8466414Z    > Compilation error. See log for more details
+2026-05-31T08:32:19.8466634Z 
+2026-05-31T08:32:19.8466732Z * Try:
+2026-05-31T08:32:19.8467018Z > Run with --stacktrace option to get the stack trace.
+2026-05-31T08:32:19.8467425Z > Run with --info or --debug option to get more log output.
+2026-05-31T08:32:19.8467808Z > Run with --scan to get full insights.
+2026-05-31T08:32:19.8468173Z > Get more help at https://help.gradle.org.
+2026-05-31T08:32:19.8468407Z 
+2026-05-31T08:32:19.8468514Z BUILD FAILED in 2m 32s
+2026-05-31T08:32:20.2820511Z ##[error]Process completed with exit code 1.
+2026-05-31T08:32:20.2939332Z Post job cleanup.
+2026-05-31T08:32:20.4772395Z Post job cleanup.
+2026-05-31T08:32:20.5838525Z [command]/usr/bin/git version
+2026-05-31T08:32:20.5874453Z git version 2.54.0
+2026-05-31T08:32:20.5916763Z Temporarily overriding HOME='/home/runner/work/_temp/37c5a6a7-dc74-417b-a928-1d41f8cfaf8b' before making global git config changes
+2026-05-31T08:32:20.5918063Z Adding repository directory to the temporary git global config as a safe directory
+2026-05-31T08:32:20.5930441Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Kaze/Kaze
+2026-05-31T08:32:20.5966231Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-05-31T08:32:20.5999160Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-05-31T08:32:20.6245398Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-05-31T08:32:20.6269367Z http.https://github.com/.extraheader
+2026-05-31T08:32:20.6282306Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-05-31T08:32:20.6314769Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-05-31T08:32:20.6556002Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-05-31T08:32:20.6588509Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-05-31T08:32:20.6975125Z Cleaning up orphan processes
+2026-05-31T08:32:20.7302441Z Terminate orphan process: pid (2344) (java)
+2026-05-31T08:32:20.7328419Z Terminate orphan process: pid (2603) (java)
+2026-05-31T08:32:20.7348052Z ##[warning]Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v3. Actions will be forced to run with Node.js 24 by default starting June 16th, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

@@ -1,0 +1,92 @@
+﻿2026-05-31T08:29:47.1946040Z ##[group]Run ./gradlew assembleRelease
+2026-05-31T08:29:47.1946403Z [36;1m./gradlew assembleRelease[0m
+2026-05-31T08:29:47.1972096Z shell: /usr/bin/bash -e {0}
+2026-05-31T08:29:47.1972378Z env:
+2026-05-31T08:29:47.1972728Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.19-10/x64
+2026-05-31T08:29:47.1973264Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.19-10/x64
+2026-05-31T08:29:47.1973834Z   KEYSTORE_PATH: /home/runner/work/Kaze/Kaze/***-release.jks
+2026-05-31T08:29:47.1974229Z   KEYSTORE_PASSWORD: ***
+2026-05-31T08:29:47.1974512Z   KEY_ALIAS: ***
+2026-05-31T08:29:47.1975011Z   KEY_PASSWORD: ***
+2026-05-31T08:29:47.1975284Z ##[endgroup]
+2026-05-31T08:29:47.6311402Z Downloading https://services.gradle.org/distributions/gradle-8.9-bin.zip
+2026-05-31T08:29:50.0575203Z ............10%.............20%.............30%.............40%.............50%.............60%.............70%.............80%.............90%.............100%
+2026-05-31T08:29:51.3462304Z 
+2026-05-31T08:29:51.3464287Z Welcome to Gradle 8.9!
+2026-05-31T08:29:51.3465800Z 
+2026-05-31T08:29:51.3466043Z Here are the highlights of this release:
+2026-05-31T08:29:51.3467073Z  - Enhanced Error and Warning Messages
+2026-05-31T08:29:51.3468315Z  - IDE Integration Improvements
+2026-05-31T08:29:51.3469132Z  - Daemon JVM Information
+2026-05-31T08:29:51.3469414Z 
+2026-05-31T08:29:51.3471590Z For more details see https://docs.gradle.org/8.9/release-notes.html
+2026-05-31T08:29:51.3472274Z 
+2026-05-31T08:29:51.5455620Z Starting a Gradle Daemon (subsequent builds will be faster)
+2026-05-31T08:29:54.3466545Z Calculating task graph as no cached configuration is available for tasks: assembleRelease
+2026-05-31T08:31:44.4490007Z > Task :app:preBuild UP-TO-DATE
+2026-05-31T08:31:44.5508684Z > Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+2026-05-31T08:31:44.5509912Z > Task :app:preReleaseBuild UP-TO-DATE
+2026-05-31T08:31:44.5510683Z > Task :app:processReleaseGoogleServices
+2026-05-31T08:31:44.6458106Z > Task :app:extractProguardFiles
+2026-05-31T08:31:44.6466331Z > Task :app:generateReleaseBuildConfig
+2026-05-31T08:31:44.6467088Z > Task :app:generateReleaseResValues
+2026-05-31T08:31:44.6467793Z > Task :app:buildKotlinToolingMetadata
+2026-05-31T08:31:44.6468539Z > Task :app:createReleaseCompatibleScreenManifests
+2026-05-31T08:31:44.6469397Z > Task :app:extractDeepLinksRelease
+2026-05-31T08:31:44.6492197Z > Task :app:generateReleaseResources
+2026-05-31T08:31:48.0481686Z > Task :app:mapReleaseSourceSetPaths
+2026-05-31T08:31:48.2488328Z > Task :app:packageReleaseResources
+2026-05-31T08:31:48.2541213Z > Task :app:checkReleaseAarMetadata
+2026-05-31T08:31:49.0466015Z > Task :app:processReleaseMainManifest
+2026-05-31T08:31:49.2479466Z > Task :app:processReleaseManifest
+2026-05-31T08:31:49.2480445Z > Task :app:parseReleaseLocalResources
+2026-05-31T08:31:49.2505619Z > Task :app:processReleaseManifestForPackage
+2026-05-31T08:31:49.2528292Z > Task :app:mergeReleaseJniLibFolders
+2026-05-31T08:31:52.0465526Z > Task :app:javaPreCompileRelease
+2026-05-31T08:31:52.5459850Z > Task :app:checkReleaseDuplicateClasses
+2026-05-31T08:31:52.5485224Z > Task :app:mergeReleaseStartupProfile
+2026-05-31T08:31:52.5515114Z > Task :app:mergeReleaseArtProfile
+2026-05-31T08:31:52.5540665Z > Task :app:mergeReleaseShaders
+2026-05-31T08:31:52.5555266Z > Task :app:compileReleaseShaders NO-SOURCE
+2026-05-31T08:31:52.5586474Z > Task :app:generateReleaseAssets UP-TO-DATE
+2026-05-31T08:31:52.7453802Z > Task :app:extractReleaseVersionControlInfo
+2026-05-31T08:31:52.7535497Z > Task :app:mergeReleaseNativeLibs
+2026-05-31T08:31:52.9475234Z 
+2026-05-31T08:31:52.9483623Z > Task :app:stripReleaseDebugSymbols
+2026-05-31T08:31:52.9556059Z Unable to strip the following libraries, packaging them as they are: libandroidx.graphics.path.so.
+2026-05-31T08:31:52.9556847Z 
+2026-05-31T08:31:52.9557051Z > Task :app:mergeReleaseAssets
+2026-05-31T08:31:52.9557531Z > Task :app:compressReleaseAssets
+2026-05-31T08:31:52.9558031Z > Task :app:validateSigningRelease
+2026-05-31T08:31:52.9558940Z > Task :app:writeReleaseAppMetadata
+2026-05-31T08:31:52.9559473Z > Task :app:extractReleaseNativeSymbolTables
+2026-05-31T08:31:52.9560031Z > Task :app:collectReleaseDependencies
+2026-05-31T08:31:52.9560619Z > Task :app:mergeReleaseNativeDebugMetadata NO-SOURCE
+2026-05-31T08:31:53.0454142Z > Task :app:writeReleaseSigningConfigVersions
+2026-05-31T08:31:53.1453951Z > Task :app:sdkReleaseDependencyData
+2026-05-31T08:31:53.9473493Z > Task :app:mergeReleaseResources
+2026-05-31T08:31:54.6475617Z > Task :app:processReleaseResources
+2026-05-31T08:31:54.9455265Z > Task :app:convertLinkedResourcesToProtoRelease
+2026-05-31T08:32:10.7475733Z > Task :app:kspReleaseKotlin
+2026-05-31T08:32:19.7487537Z e: file:///home/runner/work/Kaze/Kaze/app/src/main/java/com/***/ui/screens/discover/DiscoverScreen.kt:104:41 Unresolved reference 'ExperimentalFoundationApi'.
+2026-05-31T08:32:19.7489576Z e: file:///home/runner/work/Kaze/Kaze/app/src/main/java/com/***/ui/screens/discover/DiscoverScreen.kt:104:41 Annotation argument must be a compile-time constant.
+2026-05-31T08:32:19.7490620Z 
+2026-05-31T08:32:19.7522184Z > Task :app:compileReleaseKotlin FAILED
+2026-05-31T08:32:19.8458764Z 
+2026-05-31T08:32:19.8461669Z 37 actionable tasks: 37 executed
+2026-05-31T08:32:19.8462603Z FAILURE: Build failed with an exception.
+2026-05-31T08:32:19.8463132Z Configuration cache entry stored.
+2026-05-31T08:32:19.8463653Z 
+2026-05-31T08:32:19.8463946Z * What went wrong:
+2026-05-31T08:32:19.8464454Z Execution failed for task ':app:compileReleaseKotlin'.
+2026-05-31T08:32:19.8465669Z > A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+2026-05-31T08:32:19.8466411Z    > Compilation error. See log for more details
+2026-05-31T08:32:19.8466631Z 
+2026-05-31T08:32:19.8466729Z * Try:
+2026-05-31T08:32:19.8467015Z > Run with --stacktrace option to get the stack trace.
+2026-05-31T08:32:19.8467422Z > Run with --info or --debug option to get more log output.
+2026-05-31T08:32:19.8467791Z > Run with --scan to get full insights.
+2026-05-31T08:32:19.8468171Z > Get more help at https://help.gradle.org.
+2026-05-31T08:32:19.8468405Z 
+2026-05-31T08:32:19.8468511Z BUILD FAILED in 2m 32s
+2026-05-31T08:32:20.2820491Z ##[error]Process completed with exit code 1.

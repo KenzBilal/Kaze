@@ -1,0 +1,32 @@
+﻿2026-05-31T08:29:38.5949927Z Current runner version: '2.334.0'
+2026-05-31T08:29:38.5984146Z ##[group]Runner Image Provisioner
+2026-05-31T08:29:38.5985734Z Hosted Compute Agent
+2026-05-31T08:29:38.5986881Z Version: 20260520.533
+2026-05-31T08:29:38.5988061Z Commit: 189110e25284a9812c124fd27b339e2fb4f2f9db
+2026-05-31T08:29:38.5989438Z Build Date: 2026-05-20T17:44:04Z
+2026-05-31T08:29:38.5990650Z Worker ID: {cb5542ca-adc5-4df9-ab70-c05be08d9ce8}
+2026-05-31T08:29:38.5991897Z Azure Region: centralus
+2026-05-31T08:29:38.5993466Z ##[endgroup]
+2026-05-31T08:29:38.5996134Z ##[group]Operating System
+2026-05-31T08:29:38.5997423Z Ubuntu
+2026-05-31T08:29:38.5998315Z 24.04.4
+2026-05-31T08:29:38.5999329Z LTS
+2026-05-31T08:29:38.6000201Z ##[endgroup]
+2026-05-31T08:29:38.6001297Z ##[group]Runner Image
+2026-05-31T08:29:38.6002427Z Image: ubuntu-24.04
+2026-05-31T08:29:38.6003445Z Version: 20260525.161.1
+2026-05-31T08:29:38.6005716Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260525.161/images/ubuntu/Ubuntu2404-Readme.md
+2026-05-31T08:29:38.6008705Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260525.161
+2026-05-31T08:29:38.6010425Z ##[endgroup]
+2026-05-31T08:29:38.6012372Z ##[group]GITHUB_TOKEN Permissions
+2026-05-31T08:29:38.6015567Z Contents: write
+2026-05-31T08:29:38.6016770Z Metadata: read
+2026-05-31T08:29:38.6017771Z ##[endgroup]
+2026-05-31T08:29:38.6020683Z Secret source: Actions
+2026-05-31T08:29:38.6022196Z Prepare workflow directory
+2026-05-31T08:29:38.6362987Z Prepare all required actions
+2026-05-31T08:29:38.6400952Z Getting action download info
+2026-05-31T08:29:39.0927756Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+2026-05-31T08:29:39.2209083Z Download action repository 'actions/setup-java@v3' (SHA:17f84c3641ba7b8f6deff6309fc4c864478f5d62)
+2026-05-31T08:29:39.7562506Z Download action repository 'softprops/action-gh-release@v2' (SHA:3bb12739c298aeb8a4eeaf626c5b8d85266b0e65)
+2026-05-31T08:29:40.1764753Z Complete job name: build-and-release
