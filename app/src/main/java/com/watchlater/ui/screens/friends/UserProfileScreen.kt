@@ -222,12 +222,22 @@ fun UserProfileScreen(
             }
             else -> {
                 val user = uiState.user!!
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(padding),
+                var selectedTabIndex by remember { mutableStateOf(0) }
+                val tabs = listOf("Watched", "To Watch")
+
+                val watchedList = uiState.watchlist.filter { it.is_watched }
+                val toWatchList = uiState.watchlist.filter { !it.is_watched }
+                val currentList = if (selectedTabIndex == 0) watchedList else toWatchList
+
+                LazyVerticalStaggeredGrid(
+                    columns = StaggeredGridCells.Fixed(2),
+                    modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalItemSpacing = 8.dp,
                     contentPadding = PaddingValues(bottom = 100.dp)
                 ) {
-                    // Header
-                    item {
+                    // Header spans full width
+                    item(span = androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan.FullLine) {
                         ProfileHeader(
                             user = user,
                             followersCount = uiState.followersCount,
@@ -240,45 +250,52 @@ fun UserProfileScreen(
                         )
                     }
 
-                    // Watchlist header
-                    item {
-                        Text(
-                            "Watchlist",
-                            color = TextSecondary,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 13.sp,
-                            letterSpacing = 1.sp,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                        )
+                    // Custom Tabs
+                    item(span = androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan.FullLine) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp, horizontal = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            tabs.forEachIndexed { index, title ->
+                                val selected = selectedTabIndex == index
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(if (selected) TextPrimary else SurfaceElevated)
+                                        .clickable { selectedTabIndex = index }
+                                        .padding(vertical = 10.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        title,
+                                        color = if (selected) Background else TextSecondary,
+                                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                                        fontSize = 13.sp
+                                    )
+                                }
+                            }
+                        }
                     }
 
-                    // Pinterest grid
-                    item {
-                        if (uiState.watchlist.isEmpty()) {
+                    // Content
+                    if (currentList.isEmpty()) {
+                        item(span = androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan.FullLine) {
                             Box(
                                 Modifier.fillMaxWidth().padding(16.dp)
                                     .clip(RoundedCornerShape(12.dp)).background(SurfaceElevated)
                                     .padding(24.dp),
                                 Alignment.Center
-                            ) { Text("No items yet", color = TextTertiary) }
-                        } else {
-                            LazyVerticalStaggeredGrid(
-                                columns = StaggeredGridCells.Fixed(2),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .heightIn(max = 2000.dp) // nested scroll workaround
-                                    .padding(horizontal = 12.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalItemSpacing = 8.dp,
-                                userScrollEnabled = false
-                            ) {
-                                items(uiState.watchlist) { item ->
-                                    PinterestCard(
-                                        item = item,
-                                        onClick = { viewModel.selectItem(item) }
-                                    )
-                                }
-                            }
+                            ) { Text("No items here yet", color = TextTertiary) }
+                        }
+                    } else {
+                        items(currentList) { item ->
+                            PinterestCard(
+                                item = item,
+                                onClick = { viewModel.selectItem(item) }
+                            )
                         }
                     }
                 }

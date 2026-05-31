@@ -65,7 +65,7 @@ class AddItemViewModel(
                 delay(400)
                 _uiState.update { it.copy(isSearching = true, showSuggestions = true, titleError = null) }
                 try {
-                    val results = omdbRepository.search(value)
+                    val results = omdbRepository.search(value.trim())
                     Log.d("AddItemVM", "Results: ${results.size}")
                     _uiState.update {
                         it.copy(
