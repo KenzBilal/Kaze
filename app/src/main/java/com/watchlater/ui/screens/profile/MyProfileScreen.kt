@@ -5,17 +5,22 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.staggeredgrid.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
@@ -26,6 +31,7 @@ import com.watchlater.data.local.WatchLaterDatabase
 import com.watchlater.data.repository.SupabaseUser
 import com.watchlater.data.repository.UserRepository
 import com.watchlater.model.WatchItem
+import coil.compose.AsyncImage
 import com.watchlater.ui.components.UserAvatar
 import com.watchlater.ui.theme.*
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -225,9 +231,9 @@ fun MyProfileScreen() {
 private fun FavDisplaySection(user: SupabaseUser) {
     Column(Modifier.padding(horizontal = 20.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("FAVOURITES", fontSize = 11.sp, color = TextTertiary, letterSpacing = 1.5.sp)
-        FavRow("Fav Movie", user.fav_movie)
-        FavRow("Fav Series", user.fav_series)
-        FavRow("Fav Genre", user.fav_genre)
+        FavRow("Movies", user.fav_movie)
+        FavRow("Series", user.fav_series)
+        FavRow("Genre", user.fav_genre)
     }
 }
 
@@ -259,29 +265,48 @@ private fun EditFavSection(
 ) {
     val watchedMovies = watchedItems.filter { it.type == com.watchlater.model.MediaType.MOVIE }
     val watchedSeries = watchedItems.filter { it.type == com.watchlater.model.MediaType.SERIES }
+    
+    var showMoviePicker by remember { mutableStateOf(false) }
+    var showSeriesPicker by remember { mutableStateOf(false) }
+
+    if (showMoviePicker) {
+        WatchItemPickerSheet(
+            title = "Select Movie",
+            items = watchedMovies,
+            onSelect = { onFavMovieChange(it); showMoviePicker = false },
+            onDismiss = { showMoviePicker = false }
+        )
+    }
+
+    if (showSeriesPicker) {
+        WatchItemPickerSheet(
+            title = "Select Series",
+            items = watchedSeries,
+            onSelect = { onFavSeriesChange(it); showSeriesPicker = false },
+            onDismiss = { showSeriesPicker = false }
+        )
+    }
 
     Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text("EDIT FAVOURITES", fontSize = 11.sp, color = TextTertiary, letterSpacing = 1.5.sp)
 
         // Fav Movie picker
-        PickerSection(
-            label = "Fav Movie",
+        SheetLauncherSection(
+            label = "Movies",
             selected = uiState.pendingFavMovie,
-            options = watchedMovies.map { it.title },
-            onSelect = onFavMovieChange
+            onClick = { showMoviePicker = true }
         )
 
         // Fav Series picker
-        PickerSection(
-            label = "Fav Series",
+        SheetLauncherSection(
+            label = "Series",
             selected = uiState.pendingFavSeries,
-            options = watchedSeries.map { it.title },
-            onSelect = onFavSeriesChange
+            onClick = { showSeriesPicker = true }
         )
 
         // Genre picker
         PickerSection(
-            label = "Fav Genre",
+            label = "Genre",
             selected = uiState.pendingFavGenre,
             options = GENRES,
             onSelect = onFavGenreChange
@@ -343,6 +368,107 @@ private fun PickerSection(
                         onClick = { onSelect(option); expanded = false }
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SheetLauncherSection(label: String, selected: String, onClick: () -> Unit) {
+    Column {
+        Text(label, color = TextTertiary, fontSize = 12.sp, modifier = Modifier.padding(bottom = 6.dp))
+        Box(
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))
+                .background(SurfaceElevated).clickable { onClick() }
+                .padding(horizontal = 14.dp, vertical = 12.dp)
+        ) {
+            Text(
+                selected.ifBlank { "Select…" },
+                color = if (selected.isBlank()) TextTertiary else TextPrimary,
+                fontSize = 14.sp
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun WatchItemPickerSheet(
+    title: String,
+    items: List<WatchItem>,
+    onSelect: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = SurfaceContainer,
+        dragHandle = { Box(Modifier.padding(top = 12.dp, bottom = 8.dp).width(36.dp).height(4.dp).clip(RoundedCornerShape(2.dp)).background(SurfaceHighlight)) }
+    ) {
+        Column(Modifier.fillMaxSize()) {
+            Text(title, color = TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(16.dp))
+            if (items.isEmpty()) {
+                Box(Modifier.fillMaxSize(), Alignment.Center) { Text("Nothing watched yet", color = TextTertiary) }
+            } else {
+                LazyVerticalStaggeredGrid(
+                    columns = StaggeredGridCells.Fixed(2),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalItemSpacing = 8.dp
+                ) {
+                    items(items) { item ->
+                        WatchItemPinterestCard(item) {
+                            onSelect(item.title)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun WatchItemPinterestCard(item: WatchItem, onClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(SurfaceElevated)
+            .clickable(onClick = onClick)
+    ) {
+        if (!item.posterUrl.isNullOrBlank()) {
+            AsyncImage(
+                model = item.posterUrl,
+                contentDescription = item.title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxWidth().aspectRatio(2f / 3f)
+                    .clip(RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp))
+            )
+        } else {
+            Box(
+                Modifier.fillMaxWidth().height(120.dp)
+                    .clip(RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp))
+                    .background(SurfaceHighlight),
+                Alignment.Center
+            ) {
+                Icon(
+                    if (item.type == com.watchlater.model.MediaType.SERIES) Icons.Filled.Tv else Icons.Filled.Movie,
+                    null, tint = TextTertiary, modifier = Modifier.size(28.dp)
+                )
+            }
+        }
+        Column(Modifier.padding(8.dp)) {
+            Text(
+                item.title, fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
+                color = TextPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                "${item.year}", fontSize = 11.sp, color = TextTertiary,
+                modifier = Modifier.padding(top = 2.dp)
+            )
+            if (item.myRating > 0f) {
+                Text("★ ${item.myRating}", fontSize = 11.sp, color = TextSecondary)
             }
         }
     }
