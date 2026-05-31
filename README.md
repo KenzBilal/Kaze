@@ -20,7 +20,7 @@ A professional-grade Android application for tracking movies and TV series, buil
    - Publicly searchable user profiles.
    - Follow/Unfollow users to see their watched lists and favorites.
    - Pinterest-style staggered grid for exploring other users' watchlists.
-   - Global tracking of favorites (Movie, Series, Genre).
+   - Global tracking of favorites (Movies, Series, Genre) with a professional Pinterest-style grid picker.
 3. **OMDB API Integration:**
    - Automatically fetches high-quality posters, genres, and release years based on titles.
    - For TV series, it auto-fetches total seasons.
