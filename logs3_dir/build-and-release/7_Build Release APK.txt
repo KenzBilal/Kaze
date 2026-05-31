@@ -1,0 +1,91 @@
+﻿2026-05-31T09:13:35.4949549Z ##[group]Run ./gradlew assembleRelease
+2026-05-31T09:13:35.4949916Z [36;1m./gradlew assembleRelease[0m
+2026-05-31T09:13:35.4974673Z shell: /usr/bin/bash -e {0}
+2026-05-31T09:13:35.4974995Z env:
+2026-05-31T09:13:35.4975584Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.19-10/x64
+2026-05-31T09:13:35.4976140Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.19-10/x64
+2026-05-31T09:13:35.4976690Z   KEYSTORE_PATH: /home/runner/work/Kaze/Kaze/***-release.jks
+2026-05-31T09:13:35.4977070Z   KEYSTORE_PASSWORD: ***
+2026-05-31T09:13:35.4977328Z   KEY_ALIAS: ***
+2026-05-31T09:13:35.4977565Z   KEY_PASSWORD: ***
+2026-05-31T09:13:35.4977790Z ##[endgroup]
+2026-05-31T09:13:37.3393741Z Downloading https://services.gradle.org/distributions/gradle-8.9-bin.zip
+2026-05-31T09:13:40.0755686Z ............10%.............20%.............30%.............40%.............50%.............60%.............70%.............80%.............90%.............100%
+2026-05-31T09:13:41.3754555Z 
+2026-05-31T09:13:41.3757297Z Welcome to Gradle 8.9!
+2026-05-31T09:13:41.3757834Z 
+2026-05-31T09:13:41.3758516Z Here are the highlights of this release:
+2026-05-31T09:13:41.3759665Z  - Enhanced Error and Warning Messages
+2026-05-31T09:13:41.3760845Z  - IDE Integration Improvements
+2026-05-31T09:13:41.3761851Z  - Daemon JVM Information
+2026-05-31T09:13:41.3762421Z 
+2026-05-31T09:13:41.3764228Z For more details see https://docs.gradle.org/8.9/release-notes.html
+2026-05-31T09:13:41.3765029Z 
+2026-05-31T09:13:41.5786440Z Starting a Gradle Daemon (subsequent builds will be faster)
+2026-05-31T09:13:44.3751620Z Calculating task graph as no cached configuration is available for tasks: assembleRelease
+2026-05-31T09:15:01.6846490Z > Task :app:preBuild UP-TO-DATE
+2026-05-31T09:15:01.6876085Z > Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+2026-05-31T09:15:01.6905917Z > Task :app:preReleaseBuild UP-TO-DATE
+2026-05-31T09:15:01.7770452Z > Task :app:processReleaseGoogleServices
+2026-05-31T09:15:01.8759632Z > Task :app:buildKotlinToolingMetadata
+2026-05-31T09:15:01.8796070Z > Task :app:generateReleaseResValues
+2026-05-31T09:15:01.8815918Z > Task :app:generateReleaseBuildConfig
+2026-05-31T09:15:01.8825881Z > Task :app:createReleaseCompatibleScreenManifests
+2026-05-31T09:15:01.8836138Z > Task :app:extractDeepLinksRelease
+2026-05-31T09:15:01.8837019Z > Task :app:generateReleaseResources
+2026-05-31T09:15:06.6756495Z > Task :app:mapReleaseSourceSetPaths
+2026-05-31T09:15:06.8768964Z > Task :app:packageReleaseResources
+2026-05-31T09:15:06.9756765Z > Task :app:checkReleaseAarMetadata
+2026-05-31T09:15:08.2746904Z > Task :app:processReleaseMainManifest
+2026-05-31T09:15:08.4757401Z > Task :app:processReleaseManifest
+2026-05-31T09:15:09.6786179Z > Task :app:parseReleaseLocalResources
+2026-05-31T09:15:09.6845746Z > Task :app:extractProguardFiles
+2026-05-31T09:15:09.7746261Z > Task :app:processReleaseManifestForPackage
+2026-05-31T09:15:09.7785839Z > Task :app:mergeReleaseJniLibFolders
+2026-05-31T09:15:11.4778772Z > Task :app:mergeReleaseResources
+2026-05-31T09:15:11.9747584Z > Task :app:javaPreCompileRelease
+2026-05-31T09:15:12.3746498Z > Task :app:mergeReleaseArtProfile
+2026-05-31T09:15:12.3781291Z > Task :app:mergeReleaseStartupProfile
+2026-05-31T09:15:12.3806055Z > Task :app:mergeReleaseShaders
+2026-05-31T09:15:12.3833824Z > Task :app:mergeReleaseNativeLibs
+2026-05-31T09:15:12.3847679Z > Task :app:compileReleaseShaders NO-SOURCE
+2026-05-31T09:15:12.3865939Z > Task :app:generateReleaseAssets UP-TO-DATE
+2026-05-31T09:15:12.6782720Z 
+2026-05-31T09:15:12.6796331Z > Task :app:stripReleaseDebugSymbols
+2026-05-31T09:15:12.6886427Z Unable to strip the following libraries, packaging them as they are: libandroidx.graphics.path.so.
+2026-05-31T09:15:12.6915488Z 
+2026-05-31T09:15:12.6945880Z > Task :app:mergeReleaseAssets
+2026-05-31T09:15:12.6955711Z > Task :app:compressReleaseAssets
+2026-05-31T09:15:12.6975970Z > Task :app:extractReleaseNativeSymbolTables
+2026-05-31T09:15:12.7015767Z > Task :app:mergeReleaseNativeDebugMetadata NO-SOURCE
+2026-05-31T09:15:12.7036946Z > Task :app:checkReleaseDuplicateClasses
+2026-05-31T09:15:12.7756437Z > Task :app:validateSigningRelease
+2026-05-31T09:15:12.7776068Z > Task :app:writeReleaseAppMetadata
+2026-05-31T09:15:12.7805945Z > Task :app:writeReleaseSigningConfigVersions
+2026-05-31T09:15:12.8747367Z > Task :app:extractReleaseVersionControlInfo
+2026-05-31T09:15:12.9789506Z > Task :app:collectReleaseDependencies
+2026-05-31T09:15:13.0746486Z > Task :app:sdkReleaseDependencyData
+2026-05-31T09:15:13.2769182Z > Task :app:processReleaseResources
+2026-05-31T09:15:13.9766171Z > Task :app:convertLinkedResourcesToProtoRelease
+2026-05-31T09:15:29.9776241Z > Task :app:kspReleaseKotlin
+2026-05-31T09:15:39.6744632Z 
+2026-05-31T09:15:39.6745583Z > Task :app:compileReleaseKotlin FAILED
+2026-05-31T09:15:39.6748131Z e: file:///home/runner/work/Kaze/Kaze/app/src/main/java/com/***/ui/screens/settings/SettingsScreen.kt:157:58 Argument type mismatch: actual type is 'kotlin.Int', but 'kotlin.Float' was expected.
+2026-05-31T09:15:39.6749173Z 
+2026-05-31T09:15:39.6749572Z FAILURE: Build failed with an exception.
+2026-05-31T09:15:39.6749958Z 
+2026-05-31T09:15:39.6758009Z * What went wrong:
+2026-05-31T09:15:39.6758710Z Execution failed for task ':app:compileReleaseKotlin'.
+2026-05-31T09:15:39.6760190Z > A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+2026-05-31T09:15:39.6761638Z    > Compilation error. See log for more details
+2026-05-31T09:15:39.6762189Z 
+2026-05-31T09:15:39.6762372Z * Try:
+2026-05-31T09:15:39.6762852Z > Run with --stacktrace option to get the stack trace.
+2026-05-31T09:15:39.6763549Z > Run with --info or --debug option to get more log output.
+2026-05-31T09:15:39.7750026Z 37 actionable tasks: 37 executed
+2026-05-31T09:15:39.7775905Z > Run with --scan to get full insights.
+2026-05-31T09:15:39.7789912Z > Get more help at https://help.gradle.org.
+2026-05-31T09:15:39.7790535Z Configuration cache entry stored.
+2026-05-31T09:15:39.7815470Z 
+2026-05-31T09:15:39.7828017Z BUILD FAILED in 2m 2s
+2026-05-31T09:15:40.1484241Z ##[error]Process completed with exit code 1.

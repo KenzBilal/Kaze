@@ -35,7 +35,7 @@ data class RemoteWatchItem(
     val year: Int,
     val type: String,
     val is_watched: Boolean,
-    val rating: Int,
+    val rating: Float,
     val season: Int?,
     val episode: Int?,
     val notes: String?,

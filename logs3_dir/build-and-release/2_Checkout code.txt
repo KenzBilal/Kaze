@@ -1,0 +1,110 @@
+﻿2026-05-31T09:13:28.1750503Z ##[group]Run actions/checkout@v4
+2026-05-31T09:13:28.1751482Z with:
+2026-05-31T09:13:28.1751969Z   repository: KenzBilal/Kaze
+2026-05-31T09:13:28.1756615Z   token: ***
+2026-05-31T09:13:28.1757121Z   ssh-strict: true
+2026-05-31T09:13:28.1757603Z   ssh-user: git
+2026-05-31T09:13:28.1758092Z   persist-credentials: true
+2026-05-31T09:13:28.1758616Z   clean: true
+2026-05-31T09:13:28.1759100Z   sparse-checkout-cone-mode: true
+2026-05-31T09:13:28.1759742Z   fetch-depth: 1
+2026-05-31T09:13:28.1760218Z   fetch-tags: false
+2026-05-31T09:13:28.1760712Z   show-progress: true
+2026-05-31T09:13:28.1761203Z   lfs: false
+2026-05-31T09:13:28.1761666Z   submodules: false
+2026-05-31T09:13:28.1762157Z   set-safe-directory: true
+2026-05-31T09:13:28.1762988Z ##[endgroup]
+2026-05-31T09:13:28.2873150Z Syncing repository: KenzBilal/Kaze
+2026-05-31T09:13:28.2875911Z ##[group]Getting Git version info
+2026-05-31T09:13:28.2876917Z Working directory is '/home/runner/work/Kaze/Kaze'
+2026-05-31T09:13:28.2878038Z [command]/usr/bin/git version
+2026-05-31T09:13:28.2948165Z git version 2.54.0
+2026-05-31T09:13:28.2974305Z ##[endgroup]
+2026-05-31T09:13:28.2988977Z Temporarily overriding HOME='/home/runner/work/_temp/6dc141e3-c5a0-421f-84a7-3db103f9c640' before making global git config changes
+2026-05-31T09:13:28.2990836Z Adding repository directory to the temporary git global config as a safe directory
+2026-05-31T09:13:28.3001227Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Kaze/Kaze
+2026-05-31T09:13:28.3047400Z Deleting the contents of '/home/runner/work/Kaze/Kaze'
+2026-05-31T09:13:28.3051161Z ##[group]Initializing the repository
+2026-05-31T09:13:28.3055008Z [command]/usr/bin/git init /home/runner/work/Kaze/Kaze
+2026-05-31T09:13:28.3157439Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-05-31T09:13:28.3159191Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-05-31T09:13:28.3160827Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-05-31T09:13:28.3162560Z hint: call:
+2026-05-31T09:13:28.3163310Z hint:
+2026-05-31T09:13:28.3164259Z hint: 	git config --global init.defaultBranch <name>
+2026-05-31T09:13:28.3164969Z hint:
+2026-05-31T09:13:28.3165955Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-05-31T09:13:28.3167008Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-05-31T09:13:28.3167815Z hint:
+2026-05-31T09:13:28.3168295Z hint: 	git branch -m <name>
+2026-05-31T09:13:28.3169086Z hint:
+2026-05-31T09:13:28.3170025Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-05-31T09:13:28.3171064Z Initialized empty Git repository in /home/runner/work/Kaze/Kaze/.git/
+2026-05-31T09:13:28.3174940Z [command]/usr/bin/git remote add origin https://github.com/KenzBilal/Kaze
+2026-05-31T09:13:28.3219339Z ##[endgroup]
+2026-05-31T09:13:28.3221005Z ##[group]Disabling automatic garbage collection
+2026-05-31T09:13:28.3228435Z [command]/usr/bin/git config --local gc.auto 0
+2026-05-31T09:13:28.3256729Z ##[endgroup]
+2026-05-31T09:13:28.3257555Z ##[group]Setting up auth
+2026-05-31T09:13:28.3263371Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-05-31T09:13:28.3296133Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-05-31T09:13:28.3623499Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-05-31T09:13:28.3652717Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-05-31T09:13:28.3868086Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-05-31T09:13:28.3906404Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-05-31T09:13:28.4127027Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-05-31T09:13:28.4159763Z ##[endgroup]
+2026-05-31T09:13:28.4160739Z ##[group]Fetching the repository
+2026-05-31T09:13:28.4168297Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +5ff1ed271037419461f9e67cafad6769cb582c65:refs/tags/v2.0.3
+2026-05-31T09:13:32.9560516Z From https://github.com/KenzBilal/Kaze
+2026-05-31T09:13:32.9562169Z  * [new ref]         5ff1ed271037419461f9e67cafad6769cb582c65 -> v2.0.3
+2026-05-31T09:13:32.9597690Z ##[endgroup]
+2026-05-31T09:13:32.9598278Z ##[group]Determining the checkout info
+2026-05-31T09:13:32.9599793Z ##[endgroup]
+2026-05-31T09:13:32.9604864Z [command]/usr/bin/git sparse-checkout disable
+2026-05-31T09:13:32.9646634Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-05-31T09:13:32.9671508Z ##[group]Checking out the ref
+2026-05-31T09:13:32.9676346Z [command]/usr/bin/git checkout --progress --force refs/tags/v2.0.3
+2026-05-31T09:13:34.0470048Z Updating files:  80% (2945/3678)
+2026-05-31T09:13:34.0488430Z Updating files:  81% (2980/3678)
+2026-05-31T09:13:34.0516124Z Updating files:  82% (3016/3678)
+2026-05-31T09:13:34.0542834Z Updating files:  83% (3053/3678)
+2026-05-31T09:13:34.0567929Z Updating files:  84% (3090/3678)
+2026-05-31T09:13:34.0651396Z Updating files:  85% (3127/3678)
+2026-05-31T09:13:34.0652437Z Updating files:  86% (3164/3678)
+2026-05-31T09:13:34.0653050Z Updating files:  87% (3200/3678)
+2026-05-31T09:13:34.0658700Z Updating files:  88% (3237/3678)
+2026-05-31T09:13:34.0680761Z Updating files:  89% (3274/3678)
+2026-05-31T09:13:34.0709021Z Updating files:  90% (3311/3678)
+2026-05-31T09:13:34.0733382Z Updating files:  91% (3347/3678)
+2026-05-31T09:13:34.0751528Z Updating files:  92% (3384/3678)
+2026-05-31T09:13:34.0772207Z Updating files:  93% (3421/3678)
+2026-05-31T09:13:34.0792765Z Updating files:  94% (3458/3678)
+2026-05-31T09:13:34.0814306Z Updating files:  95% (3495/3678)
+2026-05-31T09:13:34.0836470Z Updating files:  96% (3531/3678)
+2026-05-31T09:13:34.0866215Z Updating files:  97% (3568/3678)
+2026-05-31T09:13:34.0899400Z Updating files:  98% (3605/3678)
+2026-05-31T09:13:34.0920611Z Updating files:  99% (3642/3678)
+2026-05-31T09:13:34.0921151Z Updating files: 100% (3678/3678)
+2026-05-31T09:13:34.0921598Z Updating files: 100% (3678/3678), done.
+2026-05-31T09:13:34.0975101Z Note: switching to 'refs/tags/v2.0.3'.
+2026-05-31T09:13:34.0975912Z 
+2026-05-31T09:13:34.0976573Z You are in 'detached HEAD' state. You can look around, make experimental
+2026-05-31T09:13:34.0977473Z changes and commit them, and you can discard any commits you make in this
+2026-05-31T09:13:34.0978333Z state without impacting any branches by switching back to a branch.
+2026-05-31T09:13:34.0978821Z 
+2026-05-31T09:13:34.0979197Z If you want to create a new branch to retain commits you create, you may
+2026-05-31T09:13:34.0980031Z do so (now or later) by using -c with the switch command. Example:
+2026-05-31T09:13:34.0980503Z 
+2026-05-31T09:13:34.0980697Z   git switch -c <new-branch-name>
+2026-05-31T09:13:34.0981011Z 
+2026-05-31T09:13:34.0981199Z Or undo this operation with:
+2026-05-31T09:13:34.0981501Z 
+2026-05-31T09:13:34.0981713Z   git switch -
+2026-05-31T09:13:34.0981937Z 
+2026-05-31T09:13:34.0982317Z Turn off this advice by setting config variable advice.detachedHead to false
+2026-05-31T09:13:34.0982868Z 
+2026-05-31T09:13:34.0983254Z HEAD is now at 5ff1ed2 fix: imports and forEach in SettingsScreen
+2026-05-31T09:13:34.1036990Z ##[endgroup]
+2026-05-31T09:13:34.1078521Z [command]/usr/bin/git log -1 --format=%H
+2026-05-31T09:13:34.1099787Z 5ff1ed271037419461f9e67cafad6769cb582c65
