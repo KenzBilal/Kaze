@@ -10,6 +10,9 @@ interface WatchItemDao {
     @Query("SELECT * FROM watch_items ORDER BY dateAdded DESC")
     fun getAllItems(): Flow<List<WatchItem>>
 
+    @Query("SELECT * FROM watch_items ORDER BY dateAdded DESC")
+    suspend fun getAllItemsOnce(): List<WatchItem>
+
     @RawQuery(observedEntities = [WatchItem::class])
     fun getItemsViaQuery(query: androidx.sqlite.db.SupportSQLiteQuery): Flow<List<WatchItem>>
 

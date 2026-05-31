@@ -13,7 +13,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.outlined.Bookmark
+import androidx.compose.material.icons.outlined.People
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -61,6 +63,12 @@ fun AppContent(app: WatchLaterApp) {
             unselectedIcon = Icons.Outlined.Bookmark
         ),
         BottomNavItem(
+            screen = Screen.Friends,
+            label = "Friends",
+            selectedIcon = Icons.Filled.People,
+            unselectedIcon = Icons.Outlined.People
+        ),
+        BottomNavItem(
             screen = Screen.Stats,
             label = "Stats",
             selectedIcon = Icons.Filled.BarChart,
@@ -68,7 +76,7 @@ fun AppContent(app: WatchLaterApp) {
         )
     )
 
-    val showBottomBar = currentRoute in listOf(Screen.Home.route, Screen.Stats.route)
+    val showBottomBar = currentRoute in listOf(Screen.Home.route, Screen.Friends.route, Screen.Stats.route)
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),

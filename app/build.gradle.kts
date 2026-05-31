@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -13,14 +14,17 @@ android {
         applicationId = "com.watchlater"
         minSdk = 24
         targetSdk = 35
-        versionCode = 13
-        versionName = "1.4.2"
+        versionCode = 14
+        versionName = "1.5.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // OMDB API key — get free key at omdbapi.com/apikey.aspx
         buildConfigField("String", "OMDB_API_KEY", "\"${project.findProperty("omdb.api.key") ?: ""}\"")
         buildConfigField("String", "UPDATE_JSON_URL", "\"https://gist.githubusercontent.com/KenzBilal/7c19255da1430800f0030ba3c6e99765/raw/update.json\"")
+        
+        buildConfigField("String", "SUPABASE_URL", "\"https://mzlxjobibskxhgywszff.supabase.co\"")
+        buildConfigField("String", "SUPABASE_KEY", "\"sb_publishable_nKC_zzEY-e0szNHRGqy7ag_EAMQNYCW\"")
     }
 
     signingConfigs {
@@ -110,6 +114,10 @@ dependencies {
     implementation(libs.retrofit.converter.gson)
     implementation(libs.okhttp.logging)
     implementation(libs.coil.compose)
+
+    implementation(libs.ktor.client.android)
+    implementation(libs.supabase.postgrest)
+    implementation(libs.kotlinx.serialization.json)
 
     debugImplementation(libs.androidx.ui.tooling)
 }
