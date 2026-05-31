@@ -4,18 +4,19 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotlin.serialization)
+    id("com.google.gms.google-services")
 }
 
 android {
-    namespace = "com.watchlater"
+    namespace = "com.kaze"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.watchlater"
+        applicationId = "com.kaze"
         minSdk = 24
         targetSdk = 35
-        versionCode = 20
-        versionName = "1.5.6"
+        versionCode = 21
+        versionName = "2.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -118,6 +119,13 @@ dependencies {
     implementation(libs.ktor.client.android)
     implementation(libs.supabase.postgrest)
     implementation(libs.kotlinx.serialization.json)
+    
+    implementation(libs.androidx.paging.compose)
+    implementation(libs.androidx.work.runtime.ktx)
+
+    // Firebase
+    implementation(platform("com.google.firebase:firebase-bom:33.1.2"))
+    implementation("com.google.firebase:firebase-messaging-ktx")
 
     debugImplementation(libs.androidx.ui.tooling)
 }

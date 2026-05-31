@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "306573353241",
+    "project_id": "kaze-ce70e",
+    "storage_bucket": "kaze-ce70e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:306573353241:android:c2adb2d7c8cb4502802588",
+        "android_client_info": {
+          "package_name": "com.kaze"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC4soyf2sp-qZ2bnBDC5MRLhYJziZ4qeB4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
