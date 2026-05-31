@@ -8,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Vibration
+import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,15 +22,36 @@ import androidx.compose.ui.unit.sp
 import com.kaze.ui.theme.*
 import com.kaze.utils.HapticUtils
 import com.kaze.utils.UserPreferences
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class RemoteWatchItem(
+    val imdb_id: String,
+    val title: String,
+    val year: Int,
+    val type: String,
+    val is_watched: Boolean,
+    val rating: Int,
+    val season: Int?,
+    val episode: Int?,
+    val notes: String?,
+    val poster_url: String?,
+    val genres: String?,
+    val date_added: Long
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val prefs = remember { UserPreferences(context) }
+    val scope = rememberCoroutineScope()
 
     var hapticEnabled by remember { mutableStateOf(prefs.hapticEnabled) }
     var soundEnabled by remember { mutableStateOf(prefs.soundEnabled) }
+    var isSyncing by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -95,6 +117,58 @@ fun SettingsScreen(onBack: () -> Unit) {
                         soundEnabled = enabled
                         prefs.soundEnabled = enabled
                         HapticUtils.tick(context)
+                    }
+                )
+            }
+
+            item { Spacer(Modifier.height(10.dp)) }
+
+            item {
+                SettingsActionRow(
+                    icon = Icons.Filled.CloudDownload,
+                    title = "Cloud Restore",
+                    subtitle = if (isSyncing) "Restoring..." else "Recover data from cloud",
+                    onClick = {
+                        if (isSyncing) return@SettingsActionRow
+                        isSyncing = true
+                        scope.launch(Dispatchers.IO) {
+                            try {
+                                val db = com.kaze.data.local.WatchLaterDatabase.getInstance(context)
+                                val userRepo = com.kaze.data.repository.UserRepository(context)
+                                val userId = userRepo.getLocalUserId() ?: return@launch
+                                
+                                val remoteItems = com.kaze.data.remote.SupabaseApi.client.from("public_watchlist")
+                                    .select { filter { eq("user_id", userId) } }
+                                    .decodeList<RemoteWatchItem>()
+                                    
+                                val dao = db.watchItemDao()
+                                remoteItems.forEach { r ->
+                                    val existing = dao.getItemByTitleYearType(r.title, r.year, com.kaze.model.MediaType.valueOf(r.type))
+                                    if (existing == null) {
+                                        dao.insertItem(
+                                            com.kaze.model.WatchItem(
+                                                imdbId = r.imdb_id,
+                                                title = r.title,
+                                                year = r.year,
+                                                type = com.kaze.model.MediaType.valueOf(r.type),
+                                                isWatched = r.is_watched,
+                                                rating = r.rating,
+                                                season = r.season,
+                                                episode = r.episode,
+                                                notes = r.notes ?: "",
+                                                posterUrl = r.poster_url ?: "",
+                                                genres = r.genres ?: "",
+                                                dateAdded = r.date_added
+                                            )
+                                        )
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            } finally {
+                                isSyncing = false
+                            }
+                        }
                     }
                 )
             }
@@ -175,5 +249,35 @@ private fun SettingsToggleRow(
                 uncheckedTrackColor = SurfaceHighlight
             )
         )
+    }
+}
+
+@Composable
+private fun SettingsActionRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(SurfaceElevated)
+            .clickable { onClick() }
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = TextSecondary,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(Modifier.width(14.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, color = TextPrimary, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+            Text(subtitle, color = TextTertiary, fontSize = 12.sp)
+        }
     }
 }
