@@ -36,6 +36,15 @@ class WatchItemRepository(
 
     suspend fun deleteItemById(id: Long) = dao.deleteItemById(id)
 
+    suspend fun isDuplicate(imdbId: String, title: String, year: Int, type: MediaType): Boolean {
+        if (imdbId.isNotBlank()) {
+            val byImdb = dao.getItemByImdbId(imdbId)
+            if (byImdb != null) return true
+        }
+        val byDetails = dao.getItemByTitleYearType(title.trim(), year, type)
+        return byDetails != null
+    }
+
     // Stats flows
     fun getTotalCount(): Flow<Int> = dao.getTotalCount()
     fun getMovieCount(): Flow<Int> = dao.getMovieCount()

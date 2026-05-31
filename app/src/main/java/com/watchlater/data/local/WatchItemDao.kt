@@ -22,6 +22,12 @@ interface WatchItemDao {
     @Query("SELECT * FROM watch_items WHERE id = :id")
     suspend fun getItemByIdNow(id: Long): WatchItem?
 
+    @Query("SELECT * FROM watch_items WHERE imdbId = :imdbId LIMIT 1")
+    suspend fun getItemByImdbId(imdbId: String): WatchItem?
+
+    @Query("SELECT * FROM watch_items WHERE title = :title AND year = :year AND type = :type LIMIT 1")
+    suspend fun getItemByTitleYearType(title: String, year: Int, type: com.watchlater.model.MediaType): WatchItem?
+
     @Query("""
         SELECT * FROM watch_items 
         WHERE title LIKE '%' || :query || '%' 

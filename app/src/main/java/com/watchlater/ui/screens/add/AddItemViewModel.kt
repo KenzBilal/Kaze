@@ -156,6 +156,19 @@ class AddItemViewModel(
 
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true) }
+            
+            val isDuplicate = repository.isDuplicate(
+                imdbId = state.imdbId,
+                title = state.title.trim(),
+                year = yearInt ?: 0,
+                type = state.type
+            )
+            
+            if (isDuplicate) {
+                _uiState.update { it.copy(titleError = "Item already in watchlist", isSaving = false) }
+                return@launch
+            }
+
             val item = WatchItem(
                 title     = state.title.trim(),
                 year      = yearInt ?: 0,

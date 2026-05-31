@@ -20,6 +20,7 @@ data class DetailUiState(
     val isDeleted: Boolean = false,
     val isSaving: Boolean = false,
     val showDeleteDialog: Boolean = false,
+    val notes: String = "",
     // Series
     val totalSeasons: Int = 0,
     val selectedSeason: Int = 1,
@@ -56,6 +57,7 @@ class DetailViewModel(
                             item           = item,
                             rating         = item.rating,
                             isWatched      = item.isWatched,
+                            notes          = item.notes,
                             currentSeason  = item.season ?: 1,
                             currentEpisode = item.episode ?: 1,
                             selectedSeason = item.season ?: 1,
@@ -223,6 +225,7 @@ class DetailViewModel(
     // ── Generic ───────────────────────────────────────────────────────────
 
     fun onRatingChange(rating: Float) { _uiState.update { it.copy(rating = rating) } }
+    fun onNotesChange(notes: String)  { _uiState.update { it.copy(notes = notes) } }
 
     /**
      * BUG-07 fix: toggleWatched now also syncs item.isWatched in the state so that
@@ -252,6 +255,7 @@ class DetailViewModel(
             val updated = original.copy(
                 rating      = state.rating,
                 isWatched   = state.isWatched,
+                notes       = state.notes,
                 lastUpdated = System.currentTimeMillis()
             )
             repository.updateItem(updated)

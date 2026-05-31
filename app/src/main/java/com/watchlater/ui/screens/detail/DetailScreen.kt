@@ -217,16 +217,17 @@ fun DetailScreen(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(220.dp)
+                                .height(320.dp)
                                 .padding(horizontal = 20.dp)
                                 .clip(RoundedCornerShape(16.dp))
-                                .background(SurfaceHighlight)
+                                .background(SurfaceHighlight),
+                            contentAlignment = Alignment.Center
                         ) {
                             AsyncImage(
                                 model              = item.posterUrl,
                                 contentDescription = "${item.title} poster",
-                                contentScale       = ContentScale.Crop,
-                                modifier           = Modifier.fillMaxSize()
+                                contentScale       = ContentScale.Fit,
+                                modifier           = Modifier.fillMaxSize().padding(16.dp)
                             )
                         }
                         Spacer(Modifier.height(20.dp))
@@ -276,6 +277,28 @@ fun DetailScreen(
                         SectionHeader("RATING")
                         Spacer(Modifier.height(16.dp))
                         StarRatingSelector(rating = uiState.rating, onRatingChange = viewModel::onRatingChange)
+                        Spacer(Modifier.height(32.dp))
+
+                        // ── Review & Notes ────────────────────────────────────
+                        SectionHeader("REVIEW & NOTES")
+                        Spacer(Modifier.height(16.dp))
+                        OutlinedTextField(
+                            value = uiState.notes,
+                            onValueChange = viewModel::onNotesChange,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .defaultMinSize(minHeight = 120.dp),
+                            placeholder = { Text("What did you think of it?", color = TextTertiary) },
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = AccentBlue,
+                                unfocusedBorderColor = SurfaceHighlight,
+                                focusedContainerColor = SurfaceElevated,
+                                unfocusedContainerColor = SurfaceElevated,
+                                focusedTextColor = TextPrimary,
+                                unfocusedTextColor = TextPrimary
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        )
                         Spacer(Modifier.height(100.dp))
                     }
                 }
