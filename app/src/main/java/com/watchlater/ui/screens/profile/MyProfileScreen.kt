@@ -467,8 +467,8 @@ private fun WatchItemPinterestCard(item: WatchItem, onClick: () -> Unit) {
                 "${item.year}", fontSize = 11.sp, color = TextTertiary,
                 modifier = Modifier.padding(top = 2.dp)
             )
-            if (item.myRating > 0f) {
-                Text("★ ${item.myRating}", fontSize = 11.sp, color = TextSecondary)
+            if (item.rating > 0f) {
+                Text("★ ${item.rating}", fontSize = 11.sp, color = TextSecondary)
             }
         }
     }
