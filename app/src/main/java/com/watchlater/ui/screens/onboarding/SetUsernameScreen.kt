@@ -3,7 +3,6 @@ package com.watchlater.ui.screens.onboarding
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -15,10 +14,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -30,7 +29,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.watchlater.R
 import com.watchlater.data.local.WatchLaterDatabase
 import com.watchlater.data.repository.UserRepository
 import com.watchlater.ui.theme.*
@@ -45,10 +43,10 @@ import kotlinx.coroutines.launch
 private val USERNAME_REGEX = Regex("^[A-Za-z]*$")
 
 fun validateUsername(name: String): String? = when {
-    name.isBlank() -> null // No error shown for empty field
+    name.isBlank() -> null
     name.length < 4 -> "Must be at least 4 letters"
     name.length > 12 -> "Must be at most 12 letters"
-    !USERNAME_REGEX.matches(name) -> "Only letters allowed (a-z, A-Z)"
+    !USERNAME_REGEX.matches(name) -> "Only letters allowed"
     else -> null
 }
 
@@ -63,7 +61,6 @@ class SetUsernameViewModel(
     val uiState: StateFlow<SetUsernameUiState> = _uiState.asStateFlow()
 
     fun onUsernameChange(raw: String) {
-        // Reject non-letter chars immediately; allow up to 12
         val filtered = raw.filter { it.isLetter() }.take(12)
         val error = validateUsername(filtered)
         _uiState.update { it.copy(username = filtered, validationError = error) }
@@ -80,19 +77,17 @@ class SetUsernameViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, apiError = null) }
 
-            // 1. Create the user account in Supabase
             val result = userRepository.createUser(name)
             if (!result.success) {
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        apiError = result.errorMessage ?: "Failed to create account. Try a different username."
+                        apiError = result.errorMessage ?: "Failed to create account."
                     )
                 }
                 return@launch
             }
 
-            // 2. Sync existing local watchlist to Supabase
             val userId = userRepository.getLocalUserId()
             if (userId != null) {
                 val localItems = dao.getAllItemsOnce()
@@ -108,8 +103,7 @@ class SetUsernameViewModel(
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             val db = WatchLaterDatabase.getInstance(context)
-            val userRepo = UserRepository(context)
-            return SetUsernameViewModel(userRepo, db.watchItemDao()) as T
+            return SetUsernameViewModel(UserRepository(context), db.watchItemDao()) as T
         }
     }
 }
@@ -123,7 +117,6 @@ data class SetUsernameUiState(
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SetUsernameScreen(onAccountCreated: () -> Unit) {
     val context = LocalContext.current
@@ -136,56 +129,59 @@ fun SetUsernameScreen(onAccountCreated: () -> Unit) {
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
     Box(
-        modifier = Modifier.fillMaxSize().background(Background),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF0D0D0D)),
         contentAlignment = Alignment.Center
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 28.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(horizontal = 32.dp),
+            horizontalAlignment = Alignment.Start
         ) {
-            // Logo
-            Image(
-                painter = painterResource(id = R.drawable.ic_splash_logo),
-                contentDescription = "Kaze Logo",
-                modifier = Modifier.size(80.dp)
-            )
-            Spacer(modifier = Modifier.height(16.dp))
+            // App name header
             Text(
                 text = "Kaze",
-                fontWeight = FontWeight.Bold,
-                color = TextPrimary,
-                fontSize = 28.sp
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFF888888),
+                letterSpacing = 3.sp
             )
-            Spacer(modifier = Modifier.height(36.dp))
+            Spacer(modifier = Modifier.height(40.dp))
 
-            // Title
+            // Heading
             Text(
-                text = "Choose your username",
-                style = MaterialTheme.typography.headlineSmall,
+                text = "Choose a\nusername",
+                fontSize = 34.sp,
                 fontWeight = FontWeight.Bold,
-                color = TextPrimary,
-                textAlign = TextAlign.Center
+                color = Color(0xFFEEEEEE),
+                lineHeight = 40.sp
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "4–12 letters only. No numbers or symbols.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary,
-                textAlign = TextAlign.Center
+                text = "4–12 letters. No numbers or symbols.",
+                fontSize = 14.sp,
+                color = Color(0xFF777777)
             )
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(40.dp))
 
-            // Input
+            // Input field
+            val isError = uiState.validationError != null
             OutlinedTextField(
                 value = uiState.username,
                 onValueChange = viewModel::onUsernameChange,
                 modifier = Modifier
                     .fillMaxWidth()
                     .focusRequester(focusRequester),
-                placeholder = { Text("e.g. kenzwatches", color = TextTertiary) },
-                isError = uiState.validationError != null,
+                placeholder = {
+                    Text(
+                        "e.g. alex",
+                        color = Color(0xFF444444),
+                        fontSize = 16.sp
+                    )
+                },
+                isError = isError,
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(
                     capitalization = KeyboardCapitalization.None,
@@ -197,79 +193,81 @@ fun SetUsernameScreen(onAccountCreated: () -> Unit) {
                     focusManager.clearFocus()
                 }),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = AccentBlue,
-                    unfocusedBorderColor = SurfaceHighlight,
-                    errorBorderColor = MaterialTheme.colorScheme.error,
-                    focusedContainerColor = SurfaceElevated,
-                    unfocusedContainerColor = SurfaceElevated,
-                    errorContainerColor = SurfaceElevated,
-                    focusedTextColor = TextPrimary,
-                    unfocusedTextColor = TextPrimary
+                    focusedBorderColor = Color(0xFFAAAAAA),
+                    unfocusedBorderColor = Color(0xFF333333),
+                    errorBorderColor = Color(0xFFCF6679),
+                    focusedContainerColor = Color(0xFF161616),
+                    unfocusedContainerColor = Color(0xFF161616),
+                    errorContainerColor = Color(0xFF161616),
+                    focusedTextColor = Color(0xFFEEEEEE),
+                    unfocusedTextColor = Color(0xFFEEEEEE),
+                    cursorColor = Color(0xFFEEEEEE)
                 ),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(8.dp),
+                textStyle = LocalTextStyle.current.copy(fontSize = 16.sp),
                 suffix = {
                     Text(
                         text = "${uiState.username.length}/12",
-                        color = if (uiState.username.length >= 12) MaterialTheme.colorScheme.error else TextTertiary,
+                        color = if (uiState.username.length >= 12) Color(0xFFCF6679) else Color(0xFF555555),
                         fontSize = 12.sp
                     )
                 }
             )
 
             // Validation error
-            AnimatedVisibility(
-                visible = uiState.validationError != null,
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
+            AnimatedVisibility(visible = isError, enter = fadeIn(), exit = fadeOut()) {
                 Text(
                     text = uiState.validationError ?: "",
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 6.dp)
+                    color = Color(0xFFCF6679),
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(top = 6.dp)
                 )
             }
 
             // API error
-            AnimatedVisibility(
-                visible = uiState.apiError != null,
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
+            AnimatedVisibility(visible = uiState.apiError != null, enter = fadeIn(), exit = fadeOut()) {
                 Text(
                     text = uiState.apiError ?: "",
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 6.dp)
+                    color = Color(0xFFCF6679),
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(top = 6.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
-            // Submit button
+            // Submit button — minimal white/grey
             Button(
                 onClick = {
                     keyboard?.hide()
                     focusManager.clearFocus()
                     viewModel.submit(onAccountCreated)
                 },
-                modifier = Modifier.fillMaxWidth().height(52.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
                 enabled = uiState.username.length >= 4 && uiState.validationError == null && !uiState.isLoading,
-                colors = ButtonDefaults.buttonColors(containerColor = AccentBlue),
-                shape = RoundedCornerShape(12.dp)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFEEEEEE),
+                    contentColor = Color(0xFF0D0D0D),
+                    disabledContainerColor = Color(0xFF252525),
+                    disabledContentColor = Color(0xFF555555)
+                ),
+                shape = RoundedCornerShape(8.dp),
+                elevation = ButtonDefaults.buttonElevation(0.dp)
             ) {
                 if (uiState.isLoading) {
                     CircularProgressIndicator(
-                        color = Background,
-                        modifier = Modifier.size(24.dp),
+                        color = Color(0xFF0D0D0D),
+                        modifier = Modifier.size(20.dp),
                         strokeWidth = 2.dp
                     )
                 } else {
-                    Text("Let's go →", fontWeight = FontWeight.Bold)
+                    Text(
+                        text = "Continue",
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 15.sp
+                    )
                 }
             }
         }

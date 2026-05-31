@@ -26,6 +26,7 @@ import com.watchlater.ui.screens.splash.SplashScreen
 import com.watchlater.ui.screens.friends.FriendsScreen
 import com.watchlater.ui.screens.friends.UserProfileScreen
 import com.watchlater.ui.screens.onboarding.SetUsernameScreen
+import com.watchlater.ui.screens.profile.MyProfileScreen
 import com.watchlater.ui.theme.SurfaceContainer
 
 sealed class Screen(val route: String) {
@@ -34,6 +35,7 @@ sealed class Screen(val route: String) {
     object Home         : Screen("home")
     object Friends      : Screen("friends")
     object Stats        : Screen("stats")
+    object MyProfile    : Screen("myProfile")
     object Search       : Screen("search")
     object Detail : Screen("detail/{itemId}") {
         fun createRoute(id: Long) = "detail/$id"
@@ -139,6 +141,11 @@ fun WatchLaterNavGraph(
             )
         }
 
+        // ── My Profile ────────────────────────────────────────────────────
+        composable(Screen.MyProfile.route) {
+            MyProfileScreen()
+        }
+
         // ── User Profile ──────────────────────────────────────────────────
         composable(
             route = Screen.UserProfile.route,
@@ -147,9 +154,11 @@ fun WatchLaterNavGraph(
             val userId = backStack.arguments!!.getString("userId") ?: ""
             UserProfileScreen(
                 userId = userId,
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                onUserClick = { id -> navController.navigate(Screen.UserProfile.createRoute(id)) }
             )
         }
+
 
         // ── Detail ────────────────────────────────────────────────────────
         composable(

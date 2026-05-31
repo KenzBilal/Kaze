@@ -15,7 +15,10 @@ import java.util.UUID
 @Serializable
 data class SupabaseUser(
     val id: String,
-    val username: String
+    val username: String,
+    val fav_movie: String? = null,
+    val fav_series: String? = null,
+    val fav_genre: String? = null
 )
 
 @Serializable
@@ -33,6 +36,12 @@ data class PublicWatchlistItem(
     val poster_url: String?,
     val genres: String,
     val date_added: Long
+)
+
+@Serializable
+data class FollowRelation(
+    val follower_id: String,
+    val following_id: String
 )
 
 data class CreateUserResult(
@@ -66,15 +75,9 @@ class UserRepository(private val context: Context) {
 
     // ── Account Creation ─────────────────────────────────────────────────────
 
-    /**
-     * Creates a new user in Supabase with the given username.
-     * Validates format (4-12 letters only) before hitting the network.
-     * Saves user ID and username locally on success.
-     */
     suspend fun createUser(username: String): CreateUserResult {
         val trimmed = username.trim()
 
-        // Client-side validation (mirrors DB constraint)
         if (trimmed.length < 4 || trimmed.length > 12) {
             return CreateUserResult(false, "Username must be 4–12 characters.")
         }
@@ -98,6 +101,32 @@ class UserRepository(private val context: Context) {
                     else -> "Connection error. Please check your internet and try again."
                 }
                 CreateUserResult(success = false, errorMessage = msg)
+            }
+        }
+    }
+
+    // ── Profile Update ────────────────────────────────────────────────────────
+
+    @Serializable
+    private data class ProfileUpdate(
+        val fav_movie: String?,
+        val fav_series: String?,
+        val fav_genre: String?
+    )
+
+    suspend fun updateProfile(userId: String, favMovie: String?, favSeries: String?, favGenre: String?) {
+        withContext(Dispatchers.IO) {
+            try {
+                val update = ProfileUpdate(
+                    fav_movie  = favMovie?.ifBlank { null },
+                    fav_series = favSeries?.ifBlank { null },
+                    fav_genre  = favGenre?.ifBlank { null }
+                )
+                SupabaseApi.client.from("users").update(update) {
+                    filter { eq("id", userId) }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
@@ -151,42 +180,121 @@ class UserRepository(private val context: Context) {
         }
     }
 
+    // ── Follows ───────────────────────────────────────────────────────────────
+
+    suspend fun getFollowersCount(userId: String): Int {
+        return withContext(Dispatchers.IO) {
+            try {
+                SupabaseApi.client.from("follows")
+                    .select { filter { eq("following_id", userId) } }
+                    .decodeList<FollowRelation>().size
+            } catch (e: Exception) { 0 }
+        }
+    }
+
+    suspend fun getFollowingCount(userId: String): Int {
+        return withContext(Dispatchers.IO) {
+            try {
+                SupabaseApi.client.from("follows")
+                    .select { filter { eq("follower_id", userId) } }
+                    .decodeList<FollowRelation>().size
+            } catch (e: Exception) { 0 }
+        }
+    }
+
+    suspend fun getFollowersList(userId: String): List<SupabaseUser> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val relations = SupabaseApi.client.from("follows")
+                    .select { filter { eq("following_id", userId) } }
+                    .decodeList<FollowRelation>()
+                relations.mapNotNull { getUserById(it.follower_id) }
+            } catch (e: Exception) { emptyList() }
+        }
+    }
+
+    suspend fun getFollowingList(userId: String): List<SupabaseUser> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val relations = SupabaseApi.client.from("follows")
+                    .select { filter { eq("follower_id", userId) } }
+                    .decodeList<FollowRelation>()
+                relations.mapNotNull { getUserById(it.following_id) }
+            } catch (e: Exception) { emptyList() }
+        }
+    }
+
+    suspend fun isFollowing(followerId: String, followingId: String): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                val result = SupabaseApi.client.from("follows")
+                    .select {
+                        filter {
+                            eq("follower_id", followerId)
+                            eq("following_id", followingId)
+                        }
+                    }
+                    .decodeList<FollowRelation>()
+                result.isNotEmpty()
+            } catch (e: Exception) { false }
+        }
+    }
+
+    suspend fun followUser(followerId: String, followingId: String) {
+        withContext(Dispatchers.IO) {
+            try {
+                val rel = FollowRelation(follower_id = followerId, following_id = followingId)
+                SupabaseApi.client.from("follows").insert(rel)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    suspend fun unfollowUser(followerId: String, followingId: String) {
+        withContext(Dispatchers.IO) {
+            try {
+                SupabaseApi.client.from("follows").delete {
+                    filter {
+                        eq("follower_id", followerId)
+                        eq("following_id", followingId)
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
     // ── Watchlist Sync ────────────────────────────────────────────────────────
 
-    /**
-     * Bulk-syncs all local Room WatchItems to Supabase public_watchlist.
-     * Uses upsert (insert or update on conflict) so re-calling this is safe.
-     * Errors per item are swallowed — if one fails, the rest continue.
-     */
     suspend fun syncWatchlist(userId: String, items: List<WatchItem>) {
         if (items.isEmpty()) return
         withContext(Dispatchers.IO) {
             val payload = items.map { item ->
                 PublicWatchlistItem(
-                    user_id   = userId,
-                    imdb_id   = item.imdbId,
-                    title     = item.title,
-                    year      = item.year,
-                    type      = item.type.name,
+                    user_id    = userId,
+                    imdb_id    = item.imdbId,
+                    title      = item.title,
+                    year       = item.year,
+                    type       = item.type.name,
                     is_watched = item.isWatched,
-                    rating    = item.rating,
-                    season    = item.season,
-                    episode   = item.episode,
-                    notes     = item.notes,
+                    rating     = item.rating,
+                    season     = item.season,
+                    episode    = item.episode,
+                    notes      = item.notes,
                     poster_url = item.posterUrl,
-                    genres    = item.genres,
+                    genres     = item.genres,
                     date_added = item.dateAdded
                 )
             }
 
-            // Batch upsert — Supabase handles conflicts via unique constraint
             try {
                 SupabaseApi.client.from("public_watchlist").upsert(payload) {
                     onConflict = "user_id,title,year,type"
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                // Fall back to one-by-one upsert so partial success is possible
                 payload.forEach { entry ->
                     try {
                         SupabaseApi.client.from("public_watchlist").upsert(entry) {

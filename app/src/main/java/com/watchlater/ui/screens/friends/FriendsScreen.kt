@@ -5,10 +5,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -24,7 +22,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.watchlater.data.repository.SupabaseUser
 import com.watchlater.data.repository.UserRepository
-
+import com.watchlater.ui.components.UserAvatar
 import com.watchlater.ui.theme.*
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -35,10 +33,20 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class FriendsViewModel(private val repository: UserRepository) : ViewModel() {
+
     private val _uiState = MutableStateFlow(FriendsUiState())
     val uiState: StateFlow<FriendsUiState> = _uiState.asStateFlow()
 
     private var searchJob: Job? = null
+
+    // Track local user id to hide self and manage follow state
+    private var localUserId: String? = null
+
+    init {
+        viewModelScope.launch {
+            localUserId = repository.getLocalUserId()
+        }
+    }
 
     fun onSearchChange(query: String) {
         _uiState.update { it.copy(searchQuery = query) }
@@ -51,9 +59,33 @@ class FriendsViewModel(private val repository: UserRepository) : ViewModel() {
 
         searchJob = viewModelScope.launch {
             _uiState.update { it.copy(isSearching = true) }
-            delay(500)
+            delay(400)
             val results = repository.searchUsers(query)
-            _uiState.update { it.copy(searchResults = results, isSearching = false) }
+                .filter { it.id != localUserId } // hide self
+
+            // Check which ones the local user already follows
+            val followedIds = results.mapNotNull { user ->
+                val lid = localUserId ?: return@mapNotNull null
+                if (repository.isFollowing(lid, user.id)) user.id else null
+            }.toSet()
+
+            _uiState.update {
+                it.copy(searchResults = results, followedIds = followedIds, isSearching = false)
+            }
+        }
+    }
+
+    fun toggleFollow(userId: String) {
+        val lid = localUserId ?: return
+        viewModelScope.launch {
+            val currentlyFollowing = _uiState.value.followedIds.contains(userId)
+            if (currentlyFollowing) {
+                repository.unfollowUser(lid, userId)
+                _uiState.update { it.copy(followedIds = it.followedIds - userId) }
+            } else {
+                repository.followUser(lid, userId)
+                _uiState.update { it.copy(followedIds = it.followedIds + userId) }
+            }
         }
     }
 
@@ -68,6 +100,7 @@ class FriendsViewModel(private val repository: UserRepository) : ViewModel() {
 data class FriendsUiState(
     val searchQuery: String = "",
     val searchResults: List<SupabaseUser> = emptyList(),
+    val followedIds: Set<String> = emptySet(),
     val isSearching: Boolean = false
 )
 
@@ -83,66 +116,73 @@ fun FriendsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Friends", color = TextPrimary, fontWeight = FontWeight.Bold) },
+                title = {
+                    Text(
+                        "Friends",
+                        color = TextPrimary,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Background)
             )
         },
         containerColor = Background
     ) { padding ->
-        FriendsSearchSection(
-            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp),
-            uiState = uiState,
-            onSearchChange = viewModel::onSearchChange,
-            onUserClick = onUserClick
-        )
-    }
-}
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(horizontal = 20.dp)
+        ) {
+            Spacer(modifier = Modifier.height(8.dp))
 
+            OutlinedTextField(
+                value = uiState.searchQuery,
+                onValueChange = viewModel::onSearchChange,
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("Search by username…", color = TextTertiary) },
+                leadingIcon = {
+                    Icon(Icons.Filled.Search, contentDescription = null, tint = TextTertiary)
+                },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = TextSecondary,
+                    unfocusedBorderColor = SurfaceHighlight,
+                    focusedContainerColor = SurfaceElevated,
+                    unfocusedContainerColor = SurfaceElevated,
+                    focusedTextColor = TextPrimary,
+                    unfocusedTextColor = TextPrimary
+                ),
+                shape = RoundedCornerShape(10.dp),
+                singleLine = true
+            )
 
+            Spacer(modifier = Modifier.height(20.dp))
 
-@Composable
-fun FriendsSearchSection(
-    modifier: Modifier = Modifier,
-    uiState: FriendsUiState,
-    onSearchChange: (String) -> Unit,
-    onUserClick: (String) -> Unit
-) {
-    Column(modifier = modifier) {
-        Spacer(modifier = Modifier.height(8.dp))
-        OutlinedTextField(
-            value = uiState.searchQuery,
-            onValueChange = onSearchChange,
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("Search users...", color = TextTertiary) },
-            leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "Search", tint = TextTertiary) },
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = AccentBlue,
-                unfocusedBorderColor = SurfaceHighlight,
-                focusedContainerColor = SurfaceElevated,
-                unfocusedContainerColor = SurfaceElevated,
-                focusedTextColor = TextPrimary,
-                unfocusedTextColor = TextPrimary
-            ),
-            shape = RoundedCornerShape(12.dp)
-        )
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        if (uiState.isSearching) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = AccentBlue)
-            }
-        } else if (uiState.searchQuery.isNotBlank() && uiState.searchResults.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("No users found", color = TextTertiary)
-            }
-        } else {
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(bottom = 100.dp)
-            ) {
-                items(uiState.searchResults) { user ->
-                    UserRow(user = user, onClick = { onUserClick(user.id) })
+            when {
+                uiState.isSearching -> {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = TextSecondary, strokeWidth = 2.dp)
+                    }
+                }
+                uiState.searchQuery.isNotBlank() && uiState.searchResults.isEmpty() -> {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("No users found", color = TextTertiary)
+                    }
+                }
+                else -> {
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        contentPadding = PaddingValues(bottom = 100.dp)
+                    ) {
+                        items(uiState.searchResults, key = { it.id }) { user ->
+                            UserSearchRow(
+                                user = user,
+                                isFollowing = uiState.followedIds.contains(user.id),
+                                onFollowClick = { viewModel.toggleFollow(user.id) },
+                                onClick = { onUserClick(user.id) }
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -150,28 +190,49 @@ fun FriendsSearchSection(
 }
 
 @Composable
-fun UserRow(user: SupabaseUser, onClick: () -> Unit) {
+fun UserSearchRow(
+    user: SupabaseUser,
+    isFollowing: Boolean,
+    onFollowClick: () -> Unit,
+    onClick: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(10.dp))
             .background(SurfaceElevated)
             .clickable(onClick = onClick)
-            .padding(16.dp),
+            .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier.size(48.dp).clip(CircleShape).background(AccentBlue.copy(alpha = 0.2f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(Icons.Filled.Person, contentDescription = "Profile", tint = AccentBlue)
-        }
-        Spacer(modifier = Modifier.width(16.dp))
+        UserAvatar(username = user.username, size = 44.dp, fontSize = 17.sp)
+        Spacer(modifier = Modifier.width(12.dp))
         Text(
-            text = "@${user.username}",
+            text = user.username,
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = TextPrimary
+            fontWeight = FontWeight.SemiBold,
+            color = TextPrimary,
+            modifier = Modifier.weight(1f)
         )
+        // Follow toggle button
+        OutlinedButton(
+            onClick = onFollowClick,
+            shape = RoundedCornerShape(8.dp),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = if (isFollowing) TextTertiary else TextPrimary
+            ),
+            border = androidx.compose.foundation.BorderStroke(
+                1.dp,
+                if (isFollowing) SurfaceHighlight else TextSecondary
+            ),
+            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+            modifier = Modifier.height(32.dp)
+        ) {
+            Text(
+                text = if (isFollowing) "Following" else "Follow",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
     }
 }

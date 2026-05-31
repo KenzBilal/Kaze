@@ -1,26 +1,30 @@
 package com.watchlater.ui.screens.friends
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Movie
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -35,6 +39,7 @@ import com.watchlater.data.repository.SupabaseUser
 import com.watchlater.data.repository.UserRepository
 import com.watchlater.model.MediaType
 import com.watchlater.model.WatchItem
+import com.watchlater.ui.components.UserAvatar
 import com.watchlater.ui.theme.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -53,101 +58,94 @@ class UserProfileViewModel(
     private val _uiState = MutableStateFlow(UserProfileUiState())
     val uiState: StateFlow<UserProfileUiState> = _uiState.asStateFlow()
 
-    init {
-        loadProfile()
-    }
+    init { loadProfile() }
 
     private fun loadProfile() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-
-            // Fetch user profile and their public watchlist in parallel
+            val localId = repository.getLocalUserId()
             val user = repository.getUserById(profileUserId)
             val watchlist = repository.getWatchlistByUserId(profileUserId)
-
-            // Check current follow state from local prefs (simple local tracking for now)
-            val localUserId = repository.getLocalUserId()
+            val followersCount = repository.getFollowersCount(profileUserId)
+            val followingCount = repository.getFollowingCount(profileUserId)
+            val isFollowing = if (localId != null && localId != profileUserId)
+                repository.isFollowing(localId, profileUserId) else false
 
             _uiState.update {
                 it.copy(
                     user = user,
                     watchlist = watchlist,
-                    isLoading = false,
-                    isOwnProfile = localUserId == profileUserId
+                    followersCount = followersCount,
+                    followingCount = followingCount,
+                    isFollowing = isFollowing,
+                    isOwnProfile = localId == profileUserId,
+                    localUserId = localId,
+                    isLoading = false
                 )
             }
         }
     }
 
     fun toggleFollow() {
-        _uiState.update { it.copy(isFollowing = !it.isFollowing) }
-        // TODO: persist to Supabase follows table when implemented
-    }
-
-    /**
-     * Adds a public watchlist item from another user into the local Room database.
-     * Does NOT touch their Supabase record — purely local operation on the viewer's device.
-     */
-    fun addToMyWatchlist(item: PublicWatchlistItem) {
+        val lid = _uiState.value.localUserId ?: return
         viewModelScope.launch {
-            try {
-                val mediaType = try {
-                    MediaType.valueOf(item.type)
-                } catch (e: IllegalArgumentException) {
-                    MediaType.MOVIE
-                }
-
-                // Duplicate check: skip if already in local list
-                val existing = if (item.imdb_id.isNotBlank()) {
-                    dao.getItemByImdbId(item.imdb_id)
-                } else {
-                    dao.getItemByTitleYearType(item.title, item.year, mediaType)
-                }
-
-                if (existing != null) {
-                    // Mark as already added in UI
-                    _uiState.update { state ->
-                        state.copy(addedItemIds = state.addedItemIds + item.title)
-                    }
-                    return@launch
-                }
-
-                val newItem = WatchItem(
-                    title     = item.title,
-                    year      = item.year,
-                    type      = mediaType,
-                    isWatched = false,
-                    rating    = 0f,
-                    notes     = "",
-                    posterUrl = item.poster_url,
-                    genres    = item.genres,
-                    imdbId    = item.imdb_id,
-                    dateAdded = System.currentTimeMillis(),
-                    lastUpdated = System.currentTimeMillis()
-                )
-                dao.insertItem(newItem)
-
-                _uiState.update { state ->
-                    state.copy(addedItemIds = state.addedItemIds + item.title)
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
+            if (_uiState.value.isFollowing) {
+                repository.unfollowUser(lid, profileUserId)
+                _uiState.update { it.copy(isFollowing = false, followersCount = it.followersCount - 1) }
+            } else {
+                repository.followUser(lid, profileUserId)
+                _uiState.update { it.copy(isFollowing = true, followersCount = it.followersCount + 1) }
             }
         }
     }
 
-    class Factory(
-        private val context: android.content.Context,
-        private val userId: String
-    ) : ViewModelProvider.Factory {
+    fun addToMyWatchlist(item: PublicWatchlistItem) {
+        viewModelScope.launch {
+            try {
+                val mediaType = try { MediaType.valueOf(item.type) } catch (e: Exception) { MediaType.MOVIE }
+                val existing = if (item.imdb_id.isNotBlank()) dao.getItemByImdbId(item.imdb_id)
+                               else dao.getItemByTitleYearType(item.title, item.year, mediaType)
+                if (existing != null) {
+                    _uiState.update { s -> s.copy(addedItemIds = s.addedItemIds + item.title) }
+                    return@launch
+                }
+                dao.insertItem(WatchItem(
+                    title = item.title, year = item.year, type = mediaType,
+                    isWatched = false, rating = 0f, notes = "",
+                    posterUrl = item.poster_url, genres = item.genres, imdbId = item.imdb_id,
+                    dateAdded = System.currentTimeMillis(), lastUpdated = System.currentTimeMillis()
+                ))
+                _uiState.update { s -> s.copy(addedItemIds = s.addedItemIds + item.title) }
+            } catch (e: Exception) { e.printStackTrace() }
+        }
+    }
+
+    fun showFollowers() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(listDialogTitle = "Followers", listDialogUsers = null) }
+            val list = repository.getFollowersList(profileUserId)
+            _uiState.update { it.copy(listDialogUsers = list) }
+        }
+    }
+
+    fun showFollowing() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(listDialogTitle = "Following", listDialogUsers = null) }
+            val list = repository.getFollowingList(profileUserId)
+            _uiState.update { it.copy(listDialogUsers = list) }
+        }
+    }
+
+    fun dismissDialog() = _uiState.update { it.copy(listDialogUsers = null, listDialogTitle = null) }
+
+    fun selectItem(item: PublicWatchlistItem) = _uiState.update { it.copy(selectedItem = item) }
+    fun dismissItem() = _uiState.update { it.copy(selectedItem = null) }
+
+    class Factory(private val context: android.content.Context, private val userId: String) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             val db = WatchLaterDatabase.getInstance(context)
-            return UserProfileViewModel(
-                UserRepository(context),
-                db.watchItemDao(),
-                userId
-            ) as T
+            return UserProfileViewModel(UserRepository(context), db.watchItemDao(), userId) as T
         }
     }
 }
@@ -156,9 +154,15 @@ data class UserProfileUiState(
     val isLoading: Boolean = true,
     val user: SupabaseUser? = null,
     val watchlist: List<PublicWatchlistItem> = emptyList(),
+    val followersCount: Int = 0,
+    val followingCount: Int = 0,
     val isFollowing: Boolean = false,
     val isOwnProfile: Boolean = false,
-    val addedItemIds: Set<String> = emptySet()
+    val localUserId: String? = null,
+    val addedItemIds: Set<String> = emptySet(),
+    val listDialogTitle: String? = null,
+    val listDialogUsers: List<SupabaseUser>? = null,
+    val selectedItem: PublicWatchlistItem? = null
 )
 
 // ── Screen ────────────────────────────────────────────────────────────────────
@@ -167,13 +171,33 @@ data class UserProfileUiState(
 @Composable
 fun UserProfileScreen(
     userId: String,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onUserClick: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
-    val viewModel: UserProfileViewModel = viewModel(
-        factory = UserProfileViewModel.Factory(context, userId)
-    )
+    val viewModel: UserProfileViewModel = viewModel(factory = UserProfileViewModel.Factory(context, userId))
     val uiState by viewModel.uiState.collectAsState()
+
+    // Followers/Following dialog
+    if (uiState.listDialogTitle != null) {
+        UserListDialog(
+            title = uiState.listDialogTitle!!,
+            users = uiState.listDialogUsers,
+            onUserClick = { u -> viewModel.dismissDialog(); onUserClick(u.id) },
+            onDismiss = viewModel::dismissDialog
+        )
+    }
+
+    // Item detail bottom sheet
+    uiState.selectedItem?.let { item ->
+        ItemDetailSheet(
+            item = item,
+            isAdded = uiState.addedItemIds.contains(item.title),
+            isOwnProfile = uiState.isOwnProfile,
+            onAdd = { viewModel.addToMyWatchlist(item) },
+            onDismiss = viewModel::dismissItem
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -190,74 +214,71 @@ fun UserProfileScreen(
         containerColor = Background
     ) { padding ->
         when {
-            uiState.isLoading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize().padding(padding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = AccentBlue)
-                }
+            uiState.isLoading -> Box(Modifier.fillMaxSize().padding(padding), Alignment.Center) {
+                CircularProgressIndicator(color = TextSecondary, strokeWidth = 2.dp)
             }
-            uiState.user == null -> {
-                Box(
-                    modifier = Modifier.fillMaxSize().padding(padding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("User not found", color = TextTertiary)
-                }
+            uiState.user == null -> Box(Modifier.fillMaxSize().padding(padding), Alignment.Center) {
+                Text("User not found", color = TextTertiary)
             }
             else -> {
+                val user = uiState.user!!
                 LazyColumn(
                     modifier = Modifier.fillMaxSize().padding(padding),
                     contentPadding = PaddingValues(bottom = 100.dp)
                 ) {
-                    // Profile Header
+                    // Header
                     item {
                         ProfileHeader(
-                            user = uiState.user!!,
+                            user = user,
+                            followersCount = uiState.followersCount,
+                            followingCount = uiState.followingCount,
                             isFollowing = uiState.isFollowing,
                             isOwnProfile = uiState.isOwnProfile,
-                            onFollowClick = viewModel::toggleFollow
+                            onFollowClick = viewModel::toggleFollow,
+                            onFollowersClick = viewModel::showFollowers,
+                            onFollowingClick = viewModel::showFollowing
                         )
                     }
 
-                    // Watchlist section title
+                    // Watchlist header
                     item {
                         Text(
-                            text = "Watchlist",
-                            style = MaterialTheme.typography.titleMedium,
+                            "Watchlist",
                             color = TextSecondary,
                             fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+                            fontSize = 13.sp,
+                            letterSpacing = 1.sp,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                         )
                     }
 
-                    if (uiState.watchlist.isEmpty()) {
-                        item {
+                    // Pinterest grid
+                    item {
+                        if (uiState.watchlist.isEmpty()) {
                             Box(
+                                Modifier.fillMaxWidth().padding(16.dp)
+                                    .clip(RoundedCornerShape(12.dp)).background(SurfaceElevated)
+                                    .padding(24.dp),
+                                Alignment.Center
+                            ) { Text("No items yet", color = TextTertiary) }
+                        } else {
+                            LazyVerticalStaggeredGrid(
+                                columns = StaggeredGridCells.Fixed(2),
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 20.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(SurfaceElevated)
-                                    .padding(24.dp),
-                                contentAlignment = Alignment.Center
+                                    .heightIn(max = 2000.dp) // nested scroll workaround
+                                    .padding(horizontal = 12.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalItemSpacing = 8.dp,
+                                userScrollEnabled = false
                             ) {
-                                Text(
-                                    "No public items yet.",
-                                    color = TextTertiary,
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
+                                items(uiState.watchlist) { item ->
+                                    PinterestCard(
+                                        item = item,
+                                        onClick = { viewModel.selectItem(item) }
+                                    )
+                                }
                             }
-                        }
-                    } else {
-                        items(uiState.watchlist) { item ->
-                            PublicWatchlistItemRow(
-                                item = item,
-                                isAdded = uiState.addedItemIds.contains(item.title),
-                                isOwnProfile = uiState.isOwnProfile,
-                                onAddClick = { viewModel.addToMyWatchlist(item) }
-                            )
                         }
                     }
                 }
@@ -266,159 +287,243 @@ fun UserProfileScreen(
     }
 }
 
+// ── Profile Header ────────────────────────────────────────────────────────────
+
 @Composable
 private fun ProfileHeader(
     user: SupabaseUser,
+    followersCount: Int,
+    followingCount: Int,
     isFollowing: Boolean,
     isOwnProfile: Boolean,
-    onFollowClick: () -> Unit
+    onFollowClick: () -> Unit,
+    onFollowersClick: () -> Unit,
+    onFollowingClick: () -> Unit
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 16.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Box(
-            modifier = Modifier
-                .size(90.dp)
-                .clip(CircleShape)
-                .background(AccentBlue.copy(alpha = 0.15f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                Icons.Filled.Person,
-                contentDescription = "Profile",
-                tint = AccentBlue,
-                modifier = Modifier.size(44.dp)
-            )
-        }
-        Spacer(modifier = Modifier.height(12.dp))
-        Text(
-            text = "@${user.username}",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            color = TextPrimary
-        )
-        Spacer(modifier = Modifier.height(16.dp))
+        UserAvatar(username = user.username, size = 80.dp, fontSize = 30.sp)
+        Spacer(Modifier.height(12.dp))
+        Text(user.username, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
 
-        // Only show Follow button if not own profile
+        Spacer(Modifier.height(16.dp))
+
+        // Followers / Following counts
+        Row(horizontalArrangement = Arrangement.spacedBy(32.dp)) {
+            StatChip(count = followersCount, label = "Followers", onClick = onFollowersClick)
+            StatChip(count = followingCount, label = "Following", onClick = onFollowingClick)
+        }
+
+        // Fav fields
+        if (!user.fav_movie.isNullOrBlank() || !user.fav_series.isNullOrBlank() || !user.fav_genre.isNullOrBlank()) {
+            Spacer(Modifier.height(14.dp))
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                user.fav_movie?.takeIf { it.isNotBlank() }?.let {
+                    Text("Fav Movie: $it", color = TextSecondary, fontSize = 13.sp)
+                }
+                user.fav_series?.takeIf { it.isNotBlank() }?.let {
+                    Text("Fav Series: $it", color = TextSecondary, fontSize = 13.sp)
+                }
+                user.fav_genre?.takeIf { it.isNotBlank() }?.let {
+                    Text("Genre: $it", color = TextTertiary, fontSize = 12.sp)
+                }
+            }
+        }
+
         if (!isOwnProfile) {
+            Spacer(Modifier.height(16.dp))
             Button(
                 onClick = onFollowClick,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isFollowing) SurfaceElevated else AccentBlue,
+                    containerColor = if (isFollowing) SurfaceElevated else TextPrimary,
                     contentColor = if (isFollowing) TextPrimary else Background
                 ),
-                shape = RoundedCornerShape(10.dp),
-                modifier = Modifier.width(130.dp)
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.width(120.dp),
+                elevation = ButtonDefaults.buttonElevation(0.dp)
             ) {
-                Text(
-                    text = if (isFollowing) "Following" else "Follow",
-                    fontWeight = FontWeight.SemiBold
-                )
+                Text(if (isFollowing) "Following" else "Follow", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
             }
         }
-        Spacer(modifier = Modifier.height(8.dp))
+
+        Spacer(Modifier.height(8.dp))
         HorizontalDivider(color = SurfaceHighlight)
     }
 }
 
 @Composable
-private fun PublicWatchlistItemRow(
-    item: PublicWatchlistItem,
-    isAdded: Boolean,
-    isOwnProfile: Boolean,
-    onAddClick: () -> Unit
-) {
-    Row(
+private fun StatChip(count: Int, label: String, onClick: () -> Unit) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.clickable(onClick = onClick)
+    ) {
+        Text("$count", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+        Text(label, fontSize = 12.sp, color = TextTertiary)
+    }
+}
+
+// ── Pinterest Card ────────────────────────────────────────────────────────────
+
+@Composable
+private fun PinterestCard(item: PublicWatchlistItem, onClick: () -> Unit) {
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 5.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(10.dp))
             .background(SurfaceElevated)
-            .padding(12.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .clickable(onClick = onClick)
     ) {
-        // Poster thumbnail
-        Box(
-            modifier = Modifier
-                .size(width = 52.dp, height = 76.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(SurfaceHighlight),
-            contentAlignment = Alignment.Center
-        ) {
-            if (!item.poster_url.isNullOrBlank()) {
-                AsyncImage(
-                    model = item.poster_url,
-                    contentDescription = item.title,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-            } else {
-                Icon(
-                    imageVector = if (item.type == "SERIES") Icons.Filled.Tv else Icons.Filled.Movie,
-                    contentDescription = null,
-                    tint = TextTertiary,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.width(12.dp))
-
-        // Title + info
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = item.title,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = TextPrimary,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+        if (!item.poster_url.isNullOrBlank()) {
+            AsyncImage(
+                model = item.poster_url,
+                contentDescription = item.title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxWidth().aspectRatio(2f / 3f)
+                    .clip(RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp))
             )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "${item.year}  ·  ${item.type.lowercase().replaceFirstChar { it.uppercase() }}",
-                style = MaterialTheme.typography.bodySmall,
-                color = TextTertiary,
-                fontSize = 12.sp
-            )
-            if (item.notes.isNotBlank()) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "\"${item.notes}\"",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    fontSize = 11.sp
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.width(8.dp))
-
-        // Add to my watchlist button — NOT shown on own profile
-        if (!isOwnProfile) {
-            IconButton(
-                onClick = onAddClick,
-                enabled = !isAdded,
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .background(
-                        if (isAdded) AccentBlue.copy(alpha = 0.15f)
-                        else AccentBlue.copy(alpha = 0.1f)
-                    )
+        } else {
+            Box(
+                Modifier.fillMaxWidth().height(120.dp)
+                    .clip(RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp))
+                    .background(SurfaceHighlight),
+                Alignment.Center
             ) {
                 Icon(
-                    imageVector = if (isAdded) Icons.Filled.Check else Icons.Filled.Add,
-                    contentDescription = if (isAdded) "Already added" else "Add to my watchlist",
-                    tint = AccentBlue,
-                    modifier = Modifier.size(18.dp)
+                    if (item.type == "SERIES") Icons.Filled.Tv else Icons.Filled.Movie,
+                    null, tint = TextTertiary, modifier = Modifier.size(28.dp)
                 )
+            }
+        }
+        Column(Modifier.padding(8.dp)) {
+            Text(
+                item.title, fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
+                color = TextPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                "${item.year}", fontSize = 11.sp, color = TextTertiary,
+                modifier = Modifier.padding(top = 2.dp)
+            )
+            if (item.rating > 0f) {
+                Text("★ ${item.rating}", fontSize = 11.sp, color = TextSecondary)
             }
         }
     }
+}
+
+// ── Item Detail Bottom Sheet ──────────────────────────────────────────────────
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ItemDetailSheet(
+    item: PublicWatchlistItem,
+    isAdded: Boolean,
+    isOwnProfile: Boolean,
+    onAdd: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = SurfaceContainer,
+        dragHandle = { Box(Modifier.padding(top = 12.dp, bottom = 8.dp).width(36.dp).height(4.dp).clip(RoundedCornerShape(2.dp)).background(SurfaceHighlight)) }
+    ) {
+        Row(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+            if (!item.poster_url.isNullOrBlank()) {
+                AsyncImage(
+                    model = item.poster_url, contentDescription = item.title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.width(90.dp).height(130.dp).clip(RoundedCornerShape(8.dp))
+                )
+                Spacer(Modifier.width(14.dp))
+            }
+            Column(Modifier.weight(1f)) {
+                Text(item.title, fontSize = 17.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                Spacer(Modifier.height(4.dp))
+                Text("${item.year}  ·  ${item.type.lowercase().replaceFirstChar { it.uppercase() }}", color = TextTertiary, fontSize = 13.sp)
+                if (item.genres.isNotBlank()) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(item.genres, color = TextSecondary, fontSize = 12.sp)
+                }
+                if (item.season != null && item.episode != null) {
+                    Spacer(Modifier.height(4.dp))
+                    Text("S${item.season} E${item.episode}", color = TextSecondary, fontSize = 12.sp)
+                }
+                if (item.rating > 0f) {
+                    Spacer(Modifier.height(4.dp))
+                    Text("★ ${item.rating} / 10", color = TextSecondary, fontSize = 12.sp)
+                }
+            }
+        }
+        if (item.notes.isNotBlank()) {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "\"${item.notes}\"", color = TextSecondary, fontSize = 13.sp,
+                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+        }
+        if (!isOwnProfile) {
+            Spacer(Modifier.height(16.dp))
+            Button(
+                onClick = onAdd, enabled = !isAdded,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).height(48.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isAdded) SurfaceElevated else TextPrimary,
+                    contentColor = if (isAdded) TextTertiary else Background
+                ),
+                shape = RoundedCornerShape(8.dp),
+                elevation = ButtonDefaults.buttonElevation(0.dp)
+            ) {
+                Icon(if (isAdded) Icons.Filled.Check else Icons.Filled.Add, null, Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(if (isAdded) "Added to watchlist" else "Add to my watchlist", fontWeight = FontWeight.SemiBold)
+            }
+        }
+        Spacer(Modifier.height(32.dp))
+    }
+}
+
+// ── User List Dialog ──────────────────────────────────────────────────────────
+
+@Composable
+private fun UserListDialog(
+    title: String,
+    users: List<SupabaseUser>?,
+    onUserClick: (SupabaseUser) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = SurfaceContainer,
+        title = { Text(title, color = TextPrimary, fontWeight = FontWeight.Bold) },
+        text = {
+            if (users == null) {
+                Box(Modifier.fillMaxWidth().height(80.dp), Alignment.Center) {
+                    CircularProgressIndicator(color = TextSecondary, strokeWidth = 2.dp)
+                }
+            } else if (users.isEmpty()) {
+                Text("Nobody here yet", color = TextTertiary, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+            } else {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(users, key = { it.id }) { user ->
+                        Row(
+                            Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))
+                                .clickable { onUserClick(user) }.padding(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            UserAvatar(username = user.username, size = 36.dp, fontSize = 14.sp)
+                            Spacer(Modifier.width(10.dp))
+                            Text(user.username, color = TextPrimary, fontWeight = FontWeight.Medium)
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("Close", color = TextSecondary) }
+        }
+    )
 }
