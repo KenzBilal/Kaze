@@ -24,7 +24,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.watchlater.data.repository.SupabaseUser
 import com.watchlater.data.repository.UserRepository
-import com.watchlater.ui.components.WatchLaterTopBar
+
 import com.watchlater.ui.theme.*
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -81,7 +81,12 @@ fun FriendsScreen(
     val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
-        topBar = { WatchLaterTopBar(title = "Friends", actions = {}) },
+        topBar = {
+            TopAppBar(
+                title = { Text("Friends", color = TextPrimary, fontWeight = FontWeight.Bold) },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Background)
+            )
+        },
         containerColor = Background
     ) { padding ->
         FriendsSearchSection(
