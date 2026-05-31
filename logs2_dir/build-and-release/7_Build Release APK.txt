@@ -1,0 +1,114 @@
+﻿2026-05-31T09:06:55.2152279Z ##[group]Run ./gradlew assembleRelease
+2026-05-31T09:06:55.2152657Z [36;1m./gradlew assembleRelease[0m
+2026-05-31T09:06:55.2179622Z shell: /usr/bin/bash -e {0}
+2026-05-31T09:06:55.2179917Z env:
+2026-05-31T09:06:55.2180263Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.19-10/x64
+2026-05-31T09:06:55.2180795Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.19-10/x64
+2026-05-31T09:06:55.2181396Z   KEYSTORE_PATH: /home/runner/work/Kaze/Kaze/***-release.jks
+2026-05-31T09:06:55.2181804Z   KEYSTORE_PASSWORD: ***
+2026-05-31T09:06:55.2182106Z   KEY_ALIAS: ***
+2026-05-31T09:06:55.2182374Z   KEY_PASSWORD: ***
+2026-05-31T09:06:55.2182629Z ##[endgroup]
+2026-05-31T09:06:56.7145802Z Downloading https://services.gradle.org/distributions/gradle-8.9-bin.zip
+2026-05-31T09:06:59.0555992Z ............10%.............20%.............30%.............40%.............50%.............60%.............70%.............80%.............90%.............100%
+2026-05-31T09:07:00.3629985Z 
+2026-05-31T09:07:00.3630924Z Welcome to Gradle 8.9!
+2026-05-31T09:07:00.3631420Z 
+2026-05-31T09:07:00.3632056Z Here are the highlights of this release:
+2026-05-31T09:07:00.3638060Z  - Enhanced Error and Warning Messages
+2026-05-31T09:07:00.3638949Z  - IDE Integration Improvements
+2026-05-31T09:07:00.3639550Z  - Daemon JVM Information
+2026-05-31T09:07:00.3639849Z 
+2026-05-31T09:07:00.3640188Z For more details see https://docs.gradle.org/8.9/release-notes.html
+2026-05-31T09:07:00.3640686Z 
+2026-05-31T09:07:00.5621743Z Starting a Gradle Daemon (subsequent builds will be faster)
+2026-05-31T09:07:03.2620557Z Calculating task graph as no cached configuration is available for tasks: assembleRelease
+2026-05-31T09:08:21.2659595Z > Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+2026-05-31T09:08:21.2664020Z > Task :app:preBuild UP-TO-DATE
+2026-05-31T09:08:21.2665517Z > Task :app:preReleaseBuild UP-TO-DATE
+2026-05-31T09:08:21.3658186Z > Task :app:processReleaseGoogleServices
+2026-05-31T09:08:21.4654996Z > Task :app:generateReleaseResValues
+2026-05-31T09:08:21.4682550Z > Task :app:generateReleaseBuildConfig
+2026-05-31T09:08:21.4713687Z > Task :app:buildKotlinToolingMetadata
+2026-05-31T09:08:21.4743496Z > Task :app:generateReleaseResources
+2026-05-31T09:08:21.4744138Z > Task :app:createReleaseCompatibleScreenManifests
+2026-05-31T09:08:21.6618703Z > Task :app:packageReleaseResources
+2026-05-31T09:08:24.9644298Z > Task :app:parseReleaseLocalResources
+2026-05-31T09:08:24.9673486Z > Task :app:extractDeepLinksRelease
+2026-05-31T09:08:25.1624182Z > Task :app:mapReleaseSourceSetPaths
+2026-05-31T09:08:25.4668721Z > Task :app:checkReleaseAarMetadata
+2026-05-31T09:08:25.4759738Z > Task :app:extractProguardFiles
+2026-05-31T09:08:25.4833646Z > Task :app:mergeReleaseJniLibFolders
+2026-05-31T09:08:26.4631824Z > Task :app:javaPreCompileRelease
+2026-05-31T09:08:26.8635771Z > Task :app:processReleaseMainManifest
+2026-05-31T09:08:27.0618320Z > Task :app:processReleaseManifest
+2026-05-31T09:08:27.1644017Z > Task :app:mergeReleaseNativeLibs
+2026-05-31T09:08:29.1628810Z > Task :app:processReleaseManifestForPackage
+2026-05-31T09:08:29.7660153Z 
+2026-05-31T09:08:29.7743929Z > Task :app:stripReleaseDebugSymbols
+2026-05-31T09:08:29.7745014Z Unable to strip the following libraries, packaging them as they are: libandroidx.graphics.path.so.
+2026-05-31T09:08:29.7773203Z 
+2026-05-31T09:08:29.7803553Z > Task :app:checkReleaseDuplicateClasses
+2026-05-31T09:08:29.7863551Z > Task :app:mergeReleaseStartupProfile
+2026-05-31T09:08:29.7923451Z > Task :app:mergeReleaseShaders
+2026-05-31T09:08:29.8656292Z > Task :app:extractReleaseNativeSymbolTables
+2026-05-31T09:08:29.8683451Z > Task :app:compileReleaseShaders NO-SOURCE
+2026-05-31T09:08:29.8684070Z > Task :app:mergeReleaseNativeDebugMetadata NO-SOURCE
+2026-05-31T09:08:29.8684659Z > Task :app:generateReleaseAssets UP-TO-DATE
+2026-05-31T09:08:29.9657372Z > Task :app:extractReleaseVersionControlInfo
+2026-05-31T09:08:30.1665255Z > Task :app:mergeReleaseArtProfile
+2026-05-31T09:08:30.1693567Z > Task :app:validateSigningRelease
+2026-05-31T09:08:30.1723610Z > Task :app:writeReleaseAppMetadata
+2026-05-31T09:08:30.2634028Z > Task :app:writeReleaseSigningConfigVersions
+2026-05-31T09:08:30.2663454Z > Task :app:mergeReleaseAssets
+2026-05-31T09:08:30.2663982Z > Task :app:compressReleaseAssets
+2026-05-31T09:08:30.2664487Z > Task :app:collectReleaseDependencies
+2026-05-31T09:08:30.3645151Z > Task :app:sdkReleaseDependencyData
+2026-05-31T09:08:31.1631227Z > Task :app:mergeReleaseResources
+2026-05-31T09:08:31.8625274Z > Task :app:processReleaseResources
+2026-05-31T09:08:32.2644355Z > Task :app:convertLinkedResourcesToProtoRelease
+2026-05-31T09:08:48.4618019Z > Task :app:kspReleaseKotlin
+2026-05-31T09:08:57.8628028Z e: file:///home/runner/work/Kaze/Kaze/app/src/main/java/com/***/ui/screens/settings/SettingsScreen.kt:140:91 Unresolved reference 'from'.
+2026-05-31T09:08:57.8628693Z 
+2026-05-31T09:08:57.8631008Z e: file:///home/runner/work/Kaze/Kaze/app/src/main/java/com/***/ui/screens/settings/SettingsScreen.kt:141:47 Unresolved reference 'filter'.
+2026-05-31T09:08:57.8632325Z > Task :app:compileReleaseKotlin
+2026-05-31T09:08:57.8633309Z e: file:///home/runner/work/Kaze/Kaze/app/src/main/java/com/***/ui/screens/settings/SettingsScreen.kt:141:56 Unresolved reference 'eq'.
+2026-05-31T09:08:57.8635043Z e: file:///home/runner/work/Kaze/Kaze/app/src/main/java/com/***/ui/screens/settings/SettingsScreen.kt:145:55 Cannot infer type for this parameter. Please specify it explicitly.
+2026-05-31T09:08:57.8636465Z e: file:///home/runner/work/Kaze/Kaze/app/src/main/java/com/***/ui/screens/settings/SettingsScreen.kt:146:56 Suspension functions can only be called within coroutine body.
+2026-05-31T09:08:57.8637494Z e: file:///home/runner/work/Kaze/Kaze/app/src/main/java/com/***/ui/screens/settings/SettingsScreen.kt:146:81 Unresolved reference 'title'.
+2026-05-31T09:08:57.8638427Z e: file:///home/runner/work/Kaze/Kaze/app/src/main/java/com/***/ui/screens/settings/SettingsScreen.kt:146:90 Unresolved reference 'year'.
+2026-05-31T09:08:57.8639360Z e: file:///home/runner/work/Kaze/Kaze/app/src/main/java/com/***/ui/screens/settings/SettingsScreen.kt:146:131 Unresolved reference 'type'.
+2026-05-31T09:08:57.8640406Z e: file:///home/runner/work/Kaze/Kaze/app/src/main/java/com/***/ui/screens/settings/SettingsScreen.kt:148:45 Suspension functions can only be called within coroutine body.
+2026-05-31T09:08:57.8641462Z e: file:///home/runner/work/Kaze/Kaze/app/src/main/java/com/***/ui/screens/settings/SettingsScreen.kt:150:60 Unresolved reference 'imdb_id'.
+2026-05-31T09:08:57.8642647Z e: file:///home/runner/work/Kaze/Kaze/app/src/main/java/com/***/ui/screens/settings/SettingsScreen.kt:151:59 Unresolved reference 'title'.
+2026-05-31T09:08:57.8643784Z e: file:///home/runner/work/Kaze/Kaze/app/src/main/java/com/***/ui/screens/settings/SettingsScreen.kt:152:58 Unresolved reference 'year'.
+2026-05-31T09:08:57.8644717Z e: file:///home/runner/work/Kaze/Kaze/app/src/main/java/com/***/ui/screens/settings/SettingsScreen.kt:153:91 Unresolved reference 'type'.
+2026-05-31T09:08:57.8645655Z e: file:///home/runner/work/Kaze/Kaze/app/src/main/java/com/***/ui/screens/settings/SettingsScreen.kt:154:63 Unresolved reference 'is_watched'.
+2026-05-31T09:08:57.9619125Z e: file:///home/runner/work/Kaze/Kaze/app/src/main/java/com/***/ui/screens/settings/SettingsScreen.kt:155:60 Unresolved reference 'rating'.
+2026-05-31T09:08:57.9620798Z e: file:///home/runner/work/Kaze/Kaze/app/src/main/java/com/***/ui/screens/settings/SettingsScreen.kt:156:60 Unresolved reference 'season'.
+2026-05-31T09:08:57.9621990Z e: file:///home/runner/work/Kaze/Kaze/app/src/main/java/com/***/ui/screens/settings/SettingsScreen.kt:157:61 Unresolved reference 'episode'.
+2026-05-31T09:08:57.9633678Z 
+2026-05-31T09:08:57.9634233Z > Task :app:compileReleaseKotlin FAILED
+2026-05-31T09:08:57.9634804Z 37 actionable tasks: 37 executed
+2026-05-31T09:08:57.9635276Z Configuration cache entry stored.
+2026-05-31T09:08:57.9641382Z e: file:///home/runner/work/Kaze/Kaze/app/src/main/java/com/***/ui/screens/settings/SettingsScreen.kt:158:59 Unresolved reference 'notes'.
+2026-05-31T09:08:57.9645877Z e: file:///home/runner/work/Kaze/Kaze/app/src/main/java/com/***/ui/screens/settings/SettingsScreen.kt:159:63 Unresolved reference 'poster_url'.
+2026-05-31T09:08:57.9647558Z e: file:///home/runner/work/Kaze/Kaze/app/src/main/java/com/***/ui/screens/settings/SettingsScreen.kt:160:60 Unresolved reference 'genres'.
+2026-05-31T09:08:57.9649173Z e: file:///home/runner/work/Kaze/Kaze/app/src/main/java/com/***/ui/screens/settings/SettingsScreen.kt:161:63 Unresolved reference 'date_added'.
+2026-05-31T09:08:57.9650836Z e: file:///home/runner/work/Kaze/Kaze/app/src/main/java/com/***/ui/screens/settings/SettingsScreen.kt:267:14 Unresolved reference 'clickable'.
+2026-05-31T09:08:57.9651722Z 
+2026-05-31T09:08:57.9651933Z FAILURE: Build failed with an exception.
+2026-05-31T09:08:57.9652274Z 
+2026-05-31T09:08:57.9652428Z * What went wrong:
+2026-05-31T09:08:57.9652909Z Execution failed for task ':app:compileReleaseKotlin'.
+2026-05-31T09:08:57.9654386Z > A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+2026-05-31T09:08:57.9655580Z    > Compilation error. See log for more details
+2026-05-31T09:08:57.9655943Z 
+2026-05-31T09:08:57.9656085Z * Try:
+2026-05-31T09:08:57.9656518Z > Run with --stacktrace option to get the stack trace.
+2026-05-31T09:08:57.9657168Z > Run with --info or --debug option to get more log output.
+2026-05-31T09:08:57.9657763Z > Run with --scan to get full insights.
+2026-05-31T09:08:57.9658293Z > Get more help at https://help.gradle.org.
+2026-05-31T09:08:57.9658643Z 
+2026-05-31T09:08:57.9658806Z BUILD FAILED in 2m 1s
+2026-05-31T09:08:58.4216321Z ##[error]Process completed with exit code 1.

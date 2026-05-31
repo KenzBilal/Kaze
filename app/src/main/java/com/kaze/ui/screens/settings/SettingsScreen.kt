@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material.icons.filled.CloudDownload
+import androidx.compose.foundation.clickable
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,6 +26,7 @@ import com.kaze.utils.UserPreferences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import io.github.jan.supabase.postgrest.from
 
 @Serializable
 data class RemoteWatchItem(
@@ -142,7 +144,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                                     .decodeList<RemoteWatchItem>()
                                     
                                 val dao = db.watchItemDao()
-                                remoteItems.forEach { r ->
+                                for (r in remoteItems) {
                                     val existing = dao.getItemByTitleYearType(r.title, r.year, com.kaze.model.MediaType.valueOf(r.type))
                                     if (existing == null) {
                                         dao.insertItem(
