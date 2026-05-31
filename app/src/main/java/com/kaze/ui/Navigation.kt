@@ -190,7 +190,7 @@ fun WatchLaterNavGraph(
         ) { backStack ->
             val itemId = backStack.arguments!!.getLong("itemId")
             val detailVm: DetailViewModel = viewModel(
-                factory = DetailViewModel.Factory(repo, app.container.seriesRepository, itemId)
+                factory = DetailViewModel.Factory(repo, app.container.seriesRepository, app.container.userRepository, itemId)
             )
             DetailScreen(
                 viewModel = detailVm,

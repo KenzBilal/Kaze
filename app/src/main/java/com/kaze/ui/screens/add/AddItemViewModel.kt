@@ -186,9 +186,10 @@ class AddItemViewModel(
             )
             repository.saveItem(item)
 
-            // Post activity
+            // Push to cloud + post activity
             val userId = userRepository.getLocalUserId()
             if (userId != null) {
+                userRepository.pushWatchItem(userId, item)
                 activityRepository.postActivity(
                     ActivityFeedEntry(
                         user_id = userId,

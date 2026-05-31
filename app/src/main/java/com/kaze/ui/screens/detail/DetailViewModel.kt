@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.kaze.data.repository.EpisodeUiItem
 import com.kaze.data.repository.EpisodeValidationResult
 import com.kaze.data.repository.SeriesRepository
+import com.kaze.data.repository.UserRepository
 import com.kaze.data.repository.WatchItemRepository
 import com.kaze.model.MediaType
 import com.kaze.model.WatchItem
@@ -38,6 +39,7 @@ data class DetailUiState(
 class DetailViewModel(
     private val repository: WatchItemRepository,
     private val seriesRepository: SeriesRepository,
+    private val userRepository: UserRepository,
     private val itemId: Long
 ) : ViewModel() {
 
@@ -212,6 +214,12 @@ class DetailViewModel(
             lastUpdated = System.currentTimeMillis()
         )
         repository.updateItem(updated)
+        // Sync position update to cloud
+        viewModelScope.launch {
+            userRepository.getLocalUserId()?.let { uid ->
+                userRepository.pushWatchItem(uid, updated)
+            }
+        }
         _uiState.update {
             it.copy(
                 currentSeason  = targetSeason,
@@ -259,6 +267,10 @@ class DetailViewModel(
                 lastUpdated = System.currentTimeMillis()
             )
             repository.updateItem(updated)
+            // Sync save to cloud
+            userRepository.getLocalUserId()?.let { uid ->
+                userRepository.pushWatchItem(uid, updated)
+            }
             _uiState.update { it.copy(isSaving = false, item = updated) }
             _savedEvent.emit(Unit)
             onSuccess?.invoke()
@@ -270,6 +282,10 @@ class DetailViewModel(
         viewModelScope.launch {
             seriesRepository.deleteProgress(item.id)
             repository.deleteItem(item)
+            // Remove from cloud
+            userRepository.getLocalUserId()?.let { uid ->
+                userRepository.deleteFromWatchlist(uid, item)
+            }
             _uiState.update { it.copy(isDeleted = true) }
             onSuccess()
         }
@@ -278,10 +294,11 @@ class DetailViewModel(
     class Factory(
         private val repository: WatchItemRepository,
         private val seriesRepository: SeriesRepository,
+        private val userRepository: UserRepository,
         private val itemId: Long
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-            DetailViewModel(repository, seriesRepository, itemId) as T
+            DetailViewModel(repository, seriesRepository, userRepository, itemId) as T
     }
 }

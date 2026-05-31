@@ -346,6 +346,27 @@ class UserRepository(private val context: Context) {
 
     // ── Watchlist Sync ────────────────────────────────────────────────────────
 
+    suspend fun pushWatchItem(userId: String, item: WatchItem) {
+        syncWatchlist(userId, listOf(item))
+    }
+
+    suspend fun deleteFromWatchlist(userId: String, item: WatchItem) {
+        withContext(Dispatchers.IO) {
+            try {
+                SupabaseApi.client.from("public_watchlist").delete {
+                    filter {
+                        eq("user_id", userId)
+                        eq("title", item.title)
+                        eq("year", item.year)
+                        eq("type", item.type.name)
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
     suspend fun syncWatchlist(userId: String, items: List<WatchItem>) {
         if (items.isEmpty()) return
         withContext(Dispatchers.IO) {
