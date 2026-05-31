@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material.icons.filled.CloudDownload
+import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -54,6 +55,7 @@ fun SettingsScreen(onBack: () -> Unit) {
     var hapticEnabled by remember { mutableStateOf(prefs.hapticEnabled) }
     var soundEnabled by remember { mutableStateOf(prefs.soundEnabled) }
     var isSyncing by remember { mutableStateOf(false) }
+    var isBackingUp by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -169,6 +171,33 @@ fun SettingsScreen(onBack: () -> Unit) {
                                 e.printStackTrace()
                             } finally {
                                 isSyncing = false
+                            }
+                        }
+                    }
+                )
+            }
+
+            item { Spacer(Modifier.height(10.dp)) }
+
+            item {
+                SettingsActionRow(
+                    icon = Icons.Filled.CloudUpload,
+                    title = "Cloud Backup",
+                    subtitle = if (isBackingUp) "Uploading..." else "Upload local data to cloud",
+                    onClick = {
+                        if (isBackingUp) return@SettingsActionRow
+                        isBackingUp = true
+                        scope.launch(Dispatchers.IO) {
+                            try {
+                                val db = com.kaze.data.local.WatchLaterDatabase.getInstance(context)
+                                val userRepo = com.kaze.data.repository.UserRepository(context)
+                                val userId = userRepo.getLocalUserId() ?: return@launch
+                                val allItems = db.watchItemDao().getAllItemsOnce()
+                                userRepo.syncWatchlist(userId, allItems)
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            } finally {
+                                isBackingUp = false
                             }
                         }
                     }
