@@ -54,7 +54,8 @@ fun validateUsername(name: String): String? = when {
 
 class SetUsernameViewModel(
     private val userRepository: UserRepository,
-    private val dao: com.kaze.data.local.WatchItemDao
+    private val dao: com.kaze.data.local.WatchItemDao,
+    private val backupManager: com.kaze.utils.BackupManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SetUsernameUiState())
@@ -92,6 +93,11 @@ class SetUsernameViewModel(
             if (userId != null) {
                 val localItems = dao.getAllItemsOnce()
                 userRepository.syncWatchlist(userId, localItems)
+                try {
+                    backupManager.restoreFromCloud(userId)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             }
 
             _uiState.update { it.copy(isLoading = false) }
@@ -103,7 +109,10 @@ class SetUsernameViewModel(
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             val db = WatchLaterDatabase.getInstance(context)
-            return SetUsernameViewModel(UserRepository(context), db.watchItemDao()) as T
+            val userRepo = UserRepository(context)
+            val repo = com.kaze.data.repository.WatchItemRepository(db.watchItemDao(), db.episodeProgressDao())
+            val backupManager = com.kaze.utils.BackupManager(context, repo, userRepo)
+            return SetUsernameViewModel(userRepo, db.watchItemDao(), backupManager) as T
         }
     }
 }
