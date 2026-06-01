@@ -119,7 +119,6 @@ fun DetailScreen(
                     }
                 },
                 actions = {
-                actions = {
                     if (!uiState.isPreview) {
                         // Mark series watched button (shows dialog)
                         if (uiState.item?.type == MediaType.SERIES && uiState.totalSeasons > 0) {
