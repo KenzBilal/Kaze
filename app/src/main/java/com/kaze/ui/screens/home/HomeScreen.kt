@@ -19,6 +19,7 @@ import com.kaze.ui.components.*
 import com.kaze.ui.theme.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
+import androidx.compose.ui.text.font.FontWeight
 
 @Composable
 fun HomeScreen(
@@ -36,6 +37,7 @@ fun HomeScreen(
     val tabs = listOf("TO WATCH", "WATCHED")
     var showSortSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var showMarkWatchedDialog by remember { mutableStateOf<WatchItem?>(null) }
 
     Scaffold(
         containerColor = Background,
@@ -153,7 +155,7 @@ fun HomeScreen(
         }
     }
 
-    var showMarkWatchedDialog by remember { mutableStateOf<WatchItem?>(null) }
+
     if (showMarkWatchedDialog != null) {
         val itemToMark = showMarkWatchedDialog!!
         AlertDialog(

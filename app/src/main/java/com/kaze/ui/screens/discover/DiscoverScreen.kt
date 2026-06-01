@@ -66,7 +66,7 @@ class DiscoverViewModel(
             }
 
             // Get items user already has in their own list
-            val ownItems = repository.getAllItemsOnce()
+            val ownItems = repository.getAllItemsSnapshot()
             val ownImdbIds = ownItems.map { it.imdbId }.filter { it.isNotBlank() }.toSet()
 
             // Get followed users
@@ -97,7 +97,7 @@ class DiscoverViewModel(
                 dateAdded = System.currentTimeMillis(),
                 lastUpdated = System.currentTimeMillis()
             )
-            repository.insertItem(watchItem)
+            repository.saveItem(watchItem)
             val uid = userRepo.getLocalUserId()
             if (uid != null) {
                 userRepo.pushWatchItem(uid, watchItem)

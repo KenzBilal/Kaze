@@ -116,6 +116,7 @@ private fun SearchTopBar(
     onBack: () -> Unit,
     focusRequester: FocusRequester
 ) {
+    val keyboard = LocalSoftwareKeyboardController.current
     TopAppBar(
         title = {
             TextField(
