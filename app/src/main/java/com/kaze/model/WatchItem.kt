@@ -14,7 +14,8 @@ enum class MediaType { MOVIE, SERIES }
     indices = [
         Index(value = ["isWatched"]),
         Index(value = ["type"]),
-        Index(value = ["dateAdded"])
+        Index(value = ["dateAdded"]),
+        Index(value = ["imdbId"])
     ]
 )
 data class WatchItem(

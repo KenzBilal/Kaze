@@ -5,7 +5,7 @@ import androidx.room.*
 @Dao
 interface PendingActionDao {
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(action: PendingAction)
 
     @Query("SELECT * FROM pending_actions ORDER BY createdAt ASC")

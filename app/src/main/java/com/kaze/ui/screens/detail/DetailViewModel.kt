@@ -72,7 +72,7 @@ class DetailViewModel(
                 } else if (item == null) {
                     _uiState.update { it.copy(isDeleted = true) }
                 } else {
-                    _uiState.update { it.copy(item = item) }
+                    _uiState.update { it.copy(item = item, isWatched = item.isWatched) }
                 }
             }
         }
@@ -127,7 +127,8 @@ class DetailViewModel(
             }
 
             seriesRepository.setEpisodeWatched(item.id, season, episodeNumber, newWatched)
-            if (newWatched) autoAdvancePosition(item)
+            // BUG-03 Fix: Call autoAdvancePosition unconditionally to sync episode changes to Supabase
+            autoAdvancePosition(item)
         }
     }
 
@@ -166,24 +167,32 @@ class DetailViewModel(
         _uiState.update { it.copy(showMarkAllSeriesDialog = false, isMarkingAllWatched = true, markAllProgress = 0) }
 
         viewModelScope.launch {
-            seriesRepository.markAllSeriesWatched(
-                watchItemId  = item.id,
-                imdbId       = item.imdbId,
-                totalSeasons = total,
-                onProgress   = { current, _ ->
-                    _uiState.update { it.copy(markAllProgress = current) }
-                }
-            )
-            loadSeasonEpisodes(item, _uiState.value.selectedSeason)
-            val updated = item.copy(isWatched = true, lastUpdated = System.currentTimeMillis())
-            repository.updateItem(updated)
-            _uiState.update {
-                it.copy(
-                    isMarkingAllWatched = false,
-                    isWatched           = true,
-                    item                = updated,
-                    toastMessage        = "All $total seasons marked as watched ✓"
+            try {
+                seriesRepository.markAllSeriesWatched(
+                    watchItemId  = item.id,
+                    imdbId       = item.imdbId,
+                    totalSeasons = total,
+                    onProgress   = { current, _ ->
+                        _uiState.update { it.copy(markAllProgress = current) }
+                    }
                 )
+                loadSeasonEpisodes(item, _uiState.value.selectedSeason)
+                val updated = item.copy(isWatched = true, lastUpdated = System.currentTimeMillis())
+                repository.updateItem(updated)
+                // BUG-02 Fix: Sync the series progress to Supabase
+                userRepository.getLocalUserId()?.let { uid ->
+                    userRepository.pushWatchItem(uid, updated)
+                }
+                _uiState.update {
+                    it.copy(
+                        isMarkingAllWatched = false,
+                        isWatched           = true,
+                        item                = updated,
+                        toastMessage        = "All $total seasons marked as watched ✓"
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isMarkingAllWatched = false, toastMessage = "Failed to mark all seasons watched. Check connection.") }
             }
         }
     }
@@ -242,12 +251,15 @@ class DetailViewModel(
     fun toggleWatched() {
         val item       = _uiState.value.item ?: return
         val nowWatched = !_uiState.value.isWatched
-        // Sync BOTH the convenience flag and the embedded item
-        _uiState.update { it.copy(isWatched = nowWatched, item = item.copy(isWatched = nowWatched)) }
-
+        
         if (nowWatched && item.type == MediaType.SERIES && item.imdbId.isNotBlank()
             && _uiState.value.totalSeasons > 0) {
+            // BUG-04 Fix: Do not immediately change UI state, wait for dialog confirmation
             _uiState.update { it.copy(showMarkAllSeriesDialog = true) }
+        } else {
+            // BUG-04 Fix: Persist immediately for movies or unwatching
+            _uiState.update { it.copy(isWatched = nowWatched, item = item.copy(isWatched = nowWatched)) }
+            saveItem()
         }
     }
 
@@ -287,7 +299,6 @@ class DetailViewModel(
                 userRepository.deleteFromWatchlist(uid, item)
             }
             _uiState.update { it.copy(isDeleted = true) }
-            onSuccess()
         }
     }
 

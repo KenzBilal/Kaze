@@ -58,9 +58,7 @@ class FriendsViewModel(private val repository: UserRepository) : ViewModel() {
                 .filter { it.id != localUserId }
             val lid = localUserId
             val followedIds = if (lid != null) {
-                results.mapNotNull { user ->
-                    if (repository.isFollowing(lid, user.id)) user.id else null
-                }.toSet()
+                repository.getFollowedIds(lid)
             } else emptySet()
             _uiState.update {
                 it.copy(
@@ -93,11 +91,11 @@ class FriendsViewModel(private val repository: UserRepository) : ViewModel() {
             val results = repository.searchUsers(query)
                 .filter { it.id != localUserId } // hide self
 
-            // Check which ones the local user already follows
-            val followedIds = results.mapNotNull { user ->
-                val lid = localUserId ?: return@mapNotNull null
-                if (repository.isFollowing(lid, user.id)) user.id else null
-            }.toSet()
+            val lid = localUserId
+            val followedIds = if (lid != null) {
+                val allFollowed = repository.getFollowedIds(lid)
+                results.mapNotNull { user -> if (allFollowed.contains(user.id)) user.id else null }.toSet()
+            } else emptySet()
 
             _uiState.update {
                 it.copy(searchResults = results, followedIds = followedIds, isSearching = false)
@@ -109,12 +107,18 @@ class FriendsViewModel(private val repository: UserRepository) : ViewModel() {
         val lid = localUserId ?: return
         viewModelScope.launch {
             val currentlyFollowing = _uiState.value.followedIds.contains(userId)
-            if (currentlyFollowing) {
-                repository.unfollowUser(lid, userId)
-                _uiState.update { it.copy(followedIds = it.followedIds - userId) }
-            } else {
-                repository.followUser(lid, userId)
-                _uiState.update { it.copy(followedIds = it.followedIds + userId) }
+            // Optimistic update
+            _uiState.update {
+                it.copy(followedIds = if (currentlyFollowing) it.followedIds - userId else it.followedIds + userId)
+            }
+            try {
+                if (currentlyFollowing) repository.unfollowUser(lid, userId)
+                else repository.followUser(lid, userId)
+            } catch (e: Exception) {
+                // Rollback on failure
+                _uiState.update {
+                    it.copy(followedIds = if (currentlyFollowing) it.followedIds + userId else it.followedIds - userId)
+                }
             }
         }
     }

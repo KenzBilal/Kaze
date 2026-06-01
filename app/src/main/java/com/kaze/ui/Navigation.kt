@@ -69,6 +69,7 @@ fun WatchLaterNavGraph(
         // ── Splash ────────────────────────────────────────────────────────
         composable(Screen.Splash.route) {
             SplashScreen(
+                userRepository = app.container.userRepository,
                 onGoHome = {
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Splash.route) { inclusive = true }
@@ -95,7 +96,15 @@ fun WatchLaterNavGraph(
 
         // ── Home ──────────────────────────────────────────────────────────
         composable(Screen.Home.route) {
-            val homeVm: HomeViewModel = viewModel(factory = HomeViewModel.Factory(repo, app.container.updateManager))
+            val homeVm: HomeViewModel = viewModel(
+                factory = HomeViewModel.Factory(
+                    repository = repo,
+                    seriesRepository = app.container.seriesRepository,
+                    userRepository = app.container.userRepository,
+                    userPreferences = app.container.userPreferences,
+                    updateManager = app.container.updateManager
+                )
+            )
             val addVm:  AddItemViewModel = viewModel(factory = AddItemViewModel.Factory(repo, app.container.omdbRepository, app.container.activityRepository, app.container.userRepository))
             var showAddSheet by remember { mutableStateOf(false) }
             val addSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -109,7 +118,7 @@ fun WatchLaterNavGraph(
 
             if (showAddSheet) {
                 ModalBottomSheet(
-                    onDismissRequest = { showAddSheet = false },
+                    onDismissRequest = { showAddSheet = false; addVm.reset() },
                     sheetState       = addSheetState,
                     containerColor   = SurfaceContainer,
                     dragHandle       = null
@@ -124,7 +133,10 @@ fun WatchLaterNavGraph(
 
         // ── Discover ──────────────────────────────────────────────────────
         composable(Screen.Discover.route) {
-            DiscoverScreen()
+            DiscoverScreen(
+                repository = repo,
+                onItemClick = { id -> navController.navigate(Screen.Detail.createRoute(id)) }
+            )
         }
 
         // ── Feed ──────────────────────────────────────────────────────────

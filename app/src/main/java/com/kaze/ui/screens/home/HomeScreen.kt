@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
@@ -27,7 +28,11 @@ fun HomeScreen(
     onSearchClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    var selectedTab by remember { mutableIntStateOf(0) }
+    var selectedTab by rememberSaveable { mutableIntStateOf(uiState.selectedTab) }
+    
+    LaunchedEffect(selectedTab) {
+        viewModel.setTab(selectedTab)
+    }
     val tabs = listOf("TO WATCH", "WATCHED")
     var showSortSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -102,22 +107,30 @@ fun HomeScreen(
             ) { tab ->
                 when (tab) {
                     0 -> WatchItemList(
-                        items = uiState.toWatchItems,
+                        items = uiState.items,
                         isLoading = uiState.isLoading,
+                        isFiltered = uiState.sortFilterState.filter != FilterOption.ALL,
                         emptyIcon = Icons.Outlined.Bookmark,
                         emptyTitle = "Your watchlist is empty",
                         emptySubtitle = "Tap + to add movies and series\nyou want to watch",
                         onItemClick = onItemClick,
-                        onToggleWatched = { viewModel.toggleWatched(it) }
+                        onToggleWatched = { item -> 
+                            if (item.type == com.kaze.model.MediaType.SERIES && !item.isWatched) showMarkWatchedDialog = item
+                            else viewModel.toggleWatched(item)
+                        }
                     )
                     1 -> WatchItemList(
-                        items = uiState.watchedItems,
+                        items = uiState.items,
                         isLoading = uiState.isLoading,
+                        isFiltered = uiState.sortFilterState.filter != FilterOption.ALL,
                         emptyIcon = Icons.Outlined.CheckCircle,
                         emptyTitle = "Nothing watched yet",
                         emptySubtitle = "Mark items as watched and\nthey'll appear here",
                         onItemClick = onItemClick,
-                        onToggleWatched = { viewModel.toggleWatched(it) }
+                        onToggleWatched = { item -> 
+                            if (item.type == com.kaze.model.MediaType.SERIES && !item.isWatched) showMarkWatchedDialog = item
+                            else viewModel.toggleWatched(item)
+                        }
                     )
                 }
             }
@@ -140,20 +153,55 @@ fun HomeScreen(
         }
     }
 
+    var showMarkWatchedDialog by remember { mutableStateOf<WatchItem?>(null) }
+    if (showMarkWatchedDialog != null) {
+        val itemToMark = showMarkWatchedDialog!!
+        AlertDialog(
+            onDismissRequest = { showMarkWatchedDialog = null },
+            containerColor = SurfaceContainer,
+            title = { Text("Mark entire series?", color = TextPrimary, fontWeight = FontWeight.SemiBold) },
+            text = {
+                Text(
+                    "This will mark all seasons and every episode of ${itemToMark.title} as watched.",
+                    color = TextSecondary,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.toggleWatched(itemToMark)
+                        showMarkWatchedDialog = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = WatchedGreen, contentColor = Background)
+                ) {
+                    Text("Yes, mark all")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showMarkWatchedDialog = null }) {
+                    Text("Cancel", color = TextSecondary)
+                }
+            }
+        )
+    }
+
     val updateState by viewModel.updateState.collectAsStateWithLifecycle()
     val updateInfo by viewModel.updateInfo.collectAsStateWithLifecycle()
 
     var hideDownloadDialog by remember { mutableStateOf(false) }
+    var showUpdateDialog by remember { mutableStateOf(true) }
     // Reset hide flag only when a new download starts (user taps Update Now again)
     LaunchedEffect(updateState) {
         if (updateState == com.kaze.updater.UpdateState.AVAILABLE) {
             hideDownloadDialog = false
+            showUpdateDialog = true
         }
     }
 
-    if (updateState == com.kaze.updater.UpdateState.AVAILABLE && updateInfo != null) {
+    if (showUpdateDialog && updateState == com.kaze.updater.UpdateState.AVAILABLE && updateInfo != null) {
         AlertDialog(
-            onDismissRequest = { /* Force them to dismiss via a button if we wanted, or allow dismiss */ },
+            onDismissRequest = { showUpdateDialog = false },
             containerColor = SurfaceContainer,
             title = { Text("Update Available", color = TextPrimary) },
             text = {
@@ -167,14 +215,17 @@ fun HomeScreen(
             },
             confirmButton = {
                 Button(
-                    onClick = { viewModel.downloadUpdate() },
+                    onClick = { 
+                        showUpdateDialog = false
+                        viewModel.downloadUpdate() 
+                    },
                     colors = ButtonDefaults.buttonColors(containerColor = AccentBlue, contentColor = Background)
                 ) {
-                    Text("Update Now", color = Color.Unspecified)
+                    Text("Update Now")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { /* Could add a dismiss mechanism to viewmodel if needed, for now just ignore */ }) {
+                TextButton(onClick = { showUpdateDialog = false }) {
                     Text("Later", color = TextSecondary)
                 }
             }
@@ -208,6 +259,7 @@ fun HomeScreen(
 private fun WatchItemList(
     items: List<WatchItem>,
     isLoading: Boolean,
+    isFiltered: Boolean,
     emptyIcon: ImageVector,
     emptyTitle: String,
     emptySubtitle: String,
@@ -216,12 +268,23 @@ private fun WatchItemList(
 ) {
     when {
         isLoading -> WatchLaterLoader()
-        items.isEmpty() -> EmptyState(
-            icon = emptyIcon,
-            title = emptyTitle,
-            subtitle = emptySubtitle,
-            modifier = Modifier.fillMaxSize()
-        )
+        items.isEmpty() -> {
+            if (isFiltered) {
+                EmptyState(
+                    icon = Icons.Outlined.CheckCircle,
+                    title = "No matches found",
+                    subtitle = "Try changing your filter settings",
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                EmptyState(
+                    icon = emptyIcon,
+                    title = emptyTitle,
+                    subtitle = emptySubtitle,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+        }
         else -> LazyColumn(
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)

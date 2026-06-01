@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.staggeredgrid.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material.icons.outlined.Explore
@@ -31,6 +32,9 @@ import com.kaze.data.local.WatchLaterDatabase
 import com.kaze.data.repository.ActivityFeedItem
 import com.kaze.data.repository.ActivityRepository
 import com.kaze.data.repository.UserRepository
+import com.kaze.data.repository.WatchItemRepository
+import com.kaze.model.MediaType
+import com.kaze.model.WatchItem
 import com.kaze.ui.components.EmptyState
 import com.kaze.ui.components.WatchLaterLoader
 import com.kaze.ui.theme.*
@@ -43,9 +47,9 @@ import kotlinx.coroutines.launch
 // ── ViewModel ─────────────────────────────────────────────────────────────────
 
 class DiscoverViewModel(
+    private val repository: WatchItemRepository,
     private val activityRepo: ActivityRepository,
-    private val userRepo: UserRepository,
-    private val db: com.kaze.data.local.WatchLaterDatabase
+    private val userRepo: UserRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DiscoverUiState())
@@ -57,12 +61,12 @@ class DiscoverViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             val userId = userRepo.getLocalUserId() ?: run {
-                _uiState.update { it.copy(isLoading = false, isEmpty = true) }
+                _uiState.update { it.copy(isLoading = false, isEmpty = true, isLoggedIn = false) }
                 return@launch
             }
 
             // Get items user already has in their own list
-            val ownItems = db.watchItemDao().getAllItemsOnce()
+            val ownItems = repository.getAllItemsOnce()
             val ownImdbIds = ownItems.map { it.imdbId }.filter { it.isNotBlank() }.toSet()
 
             // Get followed users
@@ -82,13 +86,43 @@ class DiscoverViewModel(
         }
     }
 
-    class Factory(private val context: android.content.Context) : ViewModelProvider.Factory {
+    fun addToList(item: ActivityFeedItem) {
+        viewModelScope.launch {
+            val watchItem = WatchItem(
+                imdbId = item.item_imdb_id ?: return@launch,
+                title = item.item_title ?: "Unknown",
+                year = 0,
+                type = try { MediaType.valueOf(item.item_type ?: "MOVIE") } catch(e: Exception) { MediaType.MOVIE },
+                posterUrl = item.item_poster_url,
+                dateAdded = System.currentTimeMillis(),
+                lastUpdated = System.currentTimeMillis()
+            )
+            repository.insertItem(watchItem)
+            val uid = userRepo.getLocalUserId()
+            if (uid != null) {
+                userRepo.pushWatchItem(uid, watchItem)
+                activityRepo.postActivity(
+                    com.kaze.data.repository.ActivityFeedEntry(
+                        user_id = uid,
+                        action_type = "added_item",
+                        item_title = watchItem.title,
+                        item_type = watchItem.type.name,
+                        item_poster_url = watchItem.posterUrl,
+                        item_imdb_id = watchItem.imdbId
+                    )
+                )
+            }
+            load() // refresh
+        }
+    }
+
+    class Factory(private val context: android.content.Context, private val repository: WatchItemRepository) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             return DiscoverViewModel(
+                repository,
                 ActivityRepository(context),
-                UserRepository(context),
-                WatchLaterDatabase.getInstance(context)
+                UserRepository(context)
             ) as T
         }
     }
@@ -97,16 +131,20 @@ class DiscoverViewModel(
 data class DiscoverUiState(
     val isLoading: Boolean = true,
     val suggestions: List<ActivityFeedItem> = emptyList(),
-    val isEmpty: Boolean = false
+    val isEmpty: Boolean = false,
+    val isLoggedIn: Boolean = true
 )
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun DiscoverScreen() {
+fun DiscoverScreen(
+    repository: WatchItemRepository,
+    onItemClick: (Long) -> Unit
+) {
     val context = LocalContext.current
-    val viewModel: DiscoverViewModel = viewModel(factory = DiscoverViewModel.Factory(context))
+    val viewModel: DiscoverViewModel = viewModel(factory = DiscoverViewModel.Factory(context, repository))
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Scaffold(
@@ -135,9 +173,9 @@ fun DiscoverScreen() {
         when {
             uiState.isLoading -> WatchLaterLoader()
             uiState.isEmpty -> EmptyState(
-                icon = Icons.Outlined.Explore,
-                title = "Nothing to discover yet",
-                subtitle = "Follow friends to see\nwhat they're watching",
+                icon = if (uiState.isLoggedIn) Icons.Outlined.Explore else Icons.Default.Movie,
+                title = if (uiState.isLoggedIn) "Nothing to discover yet" else "Not signed in",
+                subtitle = if (uiState.isLoggedIn) "Follow friends to see\nwhat they're watching" else "Sign in to see\nwhat friends are watching",
                 modifier = Modifier.fillMaxSize().padding(padding)
             )
             else -> {
@@ -152,7 +190,11 @@ fun DiscoverScreen() {
                     contentPadding = PaddingValues(top = 8.dp, bottom = 100.dp)
                 ) {
                     items(uiState.suggestions, key = { it.id }) { item ->
-                        DiscoverCard(item = item)
+                        DiscoverCard(
+                            item = item,
+                            onClick = { /* Could navigate to detail if we fetch item first, for now disabled since we don't have local item ID yet */ },
+                            onAdd = { viewModel.addToList(item) }
+                        )
                     }
                 }
             }
@@ -161,13 +203,13 @@ fun DiscoverScreen() {
 }
 
 @Composable
-private fun DiscoverCard(item: ActivityFeedItem) {
+private fun DiscoverCard(item: ActivityFeedItem, onClick: () -> Unit, onAdd: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
             .background(SurfaceElevated)
-            .clickable { /* TODO: navigate to add screen or detail */ }
+            .clickable(onClick = onClick)
     ) {
         if (!item.item_poster_url.isNullOrBlank()) {
             AsyncImage(
@@ -197,22 +239,33 @@ private fun DiscoverCard(item: ActivityFeedItem) {
             }
         }
 
-        Column(Modifier.padding(horizontal = 10.dp, vertical = 9.dp)) {
-            Text(
-                item.item_title ?: "",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = TextPrimary,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-            if (!item.item_type.isNullOrBlank()) {
-                Spacer(Modifier.height(2.dp))
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 9.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    item.item_type.lowercase().replaceFirstChar { it.uppercase() },
-                    fontSize = 10.sp,
-                    color = TextTertiary
+                    item.item_title ?: "",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = TextPrimary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
+                if (!item.item_type.isNullOrBlank()) {
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        item.item_type.lowercase().replaceFirstChar { it.uppercase() },
+                        fontSize = 10.sp,
+                        color = TextTertiary
+                    )
+                }
+            }
+            IconButton(
+                onClick = onAdd,
+                modifier = Modifier.size(28.dp).background(AccentBlue, RoundedCornerShape(14.dp))
+            ) {
+                Icon(Icons.Filled.Add, contentDescription = "Add to list", tint = Background, modifier = Modifier.size(16.dp))
             }
         }
     }

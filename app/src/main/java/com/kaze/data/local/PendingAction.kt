@@ -7,19 +7,19 @@ import androidx.room.PrimaryKey
  * Represents an action that failed due to being offline.
  * WorkManager will retry these when connectivity is restored.
  */
-@Entity(tableName = "pending_actions")
+@Entity(
+    tableName = "pending_actions",
+    indices = [
+        androidx.room.Index(value = ["actionType", "userId", "targetId", "payload"], unique = true)
+    ]
+)
 data class PendingAction(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val actionType: String, // "FOLLOW", "UNFOLLOW", "SYNC_WATCHLIST", "ACTIVITY_FEED"
+    val actionType: ActionType,
     val userId: String,
     val targetId: String = "",      // target user id for follows
     val payload: String = "",       // JSON payload for complex actions
     val createdAt: Long = System.currentTimeMillis()
 )
 
-object ActionType {
-    const val FOLLOW = "FOLLOW"
-    const val UNFOLLOW = "UNFOLLOW"
-    const val SYNC_WATCHLIST = "SYNC_WATCHLIST"
-    const val POST_ACTIVITY = "POST_ACTIVITY"
-}
+enum class ActionType { FOLLOW, UNFOLLOW, SYNC_WATCHLIST, POST_ACTIVITY }

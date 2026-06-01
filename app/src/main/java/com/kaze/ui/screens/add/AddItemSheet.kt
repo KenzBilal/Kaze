@@ -259,7 +259,7 @@ fun AddItemSheet(
                         modifier = Modifier.size(20.dp)
                     )
                 } else {
-                    Text("Add to Watchlist", fontWeight = FontWeight.SemiBold, color = Color.Unspecified)
+                    Text("Add to Watchlist", fontWeight = FontWeight.SemiBold)
                 }
             }
             Spacer(Modifier.height(8.dp))

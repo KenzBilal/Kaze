@@ -11,4 +11,12 @@ class Converters {
     fun toMediaType(value: String): MediaType = runCatching {
         MediaType.valueOf(value)
     }.getOrDefault(MediaType.MOVIE)
+
+    @TypeConverter
+    fun fromActionType(type: ActionType): String = type.name
+
+    @TypeConverter
+    fun toActionType(value: String): ActionType = runCatching {
+        ActionType.valueOf(value)
+    }.getOrDefault(ActionType.SYNC_WATCHLIST)
 }

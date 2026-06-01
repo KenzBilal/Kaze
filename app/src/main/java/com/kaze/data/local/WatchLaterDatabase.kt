@@ -17,7 +17,7 @@ import com.kaze.model.WatchItem
         EpisodeProgress::class,
         PendingAction::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -105,6 +105,32 @@ abstract class WatchLaterDatabase : RoomDatabase() {
             }
         }
 
+        /** v5 → v6: add imdbId index on watch_items; add FK + index on episode_progress */
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // imdbId index (Bug 39)
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_watch_items_imdbId ON watch_items (imdbId)")
+
+                // Recreate episode_progress with FK + watchItemId index (Bug 40)
+                // SQLite cannot add FK constraints with ALTER TABLE — must recreate the table.
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS episode_progress_new (
+                        watchItemId INTEGER NOT NULL,
+                        season INTEGER NOT NULL,
+                        episodeNumber INTEGER NOT NULL,
+                        isWatched INTEGER NOT NULL DEFAULT 0,
+                        watchedAt INTEGER,
+                        PRIMARY KEY (watchItemId, season, episodeNumber),
+                        FOREIGN KEY (watchItemId) REFERENCES watch_items(id) ON DELETE CASCADE
+                    )
+                """.trimIndent())
+                db.execSQL("INSERT INTO episode_progress_new SELECT * FROM episode_progress")
+                db.execSQL("DROP TABLE episode_progress")
+                db.execSQL("ALTER TABLE episode_progress_new RENAME TO episode_progress")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_episode_progress_watchItemId ON episode_progress (watchItemId)")
+            }
+        }
+
         @Volatile
         private var INSTANCE: WatchLaterDatabase? = null
 
@@ -115,7 +141,7 @@ abstract class WatchLaterDatabase : RoomDatabase() {
                     WatchLaterDatabase::class.java,
                     DATABASE_NAME
                 )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                 .build()
                 INSTANCE = instance
                 instance

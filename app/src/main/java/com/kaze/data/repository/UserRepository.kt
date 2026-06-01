@@ -41,7 +41,8 @@ data class PublicWatchlistItem(
     val notes: String,
     val poster_url: String?,
     val genres: String,
-    val date_added: Long
+    val date_added: Long,
+    val last_updated: Long = 0L
 )
 
 @Serializable
@@ -190,6 +191,20 @@ class UserRepository(private val context: Context) {
         }
     }
 
+    suspend fun getUsersByIds(userIds: List<String>): List<SupabaseUser> {
+        if (userIds.isEmpty()) return emptyList()
+        return withContext(Dispatchers.IO) {
+            try {
+                SupabaseApi.client.from("users")
+                    .select { filter { isIn("id", userIds) } }
+                    .decodeList<SupabaseUser>()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                emptyList()
+            }
+        }
+    }
+
     suspend fun getWatchlistByUserId(userId: String): List<PublicWatchlistItem> {
         return withContext(Dispatchers.IO) {
             try {
@@ -231,7 +246,8 @@ class UserRepository(private val context: Context) {
                 val relations = SupabaseApi.client.from("follows")
                     .select { filter { eq("following_id", userId) } }
                     .decodeList<FollowRelation>()
-                relations.mapNotNull { getUserById(it.follower_id) }
+                val followerIds = relations.map { it.follower_id }
+                getUsersByIds(followerIds)
             } catch (e: Exception) { emptyList() }
         }
     }
@@ -242,7 +258,8 @@ class UserRepository(private val context: Context) {
                 val relations = SupabaseApi.client.from("follows")
                     .select { filter { eq("follower_id", userId) } }
                     .decodeList<FollowRelation>()
-                relations.mapNotNull { getUserById(it.following_id) }
+                val followingIds = relations.map { it.following_id }
+                getUsersByIds(followingIds)
             } catch (e: Exception) { emptyList() }
         }
     }
@@ -260,6 +277,17 @@ class UserRepository(private val context: Context) {
                     .decodeList<FollowRelation>()
                 result.isNotEmpty()
             } catch (e: Exception) { false }
+        }
+    }
+
+    suspend fun getFollowedIds(followerId: String): Set<String> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val relations = SupabaseApi.client.from("follows")
+                    .select { filter { eq("follower_id", followerId) } }
+                    .decodeList<FollowRelation>()
+                relations.map { it.following_id }.toSet()
+            } catch (e: Exception) { emptySet() }
         }
     }
 
@@ -356,9 +384,13 @@ class UserRepository(private val context: Context) {
                 SupabaseApi.client.from("public_watchlist").delete {
                     filter {
                         eq("user_id", userId)
-                        eq("title", item.title)
-                        eq("year", item.year)
-                        eq("type", item.type.name)
+                        if (item.imdbId.isNotBlank()) {
+                            eq("imdb_id", item.imdbId)
+                        } else {
+                            eq("title", item.title)
+                            eq("year", item.year)
+                            eq("type", item.type.name)
+                        }
                     }
                 }
             } catch (e: Exception) {
@@ -370,23 +402,44 @@ class UserRepository(private val context: Context) {
     suspend fun syncWatchlist(userId: String, items: List<WatchItem>) {
         if (items.isEmpty()) return
         withContext(Dispatchers.IO) {
-            val payload = items.map { item ->
+            // Fetch current server last_updated timestamps to avoid overwriting newer data
+            val serverTimestamps: Map<String, Long> = try {
+                SupabaseApi.client.from("public_watchlist")
+                    .select(columns = io.github.jan.supabase.postgrest.query.Columns.list("imdb_id", "title", "year", "type", "last_updated")) {
+                        filter { eq("user_id", userId) }
+                    }
+                    .decodeList<PublicWatchlistItem>()
+                    .associateBy(
+                        keySelector   = { it.imdb_id.ifBlank { "${it.title}_${it.year}_${it.type}" } },
+                        valueTransform = { it.last_updated }
+                    )
+            } catch (_: Exception) { emptyMap() }
+
+            // Only upsert items newer than what the server has
+            val payload = items.filter { item ->
+                val key = item.imdbId.ifBlank { "${item.title}_${item.year}_${item.type.name}" }
+                val serverTs = serverTimestamps[key] ?: 0L
+                item.lastUpdated > serverTs
+            }.map { item ->
                 PublicWatchlistItem(
-                    user_id    = userId,
-                    imdb_id    = item.imdbId,
-                    title      = item.title,
-                    year       = item.year,
-                    type       = item.type.name,
-                    is_watched = item.isWatched,
-                    rating     = item.rating,
-                    season     = item.season,
-                    episode    = item.episode,
-                    notes      = item.notes,
-                    poster_url = item.posterUrl,
-                    genres     = item.genres,
-                    date_added = item.dateAdded
+                    user_id      = userId,
+                    imdb_id      = item.imdbId,
+                    title        = item.title,
+                    year         = item.year,
+                    type         = item.type.name,
+                    is_watched   = item.isWatched,
+                    rating       = item.rating,
+                    season       = item.season,
+                    episode      = item.episode,
+                    notes        = item.notes,
+                    poster_url   = item.posterUrl,
+                    genres       = item.genres,
+                    date_added   = item.dateAdded,
+                    last_updated = item.lastUpdated
                 )
             }
+
+            if (payload.isEmpty()) return@withContext
 
             try {
                 SupabaseApi.client.from("public_watchlist").upsert(payload) {

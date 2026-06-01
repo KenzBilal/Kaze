@@ -207,9 +207,14 @@ class AddItemViewModel(
             savedState.remove<String>("type")
             savedState.remove<String>("genres")
             savedState.remove<String>("imdbId")
-            _uiState.value = AddItemUiState()
+            _uiState.update { AddItemUiState() }
             onSuccess()
         }
+    }
+
+    /** Call when the add sheet is dismissed to clear stale form state. */
+    fun reset() {
+        _uiState.update { AddItemUiState() }
     }
 
     class Factory(

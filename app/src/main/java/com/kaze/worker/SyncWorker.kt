@@ -45,7 +45,7 @@ class SyncWorker(
                             userRepo.postActivityFromPayload(action.payload)
                             dao.delete(action)
                         }
-                        else -> dao.delete(action) // Unknown action, drop it
+                        ActionType.SYNC_WATCHLIST -> dao.delete(action) // handled elsewhere
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()

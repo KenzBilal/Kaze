@@ -62,6 +62,9 @@ interface EpisodeProgressDao {
     @Query("SELECT * FROM episode_progress WHERE watchItemId = :watchItemId ORDER BY season ASC, episodeNumber ASC")
     suspend fun getAll(watchItemId: Long): List<EpisodeProgress>
 
+    @Query("SELECT * FROM episode_progress")
+    suspend fun getAllEpisodeProgressOnce(): List<EpisodeProgress>
+
     @Query("DELETE FROM episode_progress WHERE watchItemId = :watchItemId")
     suspend fun deleteAll(watchItemId: Long)
 

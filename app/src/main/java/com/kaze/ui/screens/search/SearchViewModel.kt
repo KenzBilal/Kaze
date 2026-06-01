@@ -17,6 +17,7 @@ class SearchViewModel(private val repository: WatchItemRepository) : ViewModel()
 
     val results: StateFlow<List<WatchItem>> = _query
         .debounce(200L)
+        .distinctUntilChanged()
         .flatMapLatest { q ->
             if (q.isBlank()) flowOf(emptyList())
             else repository.searchItems(q)

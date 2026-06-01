@@ -39,8 +39,15 @@ class KazeMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
+        // Handle notification payloads (sent via Firebase console)
         remoteMessage.notification?.let {
             showNotification(it.title ?: "New Activity", it.body ?: "")
+        }
+        // Handle data-only payloads (recommended for production — always delivered)
+        if (remoteMessage.data.isNotEmpty() && remoteMessage.notification == null) {
+            val title = remoteMessage.data["title"] ?: "New Activity"
+            val body  = remoteMessage.data["body"]  ?: ""
+            if (body.isNotBlank()) showNotification(title, body)
         }
     }
 

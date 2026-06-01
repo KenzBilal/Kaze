@@ -30,7 +30,16 @@ data class SeasonEpisode(
 /** Per-user episode watched progress — stored forever, never expires */
 @Entity(
     tableName = "episode_progress",
-    primaryKeys = ["watchItemId", "season", "episodeNumber"]
+    primaryKeys = ["watchItemId", "season", "episodeNumber"],
+    foreignKeys = [
+        androidx.room.ForeignKey(
+            entity = com.kaze.model.WatchItem::class,
+            parentColumns = ["id"],
+            childColumns = ["watchItemId"],
+            onDelete = androidx.room.ForeignKey.CASCADE
+        )
+    ],
+    indices = [Index(value = ["watchItemId"])]
 )
 data class EpisodeProgress(
     val watchItemId: Long,

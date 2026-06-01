@@ -61,6 +61,10 @@ class WatchItemRepository(
     suspend fun getEpisodeProgressSnapshot(watchItemId: Long): List<EpisodeProgress> =
         episodeProgressDao.getAll(watchItemId)
 
+    /** All episode progress across all items — used for batch backup export. */
+    suspend fun getAllEpisodeProgressSnapshot(): List<EpisodeProgress> =
+        episodeProgressDao.getAllEpisodeProgressOnce()
+
     /**
      * Atomically replaces all watch_items.
      * Returns a map of (old index → new DB id) for episode progress remapping.

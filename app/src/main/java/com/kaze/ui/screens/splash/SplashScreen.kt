@@ -22,6 +22,7 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun SplashScreen(
+    userRepository: UserRepository,
     onGoHome: () -> Unit,
     onGoSetUsername: () -> Unit
 ) {
@@ -29,8 +30,7 @@ fun SplashScreen(
 
     LaunchedEffect(Unit) {
         delay(1500) // Show splash for 1.5 seconds
-        val repo = UserRepository(context)
-        val userId = repo.getLocalUserId()
+        val userId = userRepository.getLocalUserId()
         if (userId != null) {
             onGoHome()
         } else {

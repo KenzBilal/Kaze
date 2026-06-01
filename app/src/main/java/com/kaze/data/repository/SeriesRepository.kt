@@ -169,6 +169,10 @@ class SeriesRepository(
      * FIX (P2): Uses upsertAll() @Transaction instead of N individual upsert() calls.
      */
     suspend fun markSeasonWatched(watchItemId: Long, imdbId: String, season: Int): Boolean {
+        // Validate previous seasons before marking
+        if (validateEpisodeMarkable(watchItemId, imdbId, season) is EpisodeValidationResult.Blocked) {
+            return false
+        }
         val episodes = fetchAndCacheSeasonIfNeeded(imdbId, season)
         if (episodes.isEmpty()) return false   // offline / not found — tell caller
         val now = System.currentTimeMillis()

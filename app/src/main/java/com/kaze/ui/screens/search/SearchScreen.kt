@@ -135,7 +135,7 @@ private fun SearchTopBar(
                     unfocusedTextColor = TextPrimary
                 ),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = {}),
+                keyboardActions = KeyboardActions(onSearch = { keyboard?.hide() }),
                 modifier = Modifier
                     .fillMaxWidth()
                     .focusRequester(focusRequester)

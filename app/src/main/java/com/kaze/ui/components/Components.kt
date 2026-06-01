@@ -65,13 +65,13 @@ fun ProgressChip(season: Int, episode: Int, modifier: Modifier = Modifier) {
 
 @Composable
 fun StarRatingDisplay(rating: Float, maxStars: Int = 5, modifier: Modifier = Modifier) {
-    val filled = rating.coerceIn(0f, 5f)
+    val filled = rating.coerceIn(0f, 5f).let { kotlin.math.round(it).toInt() }
     Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
         for (i in 1..maxStars) {
             Icon(
-                imageVector = if (i <= filled.toInt()) Icons.Filled.Star else Icons.Outlined.StarOutline,
+                imageVector = if (i <= filled) Icons.Filled.Star else Icons.Outlined.StarOutline,
                 contentDescription = null,
-                tint = if (i <= filled.toInt()) StarFilled else StarEmpty,
+                tint = if (i <= filled) StarFilled else StarEmpty,
                 modifier = Modifier.size(14.dp)
             )
         }

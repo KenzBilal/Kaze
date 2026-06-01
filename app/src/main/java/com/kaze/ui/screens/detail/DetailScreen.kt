@@ -124,14 +124,15 @@ fun DetailScreen(
                         IconButton(onClick = viewModel::showMarkAllSeriesDialog) {
                             Icon(Icons.Filled.DoneAll, "Mark all watched", tint = TextSecondary)
                         }
-                    }
-                    IconButton(onClick = viewModel::toggleWatched) {
-                        Icon(
-                            imageVector = if (uiState.isWatched) Icons.Filled.CheckCircle
-                                          else Icons.Outlined.CheckCircle,
-                            contentDescription = "Toggle watched",
-                            tint = if (uiState.isWatched) WatchedGreen else TextSecondary
-                        )
+                    } else if (uiState.item?.type != MediaType.SERIES) {
+                        IconButton(onClick = viewModel::toggleWatched) {
+                            Icon(
+                                imageVector = if (uiState.isWatched) Icons.Filled.CheckCircle
+                                              else Icons.Outlined.CheckCircle,
+                                contentDescription = "Toggle watched",
+                                tint = if (uiState.isWatched) WatchedGreen else TextSecondary
+                            )
+                        }
                     }
                     IconButton(onClick = viewModel::showDeleteDialog) {
                         Icon(Icons.Outlined.DeleteOutline, "Delete", tint = TextSecondary)

@@ -142,7 +142,7 @@ fun WatchItemCard(
 
         // Progress gradient for in-progress series
         if (item.type == MediaType.SERIES && !item.isWatched &&
-            (item.season != null || item.episode != null)) {
+            (item.season != null && item.episode != null)) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()

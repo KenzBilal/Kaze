@@ -21,36 +21,20 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.kaze.WatchLaterApp
 import com.kaze.ui.theme.*
 import com.kaze.utils.HapticUtils
 import com.kaze.utils.UserPreferences
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.serialization.Serializable
-import io.github.jan.supabase.postgrest.from
-
-@Serializable
-data class RemoteWatchItem(
-    val imdb_id: String,
-    val title: String,
-    val year: Int,
-    val type: String,
-    val is_watched: Boolean,
-    val rating: Float,
-    val season: Int?,
-    val episode: Int?,
-    val notes: String?,
-    val poster_url: String?,
-    val genres: String?,
-    val date_added: Long
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(onBack: () -> Unit) {
     val context = LocalContext.current
+    val app = context.applicationContext as com.kaze.WatchLaterApp
     val prefs = remember { UserPreferences(context) }
     val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     var hapticEnabled by remember { mutableStateOf(prefs.hapticEnabled) }
     var soundEnabled by remember { mutableStateOf(prefs.soundEnabled) }
@@ -58,6 +42,7 @@ fun SettingsScreen(onBack: () -> Unit) {
     var isBackingUp by remember { mutableStateOf(false) }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -135,40 +120,14 @@ fun SettingsScreen(onBack: () -> Unit) {
                     onClick = {
                         if (isSyncing) return@SettingsActionRow
                         isSyncing = true
-                        scope.launch(Dispatchers.IO) {
+                        scope.launch {
                             try {
-                                val db = com.kaze.data.local.WatchLaterDatabase.getInstance(context)
-                                val userRepo = com.kaze.data.repository.UserRepository(context)
-                                val userId = userRepo.getLocalUserId() ?: return@launch
-                                
-                                val remoteItems = com.kaze.data.remote.SupabaseApi.client.from("public_watchlist")
-                                    .select { filter { eq("user_id", userId) } }
-                                    .decodeList<RemoteWatchItem>()
-                                    
-                                val dao = db.watchItemDao()
-                                for (r in remoteItems) {
-                                    val existing = dao.getItemByTitleYearType(r.title, r.year, com.kaze.model.MediaType.valueOf(r.type))
-                                    if (existing == null) {
-                                        dao.insertItem(
-                                            com.kaze.model.WatchItem(
-                                                imdbId = r.imdb_id,
-                                                title = r.title,
-                                                year = r.year,
-                                                type = com.kaze.model.MediaType.valueOf(r.type),
-                                                isWatched = r.is_watched,
-                                                rating = r.rating,
-                                                season = r.season,
-                                                episode = r.episode,
-                                                notes = r.notes ?: "",
-                                                posterUrl = r.poster_url ?: "",
-                                                genres = r.genres ?: "",
-                                                dateAdded = r.date_added
-                                            )
-                                        )
-                                    }
-                                }
+                                val userId = app.container.userRepository.getLocalUserId()
+                                    ?: throw Exception("Not signed in")
+                                val count = app.container.backupManager.restoreFromCloud(userId)
+                                snackbarHostState.showSnackbar("Restored $count new item(s) from cloud")
                             } catch (e: Exception) {
-                                e.printStackTrace()
+                                snackbarHostState.showSnackbar("Restore failed: ${e.message}")
                             } finally {
                                 isSyncing = false
                             }
@@ -187,15 +146,14 @@ fun SettingsScreen(onBack: () -> Unit) {
                     onClick = {
                         if (isBackingUp) return@SettingsActionRow
                         isBackingUp = true
-                        scope.launch(Dispatchers.IO) {
+                        scope.launch {
                             try {
-                                val db = com.kaze.data.local.WatchLaterDatabase.getInstance(context)
-                                val userRepo = com.kaze.data.repository.UserRepository(context)
-                                val userId = userRepo.getLocalUserId() ?: return@launch
-                                val allItems = db.watchItemDao().getAllItemsOnce()
-                                userRepo.syncWatchlist(userId, allItems)
+                                val userId = app.container.userRepository.getLocalUserId()
+                                    ?: throw Exception("Not signed in")
+                                val count = app.container.backupManager.uploadToCloud(userId)
+                                snackbarHostState.showSnackbar("Backed up $count item(s) to cloud")
                             } catch (e: Exception) {
-                                e.printStackTrace()
+                                snackbarHostState.showSnackbar("Backup failed: ${e.message}")
                             } finally {
                                 isBackingUp = false
                             }
@@ -224,7 +182,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                         Text("Kaze", color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                         Text("Track what you watch", color = TextTertiary, fontSize = 12.sp)
                     }
-                    Text("v1.6.0", color = TextTertiary, fontSize = 12.sp)
+                    Text("v${com.kaze.BuildConfig.VERSION_NAME}", color = TextTertiary, fontSize = 12.sp)
                 }
             }
         }

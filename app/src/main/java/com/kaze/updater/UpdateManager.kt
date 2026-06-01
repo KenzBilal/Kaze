@@ -8,6 +8,7 @@ import android.content.IntentFilter
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import androidx.core.content.ContextCompat
 import android.util.Log
 import androidx.core.content.FileProvider
 import com.kaze.BuildConfig
@@ -70,11 +71,23 @@ class UpdateManager(private val context: Context) {
 
     init {
         val filter = IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            context.registerReceiver(downloadReceiver, filter, Context.RECEIVER_EXPORTED)
-        } else {
-            @Suppress("UnspecifiedRegisterReceiverFlag")
-            context.registerReceiver(downloadReceiver, filter)
+        ContextCompat.registerReceiver(
+            context,
+            downloadReceiver,
+            filter,
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        )
+    }
+
+    /**
+     * Unregister the download receiver. Call this when the manager is no longer needed
+     * to avoid memory leaks if the scope of UpdateManager ever shrinks to below app-lifetime.
+     */
+    fun dispose() {
+        try {
+            context.unregisterReceiver(downloadReceiver)
+        } catch (_: IllegalArgumentException) {
+            // Already unregistered — safe to ignore
         }
     }
 

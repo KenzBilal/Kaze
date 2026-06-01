@@ -14,21 +14,24 @@ import android.media.SoundPool
  */
 object HapticUtils {
 
+    private var cachedPrefs: UserPreferences? = null
+
+    private fun getPrefs(context: Context): UserPreferences {
+        return cachedPrefs ?: UserPreferences(context.applicationContext).also { cachedPrefs = it }
+    }
+
     fun tick(context: Context) {
-        val prefs = UserPreferences(context)
-        if (!prefs.hapticEnabled) return
+        if (!getPrefs(context).hapticEnabled) return
         vibrate(context, 18)
     }
 
     fun success(context: Context) {
-        val prefs = UserPreferences(context)
-        if (!prefs.hapticEnabled) return
+        if (!getPrefs(context).hapticEnabled) return
         vibrate(context, 40)
     }
 
     fun error(context: Context) {
-        val prefs = UserPreferences(context)
-        if (!prefs.hapticEnabled) return
+        if (!getPrefs(context).hapticEnabled) return
         // Double pulse for errors
         vibrate(context, 60)
     }

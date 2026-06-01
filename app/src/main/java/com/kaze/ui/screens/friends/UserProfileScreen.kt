@@ -51,7 +51,7 @@ import kotlinx.coroutines.launch
 
 class UserProfileViewModel(
     private val repository: UserRepository,
-    private val dao: com.kaze.data.local.WatchItemDao,
+    private val watchItemRepository: com.kaze.data.repository.WatchItemRepository,
     private val profileUserId: String
 ) : ViewModel() {
 
@@ -89,12 +89,25 @@ class UserProfileViewModel(
     fun toggleFollow() {
         val lid = _uiState.value.localUserId ?: return
         viewModelScope.launch {
-            if (_uiState.value.isFollowing) {
-                repository.unfollowUser(lid, profileUserId)
-                _uiState.update { it.copy(isFollowing = false, followersCount = it.followersCount - 1) }
-            } else {
-                repository.followUser(lid, profileUserId)
-                _uiState.update { it.copy(isFollowing = true, followersCount = it.followersCount + 1) }
+            val wasFollowing = _uiState.value.isFollowing
+            // Optimistic update
+            _uiState.update {
+                it.copy(
+                    isFollowing    = !wasFollowing,
+                    followersCount = if (wasFollowing) it.followersCount - 1 else it.followersCount + 1
+                )
+            }
+            try {
+                if (wasFollowing) repository.unfollowUser(lid, profileUserId)
+                else repository.followUser(lid, profileUserId)
+            } catch (e: Exception) {
+                // Rollback
+                _uiState.update {
+                    it.copy(
+                        isFollowing    = wasFollowing,
+                        followersCount = if (wasFollowing) it.followersCount + 1 else it.followersCount - 1
+                    )
+                }
             }
         }
     }
@@ -103,19 +116,19 @@ class UserProfileViewModel(
         viewModelScope.launch {
             try {
                 val mediaType = try { MediaType.valueOf(item.type) } catch (e: Exception) { MediaType.MOVIE }
-                val existing = if (item.imdb_id.isNotBlank()) dao.getItemByImdbId(item.imdb_id)
-                               else dao.getItemByTitleYearType(item.title, item.year, mediaType)
-                if (existing != null) {
-                    _uiState.update { s -> s.copy(addedItemIds = s.addedItemIds + item.title) }
+                val isDupe = watchItemRepository.isDuplicate(item.imdb_id, item.title, item.year, mediaType)
+                if (isDupe) {
+                    _uiState.update { s -> s.copy(addedItemIds = s.addedItemIds + item.imdb_id.ifBlank { item.title }) }
                     return@launch
                 }
-                dao.insertItem(WatchItem(
-                    title = item.title, year = item.year, type = mediaType,
-                    isWatched = false, rating = 0f, notes = "",
-                    posterUrl = item.poster_url, genres = item.genres, imdbId = item.imdb_id,
-                    dateAdded = System.currentTimeMillis(), lastUpdated = System.currentTimeMillis()
-                ))
-                _uiState.update { s -> s.copy(addedItemIds = s.addedItemIds + item.title) }
+                watchItemRepository.saveItem(
+                    com.kaze.model.WatchItem(
+                        title = item.title, year = item.year, type = mediaType,
+                        isWatched = false, rating = 0f, notes = "",
+                        posterUrl = item.poster_url, genres = item.genres, imdbId = item.imdb_id
+                    )
+                )
+                _uiState.update { s -> s.copy(addedItemIds = s.addedItemIds + item.imdb_id.ifBlank { item.title }) }
             } catch (e: Exception) { e.printStackTrace() }
         }
     }
@@ -144,8 +157,8 @@ class UserProfileViewModel(
     class Factory(private val context: android.content.Context, private val userId: String) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            val db = WatchLaterDatabase.getInstance(context)
-            return UserProfileViewModel(UserRepository(context), db.watchItemDao(), userId) as T
+            val app = context.applicationContext as com.kaze.WatchLaterApp
+            return UserProfileViewModel(app.container.userRepository, app.container.repository, userId) as T
         }
     }
 }
@@ -192,7 +205,7 @@ fun UserProfileScreen(
     uiState.selectedItem?.let { item ->
         ItemDetailSheet(
             item = item,
-            isAdded = uiState.addedItemIds.contains(item.title),
+            isAdded = uiState.addedItemIds.contains(item.imdb_id.ifBlank { item.title }),
             isOwnProfile = uiState.isOwnProfile,
             onAdd = { viewModel.addToMyWatchlist(item) },
             onDismiss = viewModel::dismissItem
@@ -466,7 +479,7 @@ private fun ItemDetailSheet(
                 }
                 if (item.season != null && item.episode != null) {
                     Spacer(Modifier.height(4.dp))
-                    Text("S${item.season} E${item.episode}", color = TextSecondary, fontSize = 12.sp)
+                    Text("S${item.season}  •  E${item.episode}", color = TextSecondary, fontSize = 12.sp)
                 }
                 if (item.rating > 0f) {
                     Spacer(Modifier.height(4.dp))

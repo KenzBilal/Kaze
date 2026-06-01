@@ -14,6 +14,7 @@ class AppContainer(context: Context) {
     val omdbRepository   = OmdbRepository()
     val activityRepository = com.kaze.data.repository.ActivityRepository(context)
     val userRepository = com.kaze.data.repository.UserRepository(context)
+    val userPreferences = com.kaze.utils.UserPreferences(context)
 
     val repository = WatchItemRepository(
         dao                = database.watchItemDao(),
@@ -28,7 +29,8 @@ class AppContainer(context: Context) {
     )
 
     val backupManager = BackupManager(
-        context    = context,
-        repository = repository
+        context        = context,
+        repository     = repository,
+        userRepository = userRepository
     )
 }
