@@ -1,7 +1,10 @@
 package com.kaze.data.local
 
 import androidx.room.Entity
+import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.kaze.model.WatchItem
 
 /** Series-level metadata cached from OMDB — total seasons, etc. */
 @Entity(tableName = "series_cache")
@@ -32,11 +35,11 @@ data class SeasonEpisode(
     tableName = "episode_progress",
     primaryKeys = ["watchItemId", "season", "episodeNumber"],
     foreignKeys = [
-        androidx.room.ForeignKey(
-            entity = com.kaze.model.WatchItem::class,
+        ForeignKey(
+            entity = WatchItem::class,
             parentColumns = ["id"],
             childColumns = ["watchItemId"],
-            onDelete = androidx.room.ForeignKey.CASCADE
+            onDelete = ForeignKey.CASCADE
         )
     ],
     indices = [Index(value = ["watchItemId"])]
