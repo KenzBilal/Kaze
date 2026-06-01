@@ -124,6 +124,8 @@ abstract class WatchLaterDatabase : RoomDatabase() {
                         FOREIGN KEY (watchItemId) REFERENCES watch_items(id) ON DELETE CASCADE
                     )
                 """.trimIndent())
+                // Prevent SQLiteConstraintException by removing orphaned rows before inserting
+                db.execSQL("DELETE FROM episode_progress WHERE watchItemId NOT IN (SELECT id FROM watch_items)")
                 db.execSQL("INSERT INTO episode_progress_new SELECT * FROM episode_progress")
                 db.execSQL("DROP TABLE episode_progress")
                 db.execSQL("ALTER TABLE episode_progress_new RENAME TO episode_progress")
