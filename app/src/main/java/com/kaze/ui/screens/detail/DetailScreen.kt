@@ -119,23 +119,26 @@ fun DetailScreen(
                     }
                 },
                 actions = {
-                    // Mark series watched button (shows dialog)
-                    if (uiState.item?.type == MediaType.SERIES && uiState.totalSeasons > 0) {
-                        IconButton(onClick = viewModel::showMarkAllSeriesDialog) {
-                            Icon(Icons.Filled.DoneAll, "Mark all watched", tint = TextSecondary)
+                actions = {
+                    if (!uiState.isPreview) {
+                        // Mark series watched button (shows dialog)
+                        if (uiState.item?.type == MediaType.SERIES && uiState.totalSeasons > 0) {
+                            IconButton(onClick = viewModel::showMarkAllSeriesDialog) {
+                                Icon(Icons.Filled.DoneAll, "Mark all watched", tint = TextSecondary)
+                            }
+                        } else if (uiState.item?.type != MediaType.SERIES) {
+                            IconButton(onClick = viewModel::toggleWatched) {
+                                Icon(
+                                    imageVector = if (uiState.isWatched) Icons.Filled.CheckCircle
+                                                  else Icons.Outlined.CheckCircle,
+                                    contentDescription = "Toggle watched",
+                                    tint = if (uiState.isWatched) WatchedGreen else TextSecondary
+                                )
+                            }
                         }
-                    } else if (uiState.item?.type != MediaType.SERIES) {
-                        IconButton(onClick = viewModel::toggleWatched) {
-                            Icon(
-                                imageVector = if (uiState.isWatched) Icons.Filled.CheckCircle
-                                              else Icons.Outlined.CheckCircle,
-                                contentDescription = "Toggle watched",
-                                tint = if (uiState.isWatched) WatchedGreen else TextSecondary
-                            )
+                        IconButton(onClick = viewModel::showDeleteDialog) {
+                            Icon(Icons.Outlined.DeleteOutline, "Delete", tint = TextSecondary)
                         }
-                    }
-                    IconButton(onClick = viewModel::showDeleteDialog) {
-                        Icon(Icons.Outlined.DeleteOutline, "Delete", tint = TextSecondary)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Background)
@@ -159,7 +162,8 @@ fun DetailScreen(
                         if (uiState.isSaving) {
                             CircularProgressIndicator(color = Background, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
                         } else {
-                            Text("Save Changes", fontWeight = FontWeight.SemiBold, color = Color.Unspecified)
+                            val btnText = if (uiState.isPreview) "Add to Watchlist" else "Save Changes"
+                            Text(btnText, fontWeight = FontWeight.SemiBold, color = Color.Unspecified)
                         }
                     }
                 }
@@ -266,40 +270,42 @@ fun DetailScreen(
                             SeriesEpisodeSection(
                                 uiState              = uiState,
                                 onSeasonSelect       = viewModel::selectSeason,
-                                onEpisodeToggle      = { s, ep -> viewModel.toggleEpisode(s, ep) },
-                                onMarkSeasonWatched  = viewModel::markSeasonWatched
+                                onEpisodeToggle      = { s, ep -> if (!uiState.isPreview) viewModel.toggleEpisode(s, ep) },
+                                onMarkSeasonWatched  = { if (!uiState.isPreview) viewModel.markSeasonWatched() }
                             )
                             Spacer(Modifier.height(24.dp))
                             SubtleDivider()
                             Spacer(Modifier.height(24.dp))
                         }
 
-                        // ── Rating ────────────────────────────────────────────
-                        SectionHeader("RATING")
-                        Spacer(Modifier.height(16.dp))
-                        StarRatingSelector(rating = uiState.rating, onRatingChange = viewModel::onRatingChange)
-                        Spacer(Modifier.height(32.dp))
-
-                        // ── Review & Notes ────────────────────────────────────
-                        SectionHeader("REVIEW & NOTES")
-                        Spacer(Modifier.height(16.dp))
-                        OutlinedTextField(
-                            value = uiState.notes,
-                            onValueChange = viewModel::onNotesChange,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .defaultMinSize(minHeight = 120.dp),
-                            placeholder = { Text("What did you think of it?", color = TextTertiary) },
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = AccentBlue,
-                                unfocusedBorderColor = SurfaceHighlight,
-                                focusedContainerColor = SurfaceElevated,
-                                unfocusedContainerColor = SurfaceElevated,
-                                focusedTextColor = TextPrimary,
-                                unfocusedTextColor = TextPrimary
-                            ),
-                            shape = RoundedCornerShape(12.dp)
-                        )
+                        if (!uiState.isPreview) {
+                            // ── Rating ────────────────────────────────────────────
+                            SectionHeader("RATING")
+                            Spacer(Modifier.height(16.dp))
+                            StarRatingSelector(rating = uiState.rating, onRatingChange = viewModel::onRatingChange)
+                            Spacer(Modifier.height(32.dp))
+    
+                            // ── Review & Notes ────────────────────────────────────
+                            SectionHeader("REVIEW & NOTES")
+                            Spacer(Modifier.height(16.dp))
+                            OutlinedTextField(
+                                value = uiState.notes,
+                                onValueChange = viewModel::onNotesChange,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .defaultMinSize(minHeight = 120.dp),
+                                placeholder = { Text("What did you think of it?", color = TextTertiary) },
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = AccentBlue,
+                                    unfocusedBorderColor = SurfaceHighlight,
+                                    focusedContainerColor = SurfaceElevated,
+                                    unfocusedContainerColor = SurfaceElevated,
+                                    focusedTextColor = TextPrimary,
+                                    unfocusedTextColor = TextPrimary
+                                ),
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                        }
                         Spacer(Modifier.height(100.dp))
                     }
                 }
@@ -422,7 +428,7 @@ private fun SeriesEpisodeSection(
                     color      = TextTertiary,
                     fontWeight = FontWeight.Medium
                 )
-                if (watchedCount < episodes.size) {
+                if (watchedCount < episodes.size && !uiState.isPreview) {
                     TextButton(
                         onClick        = onMarkSeasonWatched,
                         contentPadding = PaddingValues(horizontal = 8.dp)
@@ -452,7 +458,8 @@ private fun SeriesEpisodeSection(
                     EpisodeRow(
                         episode   = ep,
                         isCurrent = ep.season == uiState.currentSeason && ep.episodeNumber == uiState.currentEpisode,
-                        onToggle  = { onEpisodeToggle(ep.season, ep.episodeNumber) }
+                        onToggle  = { onEpisodeToggle(ep.season, ep.episodeNumber) },
+                        isPreview = uiState.isPreview
                     )
                     if (index < episodes.lastIndex) {
                         SubtleDivider(modifier = Modifier.padding(start = 56.dp))
@@ -470,7 +477,8 @@ private fun SeriesEpisodeSection(
 private fun EpisodeRow(
     episode: EpisodeUiItem,
     isCurrent: Boolean,
-    onToggle: () -> Unit
+    onToggle: () -> Unit,
+    isPreview: Boolean = false
 ) {
     val bgColor = if (isCurrent) AccentBlue.copy(alpha = 0.07f) else Color.Transparent
 
@@ -483,7 +491,7 @@ private fun EpisodeRow(
                 if (isCurrent) Modifier.border(1.dp, AccentBlue.copy(alpha = 0.22f), RoundedCornerShape(10.dp))
                 else Modifier
             )
-            .clickable(onClick = onToggle)
+            .then(if (!isPreview) Modifier.clickable(onClick = onToggle) else Modifier)
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment     = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)

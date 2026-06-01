@@ -141,7 +141,7 @@ data class DiscoverUiState(
 @Composable
 fun DiscoverScreen(
     repository: WatchItemRepository,
-    onItemClick: (Long) -> Unit
+    onItemClick: (ActivityFeedItem) -> Unit
 ) {
     val context = LocalContext.current
     val viewModel: DiscoverViewModel = viewModel(factory = DiscoverViewModel.Factory(context, repository))
@@ -192,7 +192,7 @@ fun DiscoverScreen(
                     items(uiState.suggestions, key = { it.id }) { item ->
                         DiscoverCard(
                             item = item,
-                            onClick = { /* Could navigate to detail if we fetch item first, for now disabled since we don't have local item ID yet */ },
+                            onClick = { onItemClick(item) },
                             onAdd = { viewModel.addToList(item) }
                         )
                     }
@@ -260,12 +260,6 @@ private fun DiscoverCard(item: ActivityFeedItem, onClick: () -> Unit, onAdd: () 
                         color = TextTertiary
                     )
                 }
-            }
-            IconButton(
-                onClick = onAdd,
-                modifier = Modifier.size(28.dp).background(AccentBlue, RoundedCornerShape(14.dp))
-            ) {
-                Icon(Icons.Filled.Add, contentDescription = "Add to list", tint = Background, modifier = Modifier.size(16.dp))
             }
         }
     }

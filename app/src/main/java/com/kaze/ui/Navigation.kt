@@ -49,6 +49,10 @@ sealed class Screen(val route: String) {
     object UserProfile : Screen("userProfile/{userId}") {
         fun createRoute(id: String) = "userProfile/$id"
     }
+    object DetailPreview : Screen("detail_preview/{imdbId}?title={title}&type={type}&poster={poster}") {
+        fun createRoute(imdbId: String, title: String, type: String, poster: String?) =
+            "detail_preview/$imdbId?title=${android.net.Uri.encode(title)}&type=$type&poster=${android.net.Uri.encode(poster ?: "")}"
+    }
 }
 
 @Composable
@@ -135,7 +139,16 @@ fun WatchLaterNavGraph(
         composable(Screen.Discover.route) {
             DiscoverScreen(
                 repository = repo,
-                onItemClick = { id -> navController.navigate(Screen.Detail.createRoute(id)) }
+                onItemClick = { item ->
+                    if (item.item_imdb_id != null) {
+                        navController.navigate(Screen.DetailPreview.createRoute(
+                            imdbId = item.item_imdb_id,
+                            title = item.item_title ?: "",
+                            type = item.item_type ?: "MOVIE",
+                            poster = item.item_poster_url
+                        ))
+                    }
+                }
             )
         }
 
@@ -203,6 +216,39 @@ fun WatchLaterNavGraph(
             val itemId = backStack.arguments!!.getLong("itemId")
             val detailVm: DetailViewModel = viewModel(
                 factory = DetailViewModel.Factory(repo, app.container.seriesRepository, app.container.userRepository, itemId)
+            )
+            DetailScreen(
+                viewModel = detailVm,
+                onBack    = { navController.popBackStack() }
+            )
+        }
+        
+        // ── Detail Preview ────────────────────────────────────────────────
+        composable(
+            route = Screen.DetailPreview.route,
+            arguments = listOf(
+                navArgument("imdbId") { type = NavType.StringType },
+                navArgument("title") { type = NavType.StringType },
+                navArgument("type") { type = NavType.StringType },
+                navArgument("poster") { type = NavType.StringType; nullable = true }
+            )
+        ) { backStack ->
+            val imdbId = backStack.arguments!!.getString("imdbId") ?: ""
+            val title  = backStack.arguments!!.getString("title") ?: ""
+            val type   = backStack.arguments!!.getString("type") ?: "MOVIE"
+            val poster = backStack.arguments!!.getString("poster")
+
+            val detailVm: DetailViewModel = viewModel(
+                factory = DetailViewModel.Factory(
+                    repository = repo,
+                    seriesRepository = app.container.seriesRepository,
+                    userRepository = app.container.userRepository,
+                    itemId = -1L,
+                    previewImdbId = imdbId,
+                    previewTitle = title,
+                    previewType = type,
+                    previewPoster = poster
+                )
             )
             DetailScreen(
                 viewModel = detailVm,

@@ -28,10 +28,15 @@ class UserPreferences(context: Context) {
         get() = prefs.getString(KEY_FILTER, "ALL") ?: "ALL"
         set(value) = prefs.edit().putString(KEY_FILTER, value).apply()
 
+    var hasMigratedWatchedSeries: Boolean
+        get() = prefs.getBoolean(KEY_MIGRATED_WATCHED, false)
+        set(value) = prefs.edit().putBoolean(KEY_MIGRATED_WATCHED, value).apply()
+
     companion object {
         private const val KEY_HAPTIC = "haptic_enabled"
         private const val KEY_SOUND = "sound_enabled"
         private const val KEY_SORT = "sort_option"
         private const val KEY_FILTER = "filter_option"
+        private const val KEY_MIGRATED_WATCHED = "migrated_watched_series"
     }
 }

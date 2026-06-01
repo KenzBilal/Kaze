@@ -67,6 +67,25 @@ class HomeViewModel(
         viewModelScope.launch {
             updateManager.checkForUpdates()
         }
+
+        if (!userPreferences.hasMigratedWatchedSeries) {
+            viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                try {
+                    val watchedItems = repository.getWatchedItems(SortFilterState(filter = FilterOption.SERIES)).first()
+                    watchedItems.forEach { item ->
+                        if (item.type == MediaType.SERIES && item.isWatched) {
+                            val totalSeasons = seriesRepository.getTotalSeasons(item.imdbId, item.title)
+                            if (totalSeasons > 0) {
+                                seriesRepository.markAllSeriesWatched(item.id, item.imdbId, totalSeasons)
+                            }
+                        }
+                    }
+                    userPreferences.hasMigratedWatchedSeries = true
+                } catch (e: Exception) {
+                    // Ignore, try again next time
+                }
+            }
+        }
     }
 
     fun downloadUpdate() = updateManager.downloadUpdate()

@@ -33,14 +33,19 @@ data class DetailUiState(
     val currentEpisode: Int = 1,
     // UX feedback
     val toastMessage: String? = null,
-    val showMarkAllSeriesDialog: Boolean = false
+    val showMarkAllSeriesDialog: Boolean = false,
+    val isPreview: Boolean = false
 )
 
 class DetailViewModel(
     private val repository: WatchItemRepository,
     private val seriesRepository: SeriesRepository,
     private val userRepository: UserRepository,
-    private val itemId: Long
+    private val itemId: Long,
+    private val previewImdbId: String? = null,
+    private val previewTitle: String? = null,
+    private val previewType: String? = null,
+    private val previewPoster: String? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DetailUiState())
@@ -51,6 +56,27 @@ class DetailViewModel(
 
     init {
         viewModelScope.launch {
+            if (itemId == -1L && previewImdbId != null) {
+                val mediaType = try { MediaType.valueOf(previewType ?: "MOVIE") } catch (e: Exception) { MediaType.MOVIE }
+                val previewItem = WatchItem(
+                    id = -1,
+                    imdbId = previewImdbId,
+                    title = previewTitle ?: "",
+                    year = 0,
+                    type = mediaType,
+                    posterUrl = previewPoster,
+                    dateAdded = System.currentTimeMillis(),
+                    lastUpdated = System.currentTimeMillis()
+                )
+                _uiState.value = DetailUiState(
+                    item = previewItem,
+                    isPreview = true,
+                    isLoading = false
+                )
+                if (previewItem.type == MediaType.SERIES) loadSeriesData(previewItem)
+                return@launch
+            }
+
             repository.getItemByIdFlow(itemId).collect { item ->
                 val current = _uiState.value
                 if (current.isLoading) {
@@ -268,6 +294,10 @@ class DetailViewModel(
     fun dismissDeleteDialog() { _uiState.update { it.copy(showDeleteDialog = false) } }
 
     fun saveItem(onSuccess: (() -> Unit)? = null) {
+        if (_uiState.value.isPreview) {
+            addToWatchlist(onSuccess)
+            return
+        }
         val state    = _uiState.value
         val original = state.item ?: return
         viewModelScope.launch {
@@ -289,6 +319,32 @@ class DetailViewModel(
         }
     }
 
+    private fun addToWatchlist(onSuccess: (() -> Unit)? = null) {
+        val item = _uiState.value.item ?: return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSaving = true) }
+            val watchItem = item.copy(id = 0) // reset id for Room auto-generate
+            val newId = repository.saveItem(watchItem)
+            
+            // Sync to cloud
+            val updated = watchItem.copy(id = newId)
+            userRepository.getLocalUserId()?.let { uid ->
+                userRepository.pushWatchItem(uid, updated)
+            }
+            
+            _uiState.update { it.copy(isSaving = false, isPreview = false, item = updated, toastMessage = "Added to Watchlist ✓") }
+            _savedEvent.emit(Unit)
+            onSuccess?.invoke()
+            
+            // Since it's now saved, we should reload the item via normal flow to get updates
+            repository.getItemByIdFlow(newId).collect { newItem ->
+                if (newItem != null) {
+                    _uiState.update { it.copy(item = newItem) }
+                }
+            }
+        }
+    }
+
     fun deleteItem(onSuccess: () -> Unit) {
         val item = _uiState.value.item ?: return
         viewModelScope.launch {
@@ -306,10 +362,14 @@ class DetailViewModel(
         private val repository: WatchItemRepository,
         private val seriesRepository: SeriesRepository,
         private val userRepository: UserRepository,
-        private val itemId: Long
+        private val itemId: Long,
+        private val previewImdbId: String? = null,
+        private val previewTitle: String? = null,
+        private val previewType: String? = null,
+        private val previewPoster: String? = null
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-            DetailViewModel(repository, seriesRepository, userRepository, itemId) as T
+            DetailViewModel(repository, seriesRepository, userRepository, itemId, previewImdbId, previewTitle, previewType, previewPoster) as T
     }
 }
