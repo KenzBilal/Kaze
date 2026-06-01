@@ -1,0 +1,91 @@
+build-and-release	Build Release APK	﻿2026-06-01T19:01:14.5302777Z ##[group]Run ./gradlew assembleRelease
+build-and-release	Build Release APK	2026-06-01T19:01:14.5303134Z [36;1m./gradlew assembleRelease[0m
+build-and-release	Build Release APK	2026-06-01T19:01:14.5329248Z shell: /usr/bin/bash -e {0}
+build-and-release	Build Release APK	2026-06-01T19:01:14.5329539Z env:
+build-and-release	Build Release APK	2026-06-01T19:01:14.5329923Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.19-10/x64
+build-and-release	Build Release APK	2026-06-01T19:01:14.5330481Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.19-10/x64
+build-and-release	Build Release APK	2026-06-01T19:01:14.5331055Z   KEYSTORE_PATH: /home/runner/work/Kaze/Kaze/***-release.jks
+build-and-release	Build Release APK	2026-06-01T19:01:14.5331451Z   KEYSTORE_PASSWORD: ***
+build-and-release	Build Release APK	2026-06-01T19:01:14.5331743Z   KEY_ALIAS: ***
+build-and-release	Build Release APK	2026-06-01T19:01:14.5332014Z   KEY_PASSWORD: ***
+build-and-release	Build Release APK	2026-06-01T19:01:14.5332270Z ##[endgroup]
+build-and-release	Build Release APK	2026-06-01T19:01:14.8279044Z Downloading https://services.gradle.org/distributions/gradle-8.9-bin.zip
+build-and-release	Build Release APK	2026-06-01T19:01:17.7303279Z ............10%.............20%.............30%.............40%.............50%.............60%.............70%.............80%.............90%.............100%
+build-and-release	Build Release APK	2026-06-01T19:01:19.1661117Z 
+build-and-release	Build Release APK	2026-06-01T19:01:19.1662091Z Welcome to Gradle 8.9!
+build-and-release	Build Release APK	2026-06-01T19:01:19.1662352Z 
+build-and-release	Build Release APK	2026-06-01T19:01:19.1665279Z Here are the highlights of this release:
+build-and-release	Build Release APK	2026-06-01T19:01:19.1666469Z  - Enhanced Error and Warning Messages
+build-and-release	Build Release APK	2026-06-01T19:01:19.1674134Z  - IDE Integration Improvements
+build-and-release	Build Release APK	2026-06-01T19:01:19.1674792Z  - Daemon JVM Information
+build-and-release	Build Release APK	2026-06-01T19:01:19.1675121Z 
+build-and-release	Build Release APK	2026-06-01T19:01:19.1677090Z For more details see https://docs.gradle.org/8.9/release-notes.html
+build-and-release	Build Release APK	2026-06-01T19:01:19.1677779Z 
+build-and-release	Build Release APK	2026-06-01T19:01:19.4660769Z Starting a Gradle Daemon (subsequent builds will be faster)
+build-and-release	Build Release APK	2026-06-01T19:01:22.3653642Z Calculating task graph as no cached configuration is available for tasks: assembleRelease
+build-and-release	Build Release APK	2026-06-01T19:03:01.3710407Z > Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+build-and-release	Build Release APK	2026-06-01T19:03:01.3711517Z > Task :app:preBuild UP-TO-DATE
+build-and-release	Build Release APK	2026-06-01T19:03:01.3727811Z > Task :app:preReleaseBuild UP-TO-DATE
+build-and-release	Build Release APK	2026-06-01T19:03:01.4667424Z > Task :app:processReleaseGoogleServices
+build-and-release	Build Release APK	2026-06-01T19:03:01.5667173Z > Task :app:generateReleaseResValues
+build-and-release	Build Release APK	2026-06-01T19:03:01.5678274Z > Task :app:generateReleaseBuildConfig
+build-and-release	Build Release APK	2026-06-01T19:03:01.5717328Z > Task :app:buildKotlinToolingMetadata
+build-and-release	Build Release APK	2026-06-01T19:03:01.5731094Z > Task :app:createReleaseCompatibleScreenManifests
+build-and-release	Build Release APK	2026-06-01T19:03:01.5756851Z > Task :app:generateReleaseResources
+build-and-release	Build Release APK	2026-06-01T19:03:01.5786717Z > Task :app:extractDeepLinksRelease
+build-and-release	Build Release APK	2026-06-01T19:03:01.7651152Z > Task :app:packageReleaseResources
+build-and-release	Build Release APK	2026-06-01T19:03:05.1677151Z > Task :app:parseReleaseLocalResources
+build-and-release	Build Release APK	2026-06-01T19:03:05.6667440Z > Task :app:mapReleaseSourceSetPaths
+build-and-release	Build Release APK	2026-06-01T19:03:05.6697042Z > Task :app:checkReleaseAarMetadata
+build-and-release	Build Release APK	2026-06-01T19:03:05.7663439Z > Task :app:extractProguardFiles
+build-and-release	Build Release APK	2026-06-01T19:03:05.7696952Z > Task :app:mergeReleaseJniLibFolders
+build-and-release	Build Release APK	2026-06-01T19:03:06.8680497Z > Task :app:mergeReleaseNativeLibs
+build-and-release	Build Release APK	2026-06-01T19:03:06.9662554Z 
+build-and-release	Build Release APK	2026-06-01T19:03:06.9717289Z > Task :app:stripReleaseDebugSymbols
+build-and-release	Build Release APK	2026-06-01T19:03:06.9737260Z Unable to strip the following libraries, packaging them as they are: libandroidx.graphics.path.so.
+build-and-release	Build Release APK	2026-06-01T19:03:06.9740452Z 
+build-and-release	Build Release APK	2026-06-01T19:03:06.9817091Z > Task :app:javaPreCompileRelease
+build-and-release	Build Release APK	2026-06-01T19:03:07.0692547Z > Task :app:processReleaseMainManifest
+build-and-release	Build Release APK	2026-06-01T19:03:07.1677508Z > Task :app:processReleaseManifest
+build-and-release	Build Release APK	2026-06-01T19:03:07.1708174Z > Task :app:extractReleaseNativeSymbolTables
+build-and-release	Build Release APK	2026-06-01T19:03:07.1752852Z > Task :app:mergeReleaseNativeDebugMetadata NO-SOURCE
+build-and-release	Build Release APK	2026-06-01T19:03:09.4651617Z > Task :app:processReleaseManifestForPackage
+build-and-release	Build Release APK	2026-06-01T19:03:09.4653642Z > Task :app:mergeReleaseStartupProfile
+build-and-release	Build Release APK	2026-06-01T19:03:09.8667275Z > Task :app:mergeReleaseShaders
+build-and-release	Build Release APK	2026-06-01T19:03:09.8696930Z > Task :app:compileReleaseShaders NO-SOURCE
+build-and-release	Build Release APK	2026-06-01T19:03:09.8697607Z > Task :app:generateReleaseAssets UP-TO-DATE
+build-and-release	Build Release APK	2026-06-01T19:03:10.2658939Z > Task :app:mergeReleaseAssets
+build-and-release	Build Release APK	2026-06-01T19:03:10.3660542Z > Task :app:mergeReleaseArtProfile
+build-and-release	Build Release APK	2026-06-01T19:03:10.3687138Z > Task :app:compressReleaseAssets
+build-and-release	Build Release APK	2026-06-01T19:03:10.5687336Z > Task :app:extractReleaseVersionControlInfo
+build-and-release	Build Release APK	2026-06-01T19:03:10.5767752Z > Task :app:validateSigningRelease
+build-and-release	Build Release APK	2026-06-01T19:03:10.6657584Z > Task :app:writeReleaseAppMetadata
+build-and-release	Build Release APK	2026-06-01T19:03:10.6717377Z > Task :app:writeReleaseSigningConfigVersions
+build-and-release	Build Release APK	2026-06-01T19:03:10.6777115Z > Task :app:collectReleaseDependencies
+build-and-release	Build Release APK	2026-06-01T19:03:10.7677301Z > Task :app:checkReleaseDuplicateClasses
+build-and-release	Build Release APK	2026-06-01T19:03:10.8651089Z > Task :app:sdkReleaseDependencyData
+build-and-release	Build Release APK	2026-06-01T19:03:11.2674322Z > Task :app:mergeReleaseResources
+build-and-release	Build Release APK	2026-06-01T19:03:12.0697236Z > Task :app:processReleaseResources
+build-and-release	Build Release APK	2026-06-01T19:03:12.2657454Z > Task :app:convertLinkedResourcesToProtoRelease
+build-and-release	Build Release APK	2026-06-01T19:03:28.9667399Z > Task :app:kspReleaseKotlin
+build-and-release	Build Release APK	2026-06-01T19:03:38.5665133Z e: file:///home/runner/work/Kaze/Kaze/app/src/main/java/com/***/data/repository/ActivityRepository.kt:143:33 Unresolved reference 'notIn'.
+build-and-release	Build Release APK	2026-06-01T19:03:38.5666379Z 
+build-and-release	Build Release APK	2026-06-01T19:03:38.5689001Z > Task :app:compileReleaseKotlin FAILED
+build-and-release	Build Release APK	2026-06-01T19:03:38.6650739Z 
+build-and-release	Build Release APK	2026-06-01T19:03:38.6651505Z FAILURE: Build failed with an exception.
+build-and-release	Build Release APK	2026-06-01T19:03:38.6667776Z 
+build-and-release	Build Release APK	2026-06-01T19:03:38.6671015Z * What went wrong:
+build-and-release	Build Release APK	2026-06-01T19:03:38.6671468Z 37 actionable tasks: 37 executed
+build-and-release	Build Release APK	2026-06-01T19:03:38.6672396Z Execution failed for task ':app:compileReleaseKotlin'.
+build-and-release	Build Release APK	2026-06-01T19:03:38.6673150Z Configuration cache entry stored.
+build-and-release	Build Release APK	2026-06-01T19:03:38.6674692Z > A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+build-and-release	Build Release APK	2026-06-01T19:03:38.6676478Z    > Compilation error. See log for more details
+build-and-release	Build Release APK	2026-06-01T19:03:38.6677071Z 
+build-and-release	Build Release APK	2026-06-01T19:03:38.6677403Z * Try:
+build-and-release	Build Release APK	2026-06-01T19:03:38.6678040Z > Run with --stacktrace option to get the stack trace.
+build-and-release	Build Release APK	2026-06-01T19:03:38.6678896Z > Run with --info or --debug option to get more log output.
+build-and-release	Build Release APK	2026-06-01T19:03:38.6679682Z > Run with --scan to get full insights.
+build-and-release	Build Release APK	2026-06-01T19:03:38.6680420Z > Get more help at https://help.gradle.org.
+build-and-release	Build Release APK	2026-06-01T19:03:38.6680964Z 
+build-and-release	Build Release APK	2026-06-01T19:03:38.6681309Z BUILD FAILED in 2m 23s
+build-and-release	Build Release APK	2026-06-01T19:03:39.1082205Z ##[error]Process completed with exit code 1.

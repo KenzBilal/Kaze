@@ -139,16 +139,13 @@ class ActivityRepository(private val context: Context) {
                         filter {
                             isIn("user_id", followedUserIds)
                             eq("action_type", "added_item")
-                            if (ownImdbIds.isNotEmpty()) {
-                                notIn("item_imdb_id", ownImdbIds.toList())
-                            }
                         }
                         order("created_at", io.github.jan.supabase.postgrest.query.Order.DESCENDING)
                         limit(100)
                     }
                     .decodeList<ActivityFeedItem>()
 
-                feedItems.filter { item -> item.item_imdb_id != null }
+                feedItems.filter { item -> item.item_imdb_id != null && !ownImdbIds.contains(item.item_imdb_id) }
                 .distinctBy { it.item_imdb_id }
                 .take(50)
             } catch (e: Exception) {
