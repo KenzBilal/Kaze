@@ -158,14 +158,23 @@ class ActivityRepository(private val context: Context) {
     /**
      * Store the FCM push notification token in Supabase.
      */
-    suspend fun saveFcmToken(userId: String, token: String) {
+    suspend fun saveFcmToken(userId: String, token: String, fromSyncWorker: Boolean = false) {
         withContext(Dispatchers.IO) {
             try {
                 SupabaseApi.client.from("fcm_tokens").upsert(
                     FcmToken(user_id = userId, token = token)
                 ) { onConflict = "user_id" }
             } catch (e: Exception) {
+                if (fromSyncWorker) throw e
                 e.printStackTrace()
+                pendingDao.insert(
+                    PendingAction(
+                        actionType = ActionType.SAVE_FCM_TOKEN,
+                        userId = userId,
+                        payload = token
+                    )
+                )
+                SyncWorker.enqueue(context)
             }
         }
     }

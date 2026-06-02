@@ -38,27 +38,27 @@ class SyncWorker(
                 try {
                     when (action.actionType) {
                         ActionType.FOLLOW -> {
-                            userRepo.followUser(action.userId, action.targetId)
+                            userRepo.followUser(action.userId, action.targetId, fromSyncWorker = true)
                             dao.delete(action)
                         }
                         ActionType.UNFOLLOW -> {
-                            userRepo.unfollowUser(action.userId, action.targetId)
+                            userRepo.unfollowUser(action.userId, action.targetId, fromSyncWorker = true)
                             dao.delete(action)
                         }
                         ActionType.POST_ACTIVITY -> {
-                            // Parse payload and post activity
+                            // Parse payload and post activity (throws on error)
                             userRepo.postActivityFromPayload(action.payload)
                             dao.delete(action)
                         }
                         ActionType.DELETE_WATCHLIST -> {
                             val item = Json.decodeFromString<WatchItem>(action.payload)
-                            userRepo.deleteFromWatchlist(action.userId, item)
+                            userRepo.deleteFromWatchlist(action.userId, item, fromSyncWorker = true)
                             dao.delete(action)
                         }
                         ActionType.SYNC_WATCHLIST -> {
                             val allItems = watchRepo.getAllItemsSnapshot()
                             if (allItems.isNotEmpty()) {
-                                userRepo.syncWatchlist(action.userId, allItems)
+                                userRepo.syncWatchlist(action.userId, allItems, fromSyncWorker = true)
                             }
                             dao.delete(action)
                         }
@@ -66,7 +66,7 @@ class SyncWorker(
                             val allItems = watchRepo.getAllItemsSnapshot()
                             val progressList = db.episodeProgressDao().getAllEpisodeProgressOnce()
                             if (progressList.isNotEmpty() && allItems.isNotEmpty()) {
-                                userRepo.syncEpisodeProgress(action.userId, progressList, allItems)
+                                userRepo.syncEpisodeProgress(action.userId, progressList, allItems, fromSyncWorker = true)
                             }
                             dao.delete(action)
                         }
@@ -76,7 +76,12 @@ class SyncWorker(
                             val favMovie = parts.getOrNull(0)?.ifBlank { null }
                             val favSeries = parts.getOrNull(1)?.ifBlank { null }
                             val favGenre = parts.getOrNull(2)?.ifBlank { null }
-                            userRepo.updateProfile(action.userId, favMovie, favSeries, favGenre)
+                            userRepo.updateProfile(action.userId, favMovie, favSeries, favGenre, fromSyncWorker = true)
+                            dao.delete(action)
+                        }
+                        ActionType.SAVE_FCM_TOKEN -> {
+                            val activityRepo = com.kaze.data.repository.ActivityRepository(applicationContext)
+                            activityRepo.saveFcmToken(action.userId, action.payload, fromSyncWorker = true)
                             dao.delete(action)
                         }
                     }

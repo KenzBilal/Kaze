@@ -105,6 +105,26 @@ fun AppContent(app: WatchLaterApp) {
         Screen.MyProfile.route
     )
 
+    val isOnline by app.container.networkMonitor.isOnline.collectAsState()
+    var showNetworkBanner by remember { mutableStateOf(false) }
+    var wasOnline by remember { mutableStateOf(true) }
+    var bannerIsOnline by remember { mutableStateOf(true) }
+
+    LaunchedEffect(isOnline) {
+        if (!isOnline && wasOnline) {
+            bannerIsOnline = false
+            showNetworkBanner = true
+            kotlinx.coroutines.delay(3000)
+            showNetworkBanner = false
+        } else if (isOnline && !wasOnline) {
+            bannerIsOnline = true
+            showNetworkBanner = true
+            kotlinx.coroutines.delay(3000)
+            showNetworkBanner = false
+        }
+        wasOnline = isOnline
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = Background,
@@ -163,6 +183,17 @@ fun AppContent(app: WatchLaterApp) {
                 .padding(bottom = padding.calculateBottomPadding())
         ) {
             WatchLaterNavGraph(navController = navController, app = app)
+            
+            AnimatedVisibility(
+                visible = showNetworkBanner,
+                enter = slideInVertically { -it },
+                exit = slideOutVertically { -it },
+                modifier = Modifier
+                    .align(androidx.compose.ui.Alignment.TopCenter)
+                    .padding(top = padding.calculateTopPadding())
+            ) {
+                com.kaze.ui.components.NetworkStatusBanner(isOnline = bannerIsOnline)
+            }
         }
     }
 }

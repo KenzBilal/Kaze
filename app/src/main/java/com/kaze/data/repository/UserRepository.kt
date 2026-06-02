@@ -144,7 +144,7 @@ class UserRepository(private val context: Context) {
         val fav_genre: String?
     )
 
-    suspend fun updateProfile(userId: String, favMovie: String?, favSeries: String?, favGenre: String?) {
+    suspend fun updateProfile(userId: String, favMovie: String?, favSeries: String?, favGenre: String?, fromSyncWorker: Boolean = false) {
         withContext(Dispatchers.IO) {
             try {
                 val update = ProfileUpdate(
@@ -156,6 +156,7 @@ class UserRepository(private val context: Context) {
                     filter { eq("id", userId) }
                 }
             } catch (e: Exception) {
+                if (fromSyncWorker) throw e
                 e.printStackTrace()
                 val payload = "${favMovie.orEmpty()}|||${favSeries.orEmpty()}|||${favGenre.orEmpty()}"
                 val dao = com.kaze.data.local.WatchLaterDatabase.getInstance(context).pendingActionDao()
@@ -327,12 +328,13 @@ class UserRepository(private val context: Context) {
         }
     }
 
-    suspend fun followUser(followerId: String, followingId: String) {
+    suspend fun followUser(followerId: String, followingId: String, fromSyncWorker: Boolean = false) {
         withContext(Dispatchers.IO) {
             try {
                 val rel = FollowRelation(follower_id = followerId, following_id = followingId)
                 SupabaseApi.client.from("follows").insert(rel)
             } catch (e: Exception) {
+                if (fromSyncWorker) throw e
                 e.printStackTrace()
                 // Queue for offline sync
                 val db = WatchLaterDatabase.getInstance(context)
@@ -348,7 +350,7 @@ class UserRepository(private val context: Context) {
         }
     }
 
-    suspend fun unfollowUser(followerId: String, followingId: String) {
+    suspend fun unfollowUser(followerId: String, followingId: String, fromSyncWorker: Boolean = false) {
         withContext(Dispatchers.IO) {
             try {
                 SupabaseApi.client.from("follows").delete {
@@ -358,6 +360,7 @@ class UserRepository(private val context: Context) {
                     }
                 }
             } catch (e: Exception) {
+                if (fromSyncWorker) throw e
                 e.printStackTrace()
                 // Queue for offline sync
                 val db = WatchLaterDatabase.getInstance(context)
@@ -414,7 +417,7 @@ class UserRepository(private val context: Context) {
         syncWatchlist(userId, listOf(item))
     }
 
-    suspend fun deleteFromWatchlist(userId: String, item: WatchItem) {
+    suspend fun deleteFromWatchlist(userId: String, item: WatchItem, fromSyncWorker: Boolean = false) {
         withContext(Dispatchers.IO) {
             try {
                 SupabaseApi.client.from("public_watchlist").delete {
@@ -430,6 +433,7 @@ class UserRepository(private val context: Context) {
                     }
                 }
             } catch (e: Exception) {
+                if (fromSyncWorker) throw e
                 e.printStackTrace()
                 val dao = com.kaze.data.local.WatchLaterDatabase.getInstance(context).pendingActionDao()
                 dao.insert(
@@ -444,7 +448,7 @@ class UserRepository(private val context: Context) {
         }
     }
 
-    suspend fun syncWatchlist(userId: String, items: List<WatchItem>) {
+    suspend fun syncWatchlist(userId: String, items: List<WatchItem>, fromSyncWorker: Boolean = false) {
         if (items.isEmpty()) return
         withContext(Dispatchers.IO + kotlinx.coroutines.NonCancellable) {
             // Fetch current server last_updated timestamps to avoid overwriting newer data
@@ -491,6 +495,7 @@ class UserRepository(private val context: Context) {
                     onConflict = "user_id,title,year,type"
                 }
             } catch (e: Exception) {
+                if (fromSyncWorker) throw e
                 e.printStackTrace()
                 payload.forEach { entry ->
                     try {
@@ -513,7 +518,7 @@ class UserRepository(private val context: Context) {
         }
     }
 
-    suspend fun syncEpisodeProgress(userId: String, progressList: List<com.kaze.data.local.EpisodeProgress>, items: List<WatchItem>) {
+    suspend fun syncEpisodeProgress(userId: String, progressList: List<com.kaze.data.local.EpisodeProgress>, items: List<WatchItem>, fromSyncWorker: Boolean = false) {
         if (progressList.isEmpty()) return
         withContext(Dispatchers.IO + kotlinx.coroutines.NonCancellable) {
             val itemMap = items.associateBy { it.id }
@@ -561,6 +566,7 @@ class UserRepository(private val context: Context) {
                     }
                 }
             } catch (e: Exception) {
+                if (fromSyncWorker) throw e
                 e.printStackTrace()
                 val dao = com.kaze.data.local.WatchLaterDatabase.getInstance(context).pendingActionDao()
                 dao.insert(

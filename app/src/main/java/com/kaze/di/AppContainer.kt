@@ -15,6 +15,7 @@ class AppContainer(context: Context) {
     val activityRepository = com.kaze.data.repository.ActivityRepository(context)
     val userRepository = com.kaze.data.repository.UserRepository(context)
     val userPreferences = com.kaze.utils.UserPreferences(context)
+    val networkMonitor = com.kaze.utils.NetworkMonitor(context)
 
     val repository = WatchItemRepository(
         dao                = database.watchItemDao(),
