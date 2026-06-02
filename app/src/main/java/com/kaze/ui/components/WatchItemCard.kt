@@ -145,8 +145,10 @@ fun WatchItemCard(
             val progressFraction = if (item.isWatched) 1f else {
                 val s = item.season ?: 1
                 val e = item.episode ?: 0
-                // Indeterminate progress logic when total episodes unknown
-                val frac = (s * 10f + e) / 100f
+                // Asymptotic fake math. Assumes ~15 eps/season.
+                // Moves fast early on, slows down later. Never hits 100%.
+                val watchedWeight = ((s - 1) * 15f) + e
+                val frac = 1f - (1f / (1f + (watchedWeight * 0.04f)))
                 frac.coerceIn(0.05f, 0.95f)
             }
             Box(
