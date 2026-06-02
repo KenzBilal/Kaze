@@ -58,29 +58,40 @@ class OmdbRepository {
         }
     }
 
+    data class SeriesMetadata(val genres: String, val totalSeasons: Int, val isFinished: Boolean)
+
     /**
      * A3 fix: Consolidated fetchGenre + fetchTotalSeasons into a single network call.
-     * Returns a Pair of (genres string, totalSeasons int).
+     * Returns SeriesMetadata containing genres, total seasons, and finished status.
      */
-    suspend fun fetchDetail(omdbId: String): Pair<String, Int> {
-        if (!hasApiKey || omdbId.isBlank()) return "" to 0
+    suspend fun fetchDetail(omdbId: String): SeriesMetadata {
+        if (!hasApiKey || omdbId.isBlank()) return SeriesMetadata("", 0, false)
         return try {
             val detail = api.getDetail(imdbId = omdbId, apiKey = apiKey)
             val genres = detail.genre?.takeIf { it != "N/A" } ?: ""
             val seasons = detail.totalSeasons?.toIntOrNull() ?: 0
-            genres to seasons
+            
+            val yearStr = detail.year ?: ""
+            val isFinished = when {
+                yearStr.endsWith("–") || yearStr.endsWith("-") -> false // Ongoing
+                yearStr.contains("–") || yearStr.contains("-") -> true  // Finished (e.g. 2008-2013)
+                yearStr.isNotEmpty() && yearStr != "N/A" -> true        // Miniseries
+                else -> false
+            }
+            
+            SeriesMetadata(genres, seasons, isFinished)
         } catch (e: CancellationException) { throw e
         } catch (e: Exception) {
             if (BuildConfig.DEBUG) Log.e("OmdbRepo", "fetchDetail failed: ${e.message}")
-            "" to 0
+            SeriesMetadata("", 0, false)
         }
     }
 
     /** Returns genres string — single call wrapper over fetchDetail */
-    suspend fun fetchGenre(omdbId: String): String = fetchDetail(omdbId).first
+    suspend fun fetchGenre(omdbId: String): String = fetchDetail(omdbId).genres
 
-    /** Returns total seasons for a series, or 0 on failure */
-    suspend fun fetchTotalSeasons(imdbId: String): Int = fetchDetail(imdbId).second
+    /** Returns total seasons and isFinished for a series */
+    suspend fun fetchSeriesMetadata(imdbId: String): SeriesMetadata = fetchDetail(imdbId)
 
     /** Returns episode list for one season */
     suspend fun fetchSeason(imdbId: String, season: Int): OmdbSeasonResponse? {

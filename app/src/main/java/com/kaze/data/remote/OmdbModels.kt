@@ -27,6 +27,7 @@ data class OmdbSearchItem(
 data class OmdbDetailResponse(
     @SerializedName("Genre")        val genre: String?,
     @SerializedName("totalSeasons") val totalSeasons: String?,  // "5" or null
+    @SerializedName("Year")         val year: String?,          // "2008-2013" or "2021-"
     @SerializedName("Response")     val response: String = "False"
 )
 

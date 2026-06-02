@@ -218,6 +218,20 @@ class UserRepository(private val context: Context) {
         }
     }
 
+    suspend fun getWatchlistsByUserIds(userIds: Set<String>): List<PublicWatchlistItem> {
+        if (userIds.isEmpty()) return emptyList()
+        return withContext(Dispatchers.IO) {
+            try {
+                SupabaseApi.client.from("public_watchlist")
+                    .select { filter { isIn("user_id", userIds.toList()) } }
+                    .decodeList<PublicWatchlistItem>()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                emptyList()
+            }
+        }
+    }
+
     // ── Follows ───────────────────────────────────────────────────────────────
 
     suspend fun getFollowersCount(userId: String): Int {

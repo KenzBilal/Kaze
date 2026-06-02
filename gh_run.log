@@ -1,0 +1,308 @@
+build-and-release	UNKNOWN STEP	﻿2026-06-02T04:40:51.6590305Z Current runner version: '2.334.0'
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:51.6614326Z ##[group]Runner Image Provisioner
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:51.6615434Z Hosted Compute Agent
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:51.6616110Z Version: 20260520.533
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:51.6616904Z Commit: 189110e25284a9812c124fd27b339e2fb4f2f9db
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:51.6617686Z Build Date: 2026-05-20T17:44:04Z
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:51.6618493Z Worker ID: {475f431e-232e-4688-9aae-9d515dedbb2e}
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:51.6619331Z Azure Region: westcentralus
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:51.6619992Z ##[endgroup]
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:51.6621886Z ##[group]Operating System
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:51.6622612Z Ubuntu
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:51.6623345Z 24.04.4
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:51.6624155Z LTS
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:51.6624838Z ##[endgroup]
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:51.6625474Z ##[group]Runner Image
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:51.6626152Z Image: ubuntu-24.04
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:51.6626873Z Version: 20260525.161.1
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:51.6628188Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260525.161/images/ubuntu/Ubuntu2404-Readme.md
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:51.6629851Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260525.161
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:51.6631015Z ##[endgroup]
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:51.6632233Z ##[group]GITHUB_TOKEN Permissions
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:51.6634663Z Contents: write
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:51.6635372Z Metadata: read
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:51.6636058Z ##[endgroup]
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:51.6638310Z Secret source: Actions
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:51.6639173Z Prepare workflow directory
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:51.7031965Z Prepare all required actions
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:51.7069306Z Getting action download info
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:52.2205978Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:52.3513795Z Download action repository 'actions/setup-java@v3' (SHA:17f84c3641ba7b8f6deff6309fc4c864478f5d62)
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:53.2061712Z Download action repository 'softprops/action-gh-release@v2' (SHA:3bb12739c298aeb8a4eeaf626c5b8d85266b0e65)
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:53.8179731Z Complete job name: build-and-release
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:53.9112259Z ##[group]Run actions/checkout@v4
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:53.9113699Z with:
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:53.9114800Z   repository: KenzBilal/Kaze
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:53.9126480Z   token: ***
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:53.9127383Z   ssh-strict: true
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:53.9128292Z   ssh-user: git
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:53.9129211Z   persist-credentials: true
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:53.9130249Z   clean: true
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:53.9131178Z   sparse-checkout-cone-mode: true
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:53.9132283Z   fetch-depth: 1
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:53.9133177Z   fetch-tags: false
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:53.9134281Z   show-progress: true
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:53.9135237Z   lfs: false
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:53.9136112Z   submodules: false
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:53.9137054Z   set-safe-directory: true
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:53.9138382Z ##[endgroup]
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.0249874Z Syncing repository: KenzBilal/Kaze
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.0252496Z ##[group]Getting Git version info
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.0253804Z Working directory is '/home/runner/work/Kaze/Kaze'
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.0256225Z [command]/usr/bin/git version
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.0311360Z git version 2.54.0
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.0339574Z ##[endgroup]
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.0355717Z Temporarily overriding HOME='/home/runner/work/_temp/07f2cd55-5da2-4380-a8a2-14fac845e0e3' before making global git config changes
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.0360775Z Adding repository directory to the temporary git global config as a safe directory
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.0369333Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Kaze/Kaze
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.0411499Z Deleting the contents of '/home/runner/work/Kaze/Kaze'
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.0415606Z ##[group]Initializing the repository
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.0420475Z [command]/usr/bin/git init /home/runner/work/Kaze/Kaze
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.0511523Z hint: Using 'master' as the name for the initial branch. This default branch name
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.0514628Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.0517683Z hint: to use in all of your new repositories, which will suppress this warning,
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.0519505Z hint: call:
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.0520306Z hint:
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.0521652Z hint: 	git config --global init.defaultBranch <name>
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.0523061Z hint:
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.0524700Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.0527106Z hint: 'development'. The just-created branch can be renamed via this command:
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.0528655Z hint:
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.0529486Z hint: 	git branch -m <name>
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.0530433Z hint:
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.0531699Z hint: Disable this message with "git config set advice.defaultBranchName false"
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.0533698Z Initialized empty Git repository in /home/runner/work/Kaze/Kaze/.git/
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.0537301Z [command]/usr/bin/git remote add origin https://github.com/KenzBilal/Kaze
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.0574777Z ##[endgroup]
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.0576492Z ##[group]Disabling automatic garbage collection
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.0578498Z [command]/usr/bin/git config --local gc.auto 0
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.0606919Z ##[endgroup]
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.0608527Z ##[group]Setting up auth
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.0612026Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.0643139Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.0947119Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.0979014Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.1188360Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.1219840Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.1432981Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.1465448Z ##[endgroup]
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.1474106Z ##[group]Fetching the repository
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:54.1478787Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +d6cfb0bf382645998b3900e90bcf9362f6026139:refs/tags/v2.2.0
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:58.5221328Z From https://github.com/KenzBilal/Kaze
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:58.5222195Z  * [new ref]         d6cfb0bf382645998b3900e90bcf9362f6026139 -> v2.2.0
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:58.5256029Z ##[endgroup]
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:58.5256474Z ##[group]Determining the checkout info
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:58.5262390Z ##[endgroup]
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:58.5264554Z [command]/usr/bin/git sparse-checkout disable
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:58.5309038Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:58.5334160Z ##[group]Checking out the ref
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:58.5401230Z [command]/usr/bin/git checkout --progress --force refs/tags/v2.2.0
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.5920497Z Updating files:  79% (2952/3692)
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6037093Z Updating files:  80% (2954/3692)
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6059862Z Updating files:  81% (2991/3692)
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6090526Z Updating files:  82% (3028/3692)
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6110688Z Updating files:  83% (3065/3692)
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6136816Z Updating files:  84% (3102/3692)
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6156491Z Updating files:  85% (3139/3692)
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6177750Z Updating files:  86% (3176/3692)
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6201743Z Updating files:  87% (3213/3692)
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6220896Z Updating files:  88% (3249/3692)
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6246075Z Updating files:  89% (3286/3692)
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6277338Z Updating files:  90% (3323/3692)
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6293475Z Updating files:  91% (3360/3692)
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6312428Z Updating files:  92% (3397/3692)
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6333119Z Updating files:  93% (3434/3692)
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6355436Z Updating files:  94% (3471/3692)
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6377489Z Updating files:  95% (3508/3692)
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6400071Z Updating files:  96% (3545/3692)
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6430358Z Updating files:  97% (3582/3692)
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6466131Z Updating files:  98% (3619/3692)
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6482990Z Updating files:  99% (3656/3692)
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6483399Z Updating files: 100% (3692/3692)
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6483697Z Updating files: 100% (3692/3692), done.
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6537111Z Note: switching to 'refs/tags/v2.2.0'.
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6537497Z 
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6537749Z You are in 'detached HEAD' state. You can look around, make experimental
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6538266Z changes and commit them, and you can discard any commits you make in this
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6538751Z state without impacting any branches by switching back to a branch.
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6539038Z 
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6539261Z If you want to create a new branch to retain commits you create, you may
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6539729Z do so (now or later) by using -c with the switch command. Example:
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6539994Z 
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6540114Z   git switch -c <new-branch-name>
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6540292Z 
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6540407Z Or undo this operation with:
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6540576Z 
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6540679Z   git switch -
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6540808Z 
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6541031Z Turn off this advice by setting config variable advice.detachedHead to false
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6541345Z 
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6541505Z HEAD is now at d6cfb0b feat: smart discover UI and logic
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6594482Z ##[endgroup]
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6634070Z [command]/usr/bin/git log -1 --format=%H
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6655580Z d6cfb0bf382645998b3900e90bcf9362f6026139
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6917192Z ##[group]Run actions/setup-java@v3
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6917517Z with:
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6917750Z   java-version: 17
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6918007Z   distribution: temurin
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6918254Z   cache: gradle
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6918484Z   java-package: jdk
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6918734Z   check-latest: false
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6918970Z   server-id: github
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6919207Z   server-username: GITHUB_ACTOR
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6919482Z   server-password: GITHUB_TOKEN
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6919752Z   overwrite-settings: true
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6920001Z   job-status: success
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6923151Z   token: ***
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.6923375Z ##[endgroup]
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.8911136Z ##[group]Installed distributions
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.9088816Z Resolved Java 17.0.19+10 from tool-cache
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.9089734Z Setting Java 17.0.19+10 as the default
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.9102284Z Creating toolchains.xml for JDK version 17 from temurin
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.9179352Z Writing to /home/runner/.m2/toolchains.xml
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.9179756Z 
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.9179937Z Java configuration:
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.9180450Z   Distribution: temurin
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.9180904Z   Version: 17.0.19+10
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.9182147Z   Path: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.19-10/x64
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.9182734Z 
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.9183358Z ##[endgroup]
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.9200732Z Creating settings.xml with server-id: github
+build-and-release	UNKNOWN STEP	2026-06-02T04:40:59.9222542Z Writing to /home/runner/.m2/settings.xml
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:00.8692642Z gradle cache is not found
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:00.8830876Z ##[group]Run chmod +x gradlew
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:00.8831241Z [36;1mchmod +x gradlew[0m
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:00.8861212Z shell: /usr/bin/bash -e {0}
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:00.8861490Z env:
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:00.8861818Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.19-10/x64
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:00.8862343Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.19-10/x64
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:00.8862737Z ##[endgroup]
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:00.9003287Z ##[group]Run echo "***" | base64 -d > ***-release.jks
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:00.9021515Z [36;1mecho "***" | base64 -d > ***-release.jks[0m
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:00.9044891Z shell: /usr/bin/bash -e {0}
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:00.9045161Z env:
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:00.9045506Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.19-10/x64
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:00.9046044Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.19-10/x64
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:00.9046454Z ##[endgroup]
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:00.9156261Z ##[group]Run echo "tmdb.api.key=${TMDB_API_KEY}" >> gradle.properties
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:00.9156771Z [36;1mecho "tmdb.api.key=${TMDB_API_KEY}" >> gradle.properties[0m
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:00.9157219Z [36;1mecho "omdb.api.key=${OMDB_API_KEY}" >> gradle.properties[0m
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:00.9179919Z shell: /usr/bin/bash -e {0}
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:00.9180182Z env:
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:00.9180511Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.19-10/x64
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:00.9181030Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.19-10/x64
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:00.9182738Z   TMDB_API_KEY: ***
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:00.9182997Z   OMDB_API_KEY: ***
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:00.9183219Z ##[endgroup]
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:00.9251705Z ##[group]Run ./gradlew assembleRelease
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:00.9252051Z [36;1m./gradlew assembleRelease[0m
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:00.9275378Z shell: /usr/bin/bash -e {0}
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:00.9275642Z env:
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:00.9275973Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.19-10/x64
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:00.9276485Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.19-10/x64
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:00.9277008Z   KEYSTORE_PATH: /home/runner/work/Kaze/Kaze/***-release.jks
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:00.9277381Z   KEYSTORE_PASSWORD: ***
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:00.9277637Z   KEY_ALIAS: ***
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:00.9277873Z   KEY_PASSWORD: ***
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:00.9278095Z ##[endgroup]
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:02.8499615Z Downloading https://services.gradle.org/distributions/gradle-8.9-bin.zip
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:05.9536616Z ............10%.............20%.............30%.............40%.............50%.............60%.............70%.............80%.............90%.............100%
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:07.2142044Z 
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:07.2145443Z Welcome to Gradle 8.9!
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:07.2145808Z 
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:07.2146051Z Here are the highlights of this release:
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:07.2147296Z  - Enhanced Error and Warning Messages
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:07.2147954Z  - IDE Integration Improvements
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:07.2148726Z  - Daemon JVM Information
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:07.2149042Z 
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:07.2150910Z For more details see https://docs.gradle.org/8.9/release-notes.html
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:07.2151673Z 
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:07.5133227Z Starting a Gradle Daemon (subsequent builds will be faster)
+build-and-release	UNKNOWN STEP	2026-06-02T04:41:10.3135267Z Calculating task graph as no cached configuration is available for tasks: assembleRelease
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:49.5181570Z > Task :app:preBuild UP-TO-DATE
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:49.5182890Z > Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:49.5224856Z > Task :app:preReleaseBuild UP-TO-DATE
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:49.6145000Z > Task :app:processReleaseGoogleServices
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:49.6174624Z > Task :app:buildKotlinToolingMetadata
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:49.6184410Z > Task :app:generateReleaseBuildConfig
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:49.6209663Z > Task :app:generateReleaseResValues
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:49.6234221Z > Task :app:createReleaseCompatibleScreenManifests
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:49.6237863Z > Task :app:generateReleaseResources
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:52.7184790Z > Task :app:javaPreCompileRelease
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:52.8178956Z > Task :app:mapReleaseSourceSetPaths
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:52.8204832Z > Task :app:extractDeepLinksRelease
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:52.9148633Z > Task :app:checkReleaseAarMetadata
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:52.9193767Z > Task :app:extractProguardFiles
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:52.9217332Z > Task :app:packageReleaseResources
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:53.8175423Z > Task :app:mergeReleaseJniLibFolders
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:53.9158856Z > Task :app:parseReleaseLocalResources
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:57.3154859Z > Task :app:mergeReleaseNativeLibs
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:57.5181143Z > Task :app:checkReleaseDuplicateClasses
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:57.5214219Z 
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:57.5244557Z > Task :app:stripReleaseDebugSymbols
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:57.5245461Z Unable to strip the following libraries, packaging them as they are: libandroidx.graphics.path.so.
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:57.6178201Z 
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:57.6254899Z > Task :app:processReleaseMainManifest
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:57.8145421Z > Task :app:extractReleaseNativeSymbolTables
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:57.8167561Z > Task :app:mergeReleaseArtProfile
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:57.8214567Z > Task :app:mergeReleaseStartupProfile
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:57.8266675Z > Task :app:mergeReleaseNativeDebugMetadata NO-SOURCE
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:57.8304418Z > Task :app:mergeReleaseShaders
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:57.8332417Z > Task :app:compileReleaseShaders NO-SOURCE
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:57.8384525Z > Task :app:generateReleaseAssets UP-TO-DATE
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:57.9150020Z > Task :app:processReleaseManifest
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:57.9194755Z > Task :app:extractReleaseVersionControlInfo
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:58.2175058Z > Task :app:collectReleaseDependencies
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:58.2214987Z > Task :app:mergeReleaseAssets
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:58.2223070Z > Task :app:processReleaseManifestForPackage
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:58.2254655Z > Task :app:validateSigningRelease
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:58.2277212Z > Task :app:compressReleaseAssets
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:58.2284643Z > Task :app:writeReleaseAppMetadata
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:58.3134639Z > Task :app:writeReleaseSigningConfigVersions
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:58.3151838Z > Task :app:sdkReleaseDependencyData
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:58.5158365Z > Task :app:mergeReleaseResources
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:59.1134905Z > Task :app:processReleaseResources
+build-and-release	UNKNOWN STEP	2026-06-02T04:42:59.3148513Z > Task :app:convertLinkedResourcesToProtoRelease
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:15.9164855Z > Task :app:kspReleaseKotlin
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:26.4140176Z e: file:///home/runner/work/Kaze/Kaze/app/src/main/java/com/***/ui/screens/discover/DiscoverScreen.kt:87:46 Unresolved reference 'getWatchlistsByUserIds'.
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:26.4141190Z 
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:26.4143297Z e: file:///home/runner/work/Kaze/Kaze/app/src/main/java/com/***/ui/screens/discover/DiscoverScreen.kt:91:27 Unresolved reference 'it'.
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:26.4144577Z > Task :app:compileReleaseKotlin FAILED
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:26.4147079Z e: file:///home/runner/work/Kaze/Kaze/app/src/main/java/com/***/ui/screens/discover/DiscoverScreen.kt:92:31 Unresolved reference 'it'.
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:26.5134443Z 
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:26.5155342Z 37 actionable tasks: 37 executed
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:26.5159453Z FAILURE: Build failed with an exception.
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:26.5160022Z Configuration cache entry stored.
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:26.5194222Z 
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:26.5204526Z * What went wrong:
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:26.5205218Z Execution failed for task ':app:compileReleaseKotlin'.
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:26.5206643Z > A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:26.5207928Z    > Compilation error. See log for more details
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:26.5208448Z 
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:26.5208715Z * Try:
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:26.5209283Z > Run with --stacktrace option to get the stack trace.
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:26.5210018Z > Run with --info or --debug option to get more log output.
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:26.5210707Z > Run with --scan to get full insights.
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:26.5211341Z > Get more help at https://help.gradle.org.
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:26.5211812Z 
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:26.5212096Z BUILD FAILED in 2m 24s
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:26.9551838Z ##[error]Process completed with exit code 1.
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:26.9671152Z Post job cleanup.
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:27.1556579Z Post job cleanup.
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:27.2597166Z [command]/usr/bin/git version
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:27.2634635Z git version 2.54.0
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:27.2710612Z Temporarily overriding HOME='/home/runner/work/_temp/2871eb2c-b7ef-41aa-8dae-c496c5ab979a' before making global git config changes
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:27.2711703Z Adding repository directory to the temporary git global config as a safe directory
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:27.2712823Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Kaze/Kaze
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:27.2742842Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:27.2777229Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:27.3018718Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:27.3043432Z http.https://github.com/.extraheader
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:27.3057715Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:27.3092248Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:27.3331240Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:27.3364335Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:27.3714784Z Cleaning up orphan processes
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:27.4018028Z Terminate orphan process: pid (2412) (java)
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:27.4042841Z Terminate orphan process: pid (2702) (java)
+build-and-release	UNKNOWN STEP	2026-06-02T04:43:27.4057075Z ##[warning]Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-java@v3. Actions will be forced to run with Node.js 24 by default starting June 16th, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

@@ -12,6 +12,7 @@ data class SeriesCache(
     @PrimaryKey val imdbId: String,
     val title: String,
     val totalSeasons: Int,
+    val isFinished: Boolean = false,
     val cachedAt: Long = System.currentTimeMillis()
 )
 

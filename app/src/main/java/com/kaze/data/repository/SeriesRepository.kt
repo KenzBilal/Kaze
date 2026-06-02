@@ -39,21 +39,36 @@ class SeriesRepository(
     suspend fun getTotalSeasons(imdbId: String, title: String): Int {
         if (imdbId.isBlank()) return 0
         val cached = seriesCacheDao.get(imdbId)
-        if (cached != null && System.currentTimeMillis() - cached.cachedAt < CACHE_TTL_MS) {
-            return cached.totalSeasons
+        
+        val valid = cached != null && (cached.isFinished || System.currentTimeMillis() - cached.cachedAt < CACHE_TTL_MS)
+        if (valid) {
+            return cached!!.totalSeasons
         }
-        val total = omdbRepository.fetchTotalSeasons(imdbId)
-        if (total > 0) {
-            seriesCacheDao.insert(SeriesCache(imdbId = imdbId, title = title, totalSeasons = total))
+        
+        val metadata = omdbRepository.fetchSeriesMetadata(imdbId)
+        if (metadata.totalSeasons > 0) {
+            seriesCacheDao.insert(SeriesCache(
+                imdbId = imdbId,
+                title = title,
+                totalSeasons = metadata.totalSeasons,
+                isFinished = metadata.isFinished
+            ))
+            return metadata.totalSeasons
         }
-        return total
+        
+        // CRITICAL FIX: If fetch fails (offline), fallback to expired cache to prevent data loss
+        return cached?.totalSeasons ?: 0
     }
 
     // ── Season fetching ────────────────────────────────────────────────────
 
     private suspend fun fetchAndCacheSeasonIfNeeded(imdbId: String, season: Int): List<SeasonEpisode> {
         val cachedAt = seasonEpisodeDao.getCachedAt(imdbId, season)
-        val valid    = cachedAt != null && System.currentTimeMillis() - cachedAt < CACHE_TTL_MS
+        val seriesCached = seriesCacheDao.get(imdbId)
+        
+        val isFinished = seriesCached?.isFinished == true
+        val valid = cachedAt != null && (isFinished || System.currentTimeMillis() - cachedAt < CACHE_TTL_MS)
+        
         if (!valid) {
             val response = omdbRepository.fetchSeason(imdbId, season)
             response?.episodes?.mapNotNull { ep ->
@@ -71,6 +86,7 @@ class SeriesRepository(
                 Log.d("SeriesRepo", "Cached ${it.size} eps for S$season")
             }
         }
+        // Fallback to DB if fetch failed or if valid
         return seasonEpisodeDao.getSeason(imdbId, season)
     }
 
