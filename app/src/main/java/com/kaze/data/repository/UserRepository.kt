@@ -427,7 +427,7 @@ class UserRepository(private val context: Context) {
 
     suspend fun syncWatchlist(userId: String, items: List<WatchItem>) {
         if (items.isEmpty()) return
-        withContext(Dispatchers.IO) {
+        withContext(Dispatchers.IO + kotlinx.coroutines.NonCancellable) {
             // Fetch current server last_updated timestamps to avoid overwriting newer data
             val serverTimestamps: Map<String, Long> = try {
                 SupabaseApi.client.from("public_watchlist")
@@ -488,7 +488,7 @@ class UserRepository(private val context: Context) {
 
     suspend fun syncEpisodeProgress(userId: String, progressList: List<com.kaze.data.local.EpisodeProgress>, items: List<WatchItem>) {
         if (progressList.isEmpty()) return
-        withContext(Dispatchers.IO) {
+        withContext(Dispatchers.IO + kotlinx.coroutines.NonCancellable) {
             val itemMap = items.associateBy { it.id }
             
             // Map to cloud models
