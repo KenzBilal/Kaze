@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.ui.draw.alpha
 import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -61,7 +62,15 @@ class UserProfileViewModel(
     private val _uiState = MutableStateFlow(UserProfileUiState())
     val uiState: StateFlow<UserProfileUiState> = _uiState.asStateFlow()
 
-    init { loadProfile() }
+    init { 
+        loadProfile()
+        viewModelScope.launch {
+            watchItemRepository.getAllItemsFlow().collect { ownItems ->
+                val ownImdbIds = ownItems.map { it.imdbId }.filter { it.isNotBlank() }.toSet()
+                _uiState.update { it.copy(ownImdbIds = ownImdbIds) }
+            }
+        }
+    }
 
     fun refresh() {
         viewModelScope.launch {
@@ -169,7 +178,8 @@ data class UserProfileUiState(
     val isOwnProfile: Boolean = false,
     val localUserId: String? = null,
     val listDialogTitle: String? = null,
-    val listDialogUsers: List<SupabaseUser>? = null
+    val listDialogUsers: List<SupabaseUser>? = null,
+    val ownImdbIds: Set<String> = emptySet()
 )
 
 // ── Screen ────────────────────────────────────────────────────────────────────
@@ -306,11 +316,15 @@ fun UserProfileScreen(
                         }
                     } else {
                         items(currentList) { item ->
+                            val isOwned = item.imdb_id in uiState.ownImdbIds
                             PinterestCard(
                                 item = item,
+                                isOwned = isOwned,
                                 onClick = { 
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    onItemClick(item) 
+                                    if (!isOwned) {
+                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        onItemClick(item) 
+                                    }
                                 }
                             )
                         }
@@ -402,13 +416,14 @@ private fun StatChip(count: Int, label: String, onClick: () -> Unit) {
 // ── Pinterest Card ────────────────────────────────────────────────────────────
 
 @Composable
-private fun PinterestCard(item: PublicWatchlistItem, onClick: () -> Unit) {
+private fun PinterestCard(item: PublicWatchlistItem, isOwned: Boolean = false, onClick: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(10.dp))
             .background(SurfaceElevated)
-            .clickable(onClick = onClick)
+            .alpha(if (isOwned) 0.5f else 1f)
+            .then(if (!isOwned) Modifier.clickable(onClick = onClick) else Modifier)
     ) {
         if (!item.poster_url.isNullOrBlank()) {
             AsyncImage(

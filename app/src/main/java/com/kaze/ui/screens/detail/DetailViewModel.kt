@@ -337,6 +337,17 @@ class DetailViewModel(
         val item = _uiState.value.item ?: return
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true) }
+            
+            // Check for duplicates
+            if (item.imdbId.isNotBlank()) {
+                val existing = repository.getItemByImdbId(item.imdbId)
+                if (existing != null) {
+                    _uiState.update { it.copy(isSaving = false, toastMessage = "Already in Watchlist ✓") }
+                    onSuccess?.invoke()
+                    return@launch
+                }
+            }
+            
             val watchItem = item.copy(id = 0) // reset id for Room auto-generate
             val newId = repository.saveItem(watchItem)
             

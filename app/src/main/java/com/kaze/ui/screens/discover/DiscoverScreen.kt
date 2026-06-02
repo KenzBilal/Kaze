@@ -60,7 +60,20 @@ class DiscoverViewModel(
     private val _uiState = MutableStateFlow(DiscoverUiState())
     val uiState: StateFlow<DiscoverUiState> = _uiState.asStateFlow()
 
-    init { load() }
+    private var currentFriendsWatchlists: List<PublicWatchlistItem> = emptyList()
+
+    init { 
+        load() 
+        
+        // Observe local database changes to dynamically filter suggestions
+        viewModelScope.launch {
+            repository.getAllItemsFlow().collect { ownItems ->
+                val ownImdbIds = ownItems.map { it.imdbId }.filter { it.isNotBlank() }.toSet()
+                _uiState.update { it.copy(ownImdbIds = ownImdbIds) }
+                recalculateSuggestions()
+            }
+        }
+    }
 
     fun refresh() {
         viewModelScope.launch {
@@ -95,35 +108,45 @@ class DiscoverViewModel(
                 .eachCount()
                 .entries
                 .maxByOrNull { it.value }?.key ?: ""
+                
+            _uiState.update { it.copy(topGenre = topGenre) }
 
             // Get followed users
             val following = userRepo.getFollowingList(userId)
             val followedIds = following.map { it.id }
 
             // Fetch public watchlists of friends
-            val friendsWatchlists = userRepo.getWatchlistsByUserIds(followedIds)
+            currentFriendsWatchlists = userRepo.getWatchlistsByUserIds(followedIds)
+            
+            recalculateSuggestions()
+    }
+    
+    private fun recalculateSuggestions() {
+        val state = _uiState.value
+        val ownImdbIds = state.ownImdbIds
+        val topGenre = state.topGenre
 
-            // Filter out own items, then sort by genre match, then rating
-            val suggestions = friendsWatchlists
-                .filter { it.imdb_id !in ownImdbIds && it.imdb_id.isNotBlank() }
-                .groupBy { it.imdb_id }
-                .map { entry -> entry.value.maxByOrNull { it.rating }!! }
-                .sortedWith(
-                    compareByDescending<PublicWatchlistItem> { 
-                        topGenre.isNotEmpty() && it.genres.contains(topGenre, ignoreCase = true) 
-                    }
-                    .thenByDescending { it.rating }
-                    .thenByDescending { it.date_added }
-                )
-                .take(50)
+        // Filter out own items, then sort by genre match, then rating
+        val suggestions = currentFriendsWatchlists
+            .filter { it.imdb_id !in ownImdbIds && it.imdb_id.isNotBlank() }
+            .groupBy { it.imdb_id }
+            .map { entry -> entry.value.maxByOrNull { it.rating }!! }
+            .sortedWith(
+                compareByDescending<PublicWatchlistItem> { 
+                    topGenre.isNotEmpty() && it.genres.contains(topGenre, ignoreCase = true) 
+                }
+                .thenByDescending { it.rating }
+                .thenByDescending { it.date_added }
+            )
+            .take(50)
 
-            _uiState.update {
-                it.copy(
-                    suggestions = suggestions,
-                    isLoading = false,
-                    isEmpty = suggestions.isEmpty()
-                )
-            }
+        _uiState.update {
+            it.copy(
+                suggestions = suggestions,
+                isLoading = false,
+                isEmpty = suggestions.isEmpty()
+            )
+        }
     }
 
     class Factory(private val context: android.content.Context, private val repository: WatchItemRepository) : ViewModelProvider.Factory {
@@ -143,7 +166,9 @@ data class DiscoverUiState(
     val isRefreshing: Boolean = false,
     val suggestions: List<PublicWatchlistItem> = emptyList(),
     val isEmpty: Boolean = false,
-    val isLoggedIn: Boolean = true
+    val isLoggedIn: Boolean = true,
+    val ownImdbIds: Set<String> = emptySet(),
+    val topGenre: String = ""
 )
 
 // ── Screen ────────────────────────────────────────────────────────────────────

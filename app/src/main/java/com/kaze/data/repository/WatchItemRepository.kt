@@ -26,6 +26,8 @@ class WatchItemRepository(
 
     suspend fun getItemById(id: Long): WatchItem? = dao.getItemById(id)
 
+    suspend fun getItemByImdbId(imdbId: String): WatchItem? = dao.getItemByImdbId(imdbId)
+
     suspend fun saveItem(item: WatchItem): Long = dao.insertItem(item)
 
     suspend fun updateItem(item: WatchItem) {
@@ -52,6 +54,8 @@ class WatchItemRepository(
     fun getWatchedCount(): Flow<Int> = dao.getWatchedCount()
     fun getSeriesInProgress(): Flow<List<WatchItem>> = dao.getSeriesInProgress()
     fun getRecentlyAdded(limit: Int = 5): Flow<List<WatchItem>> = dao.getRecentlyAdded(limit)
+    
+    fun getAllItemsFlow(): Flow<List<WatchItem>> = dao.getAllItems()
 
     /** One-shot snapshot of all items for backup export. */
     suspend fun getAllItemsSnapshot(): List<WatchItem> =
