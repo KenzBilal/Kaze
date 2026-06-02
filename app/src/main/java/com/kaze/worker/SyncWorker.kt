@@ -51,7 +51,7 @@ class SyncWorker(
                             dao.delete(action)
                         }
                         ActionType.DELETE_WATCHLIST -> {
-                            val item = Json.decodeFromString<WatchItem>(action.payload)
+                            val item = com.google.gson.Gson().fromJson(action.payload, WatchItem::class.java)
                             userRepo.deleteFromWatchlist(action.userId, item, fromSyncWorker = true)
                             dao.delete(action)
                         }

@@ -440,7 +440,7 @@ class UserRepository(private val context: Context) {
                     com.kaze.data.local.PendingAction(
                         actionType = com.kaze.data.local.ActionType.DELETE_WATCHLIST,
                         userId = userId,
-                        payload = kotlinx.serialization.json.Json.encodeToString(item)
+                        payload = com.google.gson.Gson().toJson(item)
                     )
                 )
                 com.kaze.worker.SyncWorker.enqueue(context)
