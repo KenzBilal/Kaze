@@ -49,7 +49,10 @@ class DetailViewModel(
     private val previewPoster: String? = null,
     private val previewRating: Float = 0f,
     private val previewNotes: String = "",
-    private val previewGenres: String = ""
+    private val previewGenres: String = "",
+    private val previewYear: Int = 0,
+    private val previewSeason: Int = 1,
+    private val previewEpisode: Int = 1
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DetailUiState())
@@ -66,10 +69,12 @@ class DetailViewModel(
                     id = -1,
                     imdbId = previewImdbId,
                     title = previewTitle ?: "",
-                    year = 0,
+                    year = previewYear,
                     type = mediaType,
                     posterUrl = previewPoster,
                     genres = previewGenres,
+                    season = if (mediaType == MediaType.SERIES) previewSeason else null,
+                    episode = if (mediaType == MediaType.SERIES) previewEpisode else null,
                     dateAdded = System.currentTimeMillis(),
                     lastUpdated = System.currentTimeMillis()
                 )
@@ -396,10 +401,13 @@ class DetailViewModel(
         private val previewPoster: String? = null,
         private val previewRating: Float = 0f,
         private val previewNotes: String = "",
-        private val previewGenres: String = ""
+        private val previewGenres: String = "",
+        private val previewYear: Int = 0,
+        private val previewSeason: Int = 1,
+        private val previewEpisode: Int = 1
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-            DetailViewModel(repository, seriesRepository, userRepository, itemId, previewImdbId, previewTitle, previewType, previewPoster, previewRating, previewNotes, previewGenres) as T
+            DetailViewModel(repository, seriesRepository, userRepository, itemId, previewImdbId, previewTitle, previewType, previewPoster, previewRating, previewNotes, previewGenres, previewYear, previewSeason, previewEpisode) as T
     }
 }

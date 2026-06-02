@@ -168,25 +168,25 @@ fun DetailScreen(
                 },
                 actions = {
                     if (!uiState.isPreview) {
-                        // Mark series watched button (shows dialog)
-                        if (uiState.item?.type == MediaType.SERIES && uiState.totalSeasons > 0) {
-                            IconButton(onClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                viewModel.showMarkAllSeriesDialog()
-                            }) {
-                                Icon(Icons.Filled.DoneAll, "Mark all watched", tint = TextSecondary)
-                            }
-                        } else if (uiState.item?.type != MediaType.SERIES) {
-                            IconButton(onClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                viewModel.toggleWatched()
-                            }) {
-                                Icon(
-                                    imageVector = if (uiState.isWatched) Icons.Filled.CheckCircle
-                                                  else Icons.Outlined.CheckCircle,
-                                    contentDescription = "Toggle watched",
-                                    tint = if (uiState.isWatched) WatchedGreen else TextSecondary
-                                )
+                        if (!uiState.isWatched) {
+                            if (uiState.item?.type == MediaType.SERIES && uiState.totalSeasons > 0) {
+                                IconButton(onClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    viewModel.showMarkAllSeriesDialog()
+                                }) {
+                                    Icon(Icons.Filled.DoneAll, "Mark all watched", tint = TextSecondary)
+                                }
+                            } else if (uiState.item?.type != MediaType.SERIES) {
+                                IconButton(onClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    viewModel.toggleWatched()
+                                }) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.CheckCircle,
+                                        contentDescription = "Toggle watched",
+                                        tint = TextSecondary
+                                    )
+                                }
                             }
                         }
                         IconButton(onClick = {
@@ -211,7 +211,7 @@ fun DetailScreen(
                     Button(
                         onClick = {
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            viewModel.saveItem()
+                            viewModel.saveItem(onSuccess = if (uiState.isPreview) onBack else null)
                         },
                         enabled  = !uiState.isSaving && !uiState.isLoading,
                         modifier = Modifier.fillMaxWidth().height(52.dp),
@@ -325,7 +325,7 @@ fun DetailScreen(
                         Spacer(Modifier.height(24.dp))
 
                         // ── Series Episode Tracker ────────────────────────────
-                        if (item.type == MediaType.SERIES) {
+                        if (item.type == MediaType.SERIES && !uiState.isWatched) {
                             SeriesEpisodeSection(
                                 uiState              = uiState,
                                 onSeasonSelect       = viewModel::selectSeason,

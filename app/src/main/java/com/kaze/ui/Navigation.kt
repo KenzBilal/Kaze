@@ -49,9 +49,9 @@ sealed class Screen(val route: String) {
     object UserProfile : Screen("userProfile/{userId}") {
         fun createRoute(id: String) = "userProfile/$id"
     }
-    object DetailPreview : Screen("detail_preview/{imdbId}?title={title}&type={type}&poster={poster}&rating={rating}&notes={notes}&genres={genres}") {
-        fun createRoute(imdbId: String, title: String, type: String, poster: String?, rating: Float = 0f, notes: String = "", genres: String = "") =
-            "detail_preview/$imdbId?title=${android.net.Uri.encode(title)}&type=$type&poster=${android.net.Uri.encode(poster ?: "")}&rating=$rating&notes=${android.net.Uri.encode(notes)}&genres=${android.net.Uri.encode(genres)}"
+    object DetailPreview : Screen("detail_preview/{imdbId}?title={title}&type={type}&poster={poster}&rating={rating}&notes={notes}&genres={genres}&year={year}&season={season}&episode={episode}") {
+        fun createRoute(imdbId: String, title: String, type: String, poster: String?, rating: Float = 0f, notes: String = "", genres: String = "", year: Int = 0, season: Int = 1, episode: Int = 1) =
+            "detail_preview/$imdbId?title=${android.net.Uri.encode(title)}&type=$type&poster=${android.net.Uri.encode(poster ?: "")}&rating=$rating&notes=${android.net.Uri.encode(notes)}&genres=${android.net.Uri.encode(genres)}&year=$year&season=$season&episode=$episode"
     }
 }
 
@@ -148,7 +148,10 @@ fun WatchLaterNavGraph(
                             poster = item.poster_url,
                             rating = item.rating,
                             notes = item.notes,
-                            genres = item.genres
+                            genres = item.genres,
+                            year = item.year,
+                            season = item.season ?: 1,
+                            episode = item.episode ?: 1
                         ))
                     }
                 }
@@ -216,7 +219,10 @@ fun WatchLaterNavGraph(
                             poster = item.poster_url,
                             rating = item.rating,
                             notes = item.notes,
-                            genres = item.genres
+                            genres = item.genres,
+                            year = item.year,
+                            season = item.season ?: 1,
+                            episode = item.episode ?: 1
                         ))
                     }
                 }
@@ -249,7 +255,10 @@ fun WatchLaterNavGraph(
                 navArgument("poster") { type = NavType.StringType; nullable = true },
                 navArgument("rating") { type = NavType.FloatType; defaultValue = 0f },
                 navArgument("notes") { type = NavType.StringType; defaultValue = "" },
-                navArgument("genres") { type = NavType.StringType; defaultValue = "" }
+                navArgument("genres") { type = NavType.StringType; defaultValue = "" },
+                navArgument("year") { type = NavType.IntType; defaultValue = 0 },
+                navArgument("season") { type = NavType.IntType; defaultValue = 1 },
+                navArgument("episode") { type = NavType.IntType; defaultValue = 1 }
             )
         ) { backStack ->
             val imdbId = backStack.arguments!!.getString("imdbId") ?: ""
@@ -259,6 +268,9 @@ fun WatchLaterNavGraph(
             val rating = backStack.arguments!!.getFloat("rating")
             val notes  = backStack.arguments!!.getString("notes") ?: ""
             val genres = backStack.arguments!!.getString("genres") ?: ""
+            val year   = backStack.arguments!!.getInt("year")
+            val season = backStack.arguments!!.getInt("season")
+            val episode = backStack.arguments!!.getInt("episode")
 
             val detailVm: DetailViewModel = viewModel(
                 factory = DetailViewModel.Factory(
@@ -272,7 +284,10 @@ fun WatchLaterNavGraph(
                     previewPoster = poster,
                     previewRating = rating,
                     previewNotes = notes,
-                    previewGenres = genres
+                    previewGenres = genres,
+                    previewYear = year,
+                    previewSeason = season,
+                    previewEpisode = episode
                 )
             )
             DetailScreen(
