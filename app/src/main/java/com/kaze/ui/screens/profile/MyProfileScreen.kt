@@ -118,7 +118,6 @@ class MyProfileViewModel(
                     isLoading = false
                 )
             }
-        }
     }
 
     fun saveProfile() {

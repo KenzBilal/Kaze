@@ -96,7 +96,6 @@ class UserProfileViewModel(
                     isLoading = false
                 )
             }
-        }
     }
 
     fun toggleFollow() {
