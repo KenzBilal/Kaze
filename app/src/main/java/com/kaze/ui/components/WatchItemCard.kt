@@ -156,11 +156,7 @@ fun WatchItemCard(
                     .fillMaxWidth(progressFraction)
                     .height(2.dp)
                     .background(
-                        if (item.isWatched) {
-                            Brush.horizontalGradient(listOf(AccentBlue, AccentBlue))
-                        } else {
-                            Brush.horizontalGradient(listOf(AccentBlue.copy(alpha = 0.7f), AccentPurple.copy(alpha = 0.3f)))
-                        }
+                        Brush.horizontalGradient(listOf(AccentBlue.copy(alpha = 0.7f), AccentPurple.copy(alpha = 0.3f)))
                     )
             )
         }
