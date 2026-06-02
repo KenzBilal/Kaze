@@ -88,8 +88,9 @@ class DiscoverViewModel(
 
             // Filter out own items, then sort by genre match, then rating
             val suggestions = friendsWatchlists
-                .filter { it.imdb_id !in ownImdbIds }
-                .distinctBy { it.imdb_id }
+                .filter { it.imdb_id !in ownImdbIds && it.imdb_id.isNotBlank() }
+                .groupBy { it.imdb_id }
+                .map { entry -> entry.value.maxByOrNull { it.rating }!! }
                 .sortedWith(
                     compareByDescending<PublicWatchlistItem> { 
                         topGenre.isNotEmpty() && it.genres.contains(topGenre, ignoreCase = true) 
