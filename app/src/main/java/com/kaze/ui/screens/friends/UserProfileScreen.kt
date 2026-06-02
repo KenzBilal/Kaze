@@ -208,8 +208,11 @@ fun UserProfileScreen(
                 var selectedTabIndex by remember { mutableStateOf(0) }
                 val tabs = listOf("Watched", "To Watch")
 
-                val watchedList = uiState.watchlist.filter { it.is_watched }
-                val toWatchList = uiState.watchlist.filter { !it.is_watched }
+                val uniqueWatchlist = uiState.watchlist.distinctBy { 
+                    if (it.imdb_id.isNotBlank()) it.imdb_id else "${it.title}${it.year}${it.type}"
+                }
+                val watchedList = uniqueWatchlist.filter { it.is_watched }.sortedByDescending { it.date_added }
+                val toWatchList = uniqueWatchlist.filter { !it.is_watched }.sortedByDescending { it.date_added }
                 val currentList = if (selectedTabIndex == 0) watchedList else toWatchList
 
                 LazyVerticalStaggeredGrid(
