@@ -218,7 +218,7 @@ class UserRepository(private val context: Context) {
         }
     }
 
-    suspend fun getWatchlistsByUserIds(userIds: Set<String>): List<PublicWatchlistItem> {
+    suspend fun getWatchlistsByUserIds(userIds: Collection<String>): List<PublicWatchlistItem> {
         if (userIds.isEmpty()) return emptyList()
         return withContext(Dispatchers.IO) {
             try {
