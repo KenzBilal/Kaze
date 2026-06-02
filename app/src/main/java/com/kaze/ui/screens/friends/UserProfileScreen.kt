@@ -22,8 +22,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -175,13 +177,14 @@ data class UserProfileUiState(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserProfileScreen(
-    userId: String,
+    profileUserId: String,
     onBack: () -> Unit,
     onUserClick: (String) -> Unit = {},
-    onItemClick: (PublicWatchlistItem) -> Unit = {}
+    onItemClick: (PublicWatchlistItem) -> Unit
 ) {
     val context = LocalContext.current
-    val viewModel: UserProfileViewModel = viewModel(factory = UserProfileViewModel.Factory(context, userId))
+    val haptic = LocalHapticFeedback.current
+    val viewModel: UserProfileViewModel = viewModel(factory = UserProfileViewModel.Factory(context, profileUserId))
     val uiState by viewModel.uiState.collectAsState()
 
     // Followers/Following dialog
@@ -201,7 +204,10 @@ fun UserProfileScreen(
             TopAppBar(
                 title = {},
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        onBack()
+                    }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TextSecondary)
                     }
                 },
@@ -249,7 +255,10 @@ fun UserProfileScreen(
                             followingCount = uiState.followingCount,
                             isFollowing = uiState.isFollowing,
                             isOwnProfile = uiState.isOwnProfile,
-                            onFollowClick = viewModel::toggleFollow,
+                            onFollowClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                viewModel.toggleFollow()
+                            },
                             onFollowersClick = viewModel::showFollowers,
                             onFollowingClick = viewModel::showFollowing
                         )
@@ -299,7 +308,10 @@ fun UserProfileScreen(
                         items(currentList) { item ->
                             PinterestCard(
                                 item = item,
-                                onClick = { onItemClick(item) }
+                                onClick = { 
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    onItemClick(item) 
+                                }
                             )
                         }
                     }

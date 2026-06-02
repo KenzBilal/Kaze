@@ -202,7 +202,7 @@ fun WatchLaterNavGraph(
         ) { backStack ->
             val userId = backStack.arguments!!.getString("userId") ?: ""
             UserProfileScreen(
-                userId = userId,
+                profileUserId = userId,
                 onBack = { navController.popBackStack() },
                 onUserClick = { id -> navController.navigate(Screen.UserProfile.createRoute(id)) },
                 onItemClick = { item ->

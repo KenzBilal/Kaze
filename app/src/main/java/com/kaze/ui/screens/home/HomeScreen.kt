@@ -20,6 +20,8 @@ import com.kaze.ui.theme.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 
 @Composable
 fun HomeScreen(
@@ -30,6 +32,7 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedTab by rememberSaveable { mutableIntStateOf(uiState.selectedTab) }
+    val haptic = LocalHapticFeedback.current
     
     LaunchedEffect(selectedTab) {
         viewModel.setTab(selectedTab)
@@ -44,13 +47,19 @@ fun HomeScreen(
         topBar = {
             HomeTopBar(
                 onSearchClick = onSearchClick,
-                onFilterClick = { showSortSheet = true },
+                onFilterClick = { 
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    showSortSheet = true 
+                },
                 hasActiveFilter = uiState.sortFilterState.filter != FilterOption.ALL
             )
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = onAddClick,
+                onClick = { 
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onAddClick() 
+                },
                 containerColor = AccentBlue,
                 contentColor = Background,
                 elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 4.dp)
@@ -82,7 +91,10 @@ fun HomeScreen(
                 tabs.forEachIndexed { index, title ->
                     Tab(
                         selected = selectedTab == index,
-                        onClick = { selectedTab = index },
+                        onClick = { 
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            selectedTab = index 
+                        },
                         text = {
                             Text(
                                 text = title,
@@ -172,6 +184,7 @@ fun HomeScreen(
             confirmButton = {
                 Button(
                     onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         viewModel.toggleWatched(itemToMark)
                         showMarkWatchedDialog = null
                     },
@@ -268,6 +281,7 @@ private fun WatchItemList(
     onItemClick: (Long) -> Unit,
     onToggleWatched: (WatchItem) -> Unit
 ) {
+    val haptic = LocalHapticFeedback.current
     when {
         isLoading -> WatchLaterLoader()
         items.isEmpty() -> {
@@ -297,8 +311,14 @@ private fun WatchItemList(
             ) { item ->
                 WatchItemCard(
                     item = item,
-                    onClick = { onItemClick(item.id) },
-                    onToggleWatched = { onToggleWatched(item) }
+                    onClick = { 
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        onItemClick(item.id) 
+                    },
+                    onToggleWatched = { 
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        onToggleWatched(item) 
+                    }
                 )
             }
             item { Spacer(Modifier.height(80.dp)) }

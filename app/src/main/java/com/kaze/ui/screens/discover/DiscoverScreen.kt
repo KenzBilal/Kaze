@@ -18,8 +18,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -152,6 +155,7 @@ fun DiscoverScreen(
     onItemClick: (PublicWatchlistItem) -> Unit
 ) {
     val context = LocalContext.current
+    val haptic = LocalHapticFeedback.current
     val viewModel: DiscoverViewModel = viewModel(factory = DiscoverViewModel.Factory(context, repository))
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -204,7 +208,10 @@ fun DiscoverScreen(
                         items(uiState.suggestions, key = { it.user_id + "_" + it.imdb_id }) { item ->
                             DiscoverCard(
                                 item = item,
-                                onClick = { onItemClick(item) }
+                                onClick = { 
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    onItemClick(item) 
+                                }
                             )
                         }
                     }

@@ -34,6 +34,7 @@ data class DetailUiState(
     // UX feedback
     val toastMessage: String? = null,
     val showMarkAllSeriesDialog: Boolean = false,
+    val showRatingPrompt: Boolean = false,
     val isPreview: Boolean = false
 )
 
@@ -218,6 +219,7 @@ class DetailViewModel(
                         isMarkingAllWatched = false,
                         isWatched           = true,
                         item                = updated,
+                        showRatingPrompt    = true,
                         toastMessage        = "All $total seasons marked as watched ✓"
                     )
                 }
@@ -264,7 +266,8 @@ class DetailViewModel(
                 currentSeason  = targetSeason,
                 currentEpisode = targetEpisode,
                 isWatched      = updated.isWatched,
-                item           = updated
+                item           = updated,
+                showRatingPrompt = if (updated.isWatched && !it.isWatched) true else it.showRatingPrompt
             )
         }
     }
@@ -273,6 +276,7 @@ class DetailViewModel(
 
     fun onRatingChange(rating: Float) { _uiState.update { it.copy(rating = rating) } }
     fun onNotesChange(notes: String)  { _uiState.update { it.copy(notes = notes) } }
+    fun dismissRatingPrompt() { _uiState.update { it.copy(showRatingPrompt = false) } }
 
     /**
      * BUG-07 fix: toggleWatched now also syncs item.isWatched in the state so that
@@ -288,7 +292,13 @@ class DetailViewModel(
             _uiState.update { it.copy(showMarkAllSeriesDialog = true) }
         } else {
             // BUG-04 Fix: Persist immediately for movies or unwatching
-            _uiState.update { it.copy(isWatched = nowWatched, item = item.copy(isWatched = nowWatched)) }
+            _uiState.update { 
+                it.copy(
+                    isWatched = nowWatched, 
+                    item = item.copy(isWatched = nowWatched), 
+                    showRatingPrompt = if (nowWatched) true else it.showRatingPrompt
+                ) 
+            }
             saveItem()
         }
     }

@@ -23,6 +23,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -43,6 +45,7 @@ fun DetailScreen(
 ) {
     val uiState        by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHost   = remember { SnackbarHostState() }
+    val haptic         = LocalHapticFeedback.current
 
     // Snackbar for saves
     LaunchedEffect(Unit) {
@@ -98,6 +101,51 @@ fun DetailScreen(
         )
     }
 
+    if (uiState.showRatingPrompt) {
+        AlertDialog(
+            onDismissRequest = viewModel::dismissRatingPrompt,
+            containerColor   = SurfaceContainer,
+            title = { Text("Rate this title", color = TextPrimary, fontWeight = FontWeight.SemiBold) },
+            text  = {
+                Column {
+                    Text(
+                        "You just finished watching it! How would you rate it?",
+                        color = TextSecondary,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    StarRatingSelector(
+                        rating = uiState.rating, 
+                        onRatingChange = { r -> 
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            viewModel.onRatingChange(r) 
+                        }
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        viewModel.saveItem()
+                        viewModel.dismissRatingPrompt()
+                    },
+                    colors  = ButtonDefaults.buttonColors(containerColor = WatchedGreen, contentColor = Background)
+                ) {
+                    Text("Save", color = Color.Unspecified)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    viewModel.dismissRatingPrompt()
+                }) {
+                    Text("Rate Later", color = TextSecondary)
+                }
+            }
+        )
+    }
+
     Scaffold(
         containerColor = Background,
         snackbarHost = {
@@ -122,11 +170,17 @@ fun DetailScreen(
                     if (!uiState.isPreview) {
                         // Mark series watched button (shows dialog)
                         if (uiState.item?.type == MediaType.SERIES && uiState.totalSeasons > 0) {
-                            IconButton(onClick = viewModel::showMarkAllSeriesDialog) {
+                            IconButton(onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                viewModel.showMarkAllSeriesDialog()
+                            }) {
                                 Icon(Icons.Filled.DoneAll, "Mark all watched", tint = TextSecondary)
                             }
                         } else if (uiState.item?.type != MediaType.SERIES) {
-                            IconButton(onClick = viewModel::toggleWatched) {
+                            IconButton(onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                viewModel.toggleWatched()
+                            }) {
                                 Icon(
                                     imageVector = if (uiState.isWatched) Icons.Filled.CheckCircle
                                                   else Icons.Outlined.CheckCircle,
@@ -135,7 +189,10 @@ fun DetailScreen(
                                 )
                             }
                         }
-                        IconButton(onClick = viewModel::showDeleteDialog) {
+                        IconButton(onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            viewModel.showDeleteDialog()
+                        }) {
                             Icon(Icons.Outlined.DeleteOutline, "Delete", tint = TextSecondary)
                         }
                     }
@@ -152,7 +209,10 @@ fun DetailScreen(
                         .padding(horizontal = 20.dp, vertical = 14.dp)
                 ) {
                     Button(
-                        onClick  = { viewModel.saveItem() },
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            viewModel.saveItem()
+                        },
                         enabled  = !uiState.isSaving && !uiState.isLoading,
                         modifier = Modifier.fillMaxWidth().height(52.dp),
                         colors   = ButtonDefaults.buttonColors(containerColor = AccentBlue, contentColor = Background),
@@ -269,19 +329,35 @@ fun DetailScreen(
                             SeriesEpisodeSection(
                                 uiState              = uiState,
                                 onSeasonSelect       = viewModel::selectSeason,
-                                onEpisodeToggle      = { s, ep -> if (!uiState.isPreview) viewModel.toggleEpisode(s, ep) },
-                                onMarkSeasonWatched  = { if (!uiState.isPreview) viewModel.markSeasonWatched() }
+                                onEpisodeToggle      = { s, ep -> 
+                                    if (!uiState.isPreview) {
+                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        viewModel.toggleEpisode(s, ep) 
+                                    }
+                                },
+                                onMarkSeasonWatched  = { 
+                                    if (!uiState.isPreview) {
+                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        viewModel.markSeasonWatched() 
+                                    }
+                                }
                             )
                             Spacer(Modifier.height(24.dp))
                             SubtleDivider()
                             Spacer(Modifier.height(24.dp))
                         }
 
-                        if (!uiState.isPreview) {
+                        if (!uiState.isPreview && uiState.isWatched) {
                             // ── Rating ────────────────────────────────────────────
                             SectionHeader("RATING")
                             Spacer(Modifier.height(16.dp))
-                            StarRatingSelector(rating = uiState.rating, onRatingChange = viewModel::onRatingChange)
+                            StarRatingSelector(
+                                rating = uiState.rating, 
+                                onRatingChange = { r -> 
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    viewModel.onRatingChange(r) 
+                                }
+                            )
                             Spacer(Modifier.height(32.dp))
     
                             // ── Review & Notes ────────────────────────────────────
@@ -554,21 +630,23 @@ private fun EpisodeRow(
             }
         }
 
-        // Animated checkbox
-        AnimatedContent(
-            targetState  = episode.isWatched,
-            transitionSpec = {
-                (scaleIn(initialScale = 0.6f, animationSpec = spring(Spring.DampingRatioMediumBouncy)) +
-                    fadeIn()) togetherWith (scaleOut(targetScale = 0.6f) + fadeOut())
-            },
-            label = "ep_check_${episode.episodeNumber}"
-        ) { watched ->
-            Icon(
-                imageVector        = if (watched) Icons.Filled.CheckCircle else Icons.Outlined.CheckCircle,
-                contentDescription = if (watched) "Watched" else "Not watched",
-                tint               = if (watched) WatchedGreen else SurfaceHighlight,
-                modifier           = Modifier.size(22.dp)
-            )
+        if (!isPreview) {
+            // Animated checkbox
+            AnimatedContent(
+                targetState  = episode.isWatched,
+                transitionSpec = {
+                    (scaleIn(initialScale = 0.6f, animationSpec = spring(Spring.DampingRatioMediumBouncy)) +
+                        fadeIn()) togetherWith (scaleOut(targetScale = 0.6f) + fadeOut())
+                },
+                label = "ep_check_${episode.episodeNumber}"
+            ) { watched ->
+                Icon(
+                    imageVector        = if (watched) Icons.Filled.CheckCircle else Icons.Outlined.CheckCircle,
+                    contentDescription = if (watched) "Watched" else "Not watched",
+                    tint               = if (watched) WatchedGreen else SurfaceHighlight,
+                    modifier           = Modifier.size(22.dp)
+                )
+            }
         }
     }
 }

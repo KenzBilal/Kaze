@@ -14,7 +14,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -155,6 +158,7 @@ fun FriendsScreen(
     onUserClick: (String) -> Unit
 ) {
     val context = LocalContext.current
+    val haptic = LocalHapticFeedback.current
     val viewModel: FriendsViewModel = viewModel(factory = FriendsViewModel.Factory(context))
     val uiState by viewModel.uiState.collectAsState()
 
@@ -227,8 +231,14 @@ fun FriendsScreen(
                             UserSearchRow(
                                 user = user,
                                 isFollowing = uiState.followedIds.contains(user.id),
-                                onFollowClick = { viewModel.toggleFollow(user.id) },
-                                onClick = { onUserClick(user.id) }
+                                onFollowClick = { 
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    viewModel.toggleFollow(user.id) 
+                                },
+                                onClick = { 
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    onUserClick(user.id) 
+                                }
                             )
                         }
                     }
