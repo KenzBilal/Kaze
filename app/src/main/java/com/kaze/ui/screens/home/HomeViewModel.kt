@@ -86,6 +86,19 @@ class HomeViewModel(
                 }
             }
         }
+        // Silent background sync to ensure cloud always matches local DB perfectly
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                userRepository.getLocalUserId()?.let { uid ->
+                    val allItems = repository.getAllItemsSnapshot()
+                    if (allItems.isNotEmpty()) {
+                        userRepository.syncWatchlist(uid, allItems)
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 
     fun downloadUpdate() = updateManager.downloadUpdate()
