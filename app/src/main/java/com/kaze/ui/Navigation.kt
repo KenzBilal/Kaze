@@ -49,9 +49,9 @@ sealed class Screen(val route: String) {
     object UserProfile : Screen("userProfile/{userId}") {
         fun createRoute(id: String) = "userProfile/$id"
     }
-    object DetailPreview : Screen("detail_preview/{imdbId}?title={title}&type={type}&poster={poster}") {
-        fun createRoute(imdbId: String, title: String, type: String, poster: String?) =
-            "detail_preview/$imdbId?title=${android.net.Uri.encode(title)}&type=$type&poster=${android.net.Uri.encode(poster ?: "")}"
+    object DetailPreview : Screen("detail_preview/{imdbId}?title={title}&type={type}&poster={poster}&rating={rating}&notes={notes}") {
+        fun createRoute(imdbId: String, title: String, type: String, poster: String?, rating: Float = 0f, notes: String = "") =
+            "detail_preview/$imdbId?title=${android.net.Uri.encode(title)}&type=$type&poster=${android.net.Uri.encode(poster ?: "")}&rating=$rating&notes=${android.net.Uri.encode(notes)}"
     }
 }
 
@@ -135,17 +135,18 @@ fun WatchLaterNavGraph(
             }
         }
 
-        // ── Discover ──────────────────────────────────────────────────────
         composable(Screen.Discover.route) {
             DiscoverScreen(
                 repository = repo,
                 onItemClick = { item ->
-                    if (item.item_imdb_id != null) {
+                    if (item.imdb_id.isNotBlank()) {
                         navController.navigate(Screen.DetailPreview.createRoute(
-                            imdbId = item.item_imdb_id,
-                            title = item.item_title ?: "",
-                            type = item.item_type ?: "MOVIE",
-                            poster = item.item_poster_url
+                            imdbId = item.imdb_id,
+                            title = item.title,
+                            type = item.type,
+                            poster = item.poster_url,
+                            rating = item.rating,
+                            notes = item.notes
                         ))
                     }
                 }
@@ -203,7 +204,19 @@ fun WatchLaterNavGraph(
             UserProfileScreen(
                 userId = userId,
                 onBack = { navController.popBackStack() },
-                onUserClick = { id -> navController.navigate(Screen.UserProfile.createRoute(id)) }
+                onUserClick = { id -> navController.navigate(Screen.UserProfile.createRoute(id)) },
+                onItemClick = { item ->
+                    if (item.imdb_id.isNotBlank()) {
+                        navController.navigate(Screen.DetailPreview.createRoute(
+                            imdbId = item.imdb_id,
+                            title = item.title,
+                            type = item.type,
+                            poster = item.poster_url,
+                            rating = item.rating,
+                            notes = item.notes
+                        ))
+                    }
+                }
             )
         }
 
@@ -230,13 +243,17 @@ fun WatchLaterNavGraph(
                 navArgument("imdbId") { type = NavType.StringType },
                 navArgument("title") { type = NavType.StringType },
                 navArgument("type") { type = NavType.StringType },
-                navArgument("poster") { type = NavType.StringType; nullable = true }
+                navArgument("poster") { type = NavType.StringType; nullable = true },
+                navArgument("rating") { type = NavType.FloatType; defaultValue = 0f },
+                navArgument("notes") { type = NavType.StringType; defaultValue = "" }
             )
         ) { backStack ->
             val imdbId = backStack.arguments!!.getString("imdbId") ?: ""
             val title  = backStack.arguments!!.getString("title") ?: ""
             val type   = backStack.arguments!!.getString("type") ?: "MOVIE"
             val poster = backStack.arguments!!.getString("poster")
+            val rating = backStack.arguments!!.getFloat("rating")
+            val notes  = backStack.arguments!!.getString("notes") ?: ""
 
             val detailVm: DetailViewModel = viewModel(
                 factory = DetailViewModel.Factory(
@@ -247,7 +264,9 @@ fun WatchLaterNavGraph(
                     previewImdbId = imdbId,
                     previewTitle = title,
                     previewType = type,
-                    previewPoster = poster
+                    previewPoster = poster,
+                    previewRating = rating,
+                    previewNotes = notes
                 )
             )
             DetailScreen(

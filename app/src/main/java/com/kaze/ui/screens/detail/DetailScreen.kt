@@ -304,6 +304,34 @@ fun DetailScreen(
                                 ),
                                 shape = RoundedCornerShape(12.dp)
                             )
+                        } else if (uiState.rating > 0f || uiState.notes.isNotBlank()) {
+                            // ── Friend's Rating & Review ──────────────────────────
+                            SectionHeader("FRIEND'S REVIEW")
+                            Spacer(Modifier.height(16.dp))
+                            if (uiState.rating > 0f) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Filled.Star, contentDescription = "Rating", tint = androidx.compose.ui.graphics.Color(0xFFFFC107), modifier = Modifier.size(24.dp))
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(text = "${uiState.rating} / 10", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                }
+                                Spacer(Modifier.height(16.dp))
+                            }
+                            if (uiState.notes.isNotBlank()) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(SurfaceElevated)
+                                        .padding(16.dp)
+                                ) {
+                                    Text(
+                                        text = "\"${uiState.notes}\"",
+                                        color = TextSecondary,
+                                        fontSize = 15.sp,
+                                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                                    )
+                                }
+                            }
                         }
                         Spacer(Modifier.height(100.dp))
                     }

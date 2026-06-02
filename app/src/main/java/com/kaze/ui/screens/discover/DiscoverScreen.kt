@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material3.*
@@ -28,9 +29,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
-import com.kaze.data.local.WatchLaterDatabase
-import com.kaze.data.repository.ActivityFeedItem
+import com.kaze.data.repository.ActivityFeedEntry
 import com.kaze.data.repository.ActivityRepository
+import com.kaze.data.repository.PublicWatchlistItem
 import com.kaze.data.repository.UserRepository
 import com.kaze.data.repository.WatchItemRepository
 import com.kaze.model.MediaType
@@ -69,12 +70,34 @@ class DiscoverViewModel(
             val ownItems = repository.getAllItemsSnapshot()
             val ownImdbIds = ownItems.map { it.imdbId }.filter { it.isNotBlank() }.toSet()
 
+            // Calculate Top Genre
+            val topGenre = ownItems
+                .filter { it.isWatched }
+                .flatMap { it.genreList }
+                .groupingBy { it }
+                .eachCount()
+                .entries
+                .maxByOrNull { it.value }?.key ?: ""
+
             // Get followed users
             val following = userRepo.getFollowingList(userId)
             val followedIds = following.map { it.id }
 
-            // Fetch suggestions from friends, excluding own items
-            val suggestions = activityRepo.getSocialSuggestions(followedIds, ownImdbIds)
+            // Fetch public watchlists of friends
+            val friendsWatchlists = userRepo.getWatchlistsByUserIds(followedIds)
+
+            // Filter out own items, then sort by genre match, then rating
+            val suggestions = friendsWatchlists
+                .filter { it.imdb_id !in ownImdbIds }
+                .distinctBy { it.imdb_id }
+                .sortedWith(
+                    compareByDescending<PublicWatchlistItem> { 
+                        topGenre.isNotEmpty() && it.genres.contains(topGenre, ignoreCase = true) 
+                    }
+                    .thenByDescending { it.rating }
+                    .thenByDescending { it.date_added }
+                )
+                .take(50)
 
             _uiState.update {
                 it.copy(
@@ -83,36 +106,6 @@ class DiscoverViewModel(
                     isEmpty = suggestions.isEmpty()
                 )
             }
-        }
-    }
-
-    fun addToList(item: ActivityFeedItem) {
-        viewModelScope.launch {
-            val watchItem = WatchItem(
-                imdbId = item.item_imdb_id ?: return@launch,
-                title = item.item_title ?: "Unknown",
-                year = 0,
-                type = try { MediaType.valueOf(item.item_type ?: "MOVIE") } catch(e: Exception) { MediaType.MOVIE },
-                posterUrl = item.item_poster_url,
-                dateAdded = System.currentTimeMillis(),
-                lastUpdated = System.currentTimeMillis()
-            )
-            repository.saveItem(watchItem)
-            val uid = userRepo.getLocalUserId()
-            if (uid != null) {
-                userRepo.pushWatchItem(uid, watchItem)
-                activityRepo.postActivity(
-                    com.kaze.data.repository.ActivityFeedEntry(
-                        user_id = uid,
-                        action_type = "added_item",
-                        item_title = watchItem.title,
-                        item_type = watchItem.type.name,
-                        item_poster_url = watchItem.posterUrl,
-                        item_imdb_id = watchItem.imdbId
-                    )
-                )
-            }
-            load() // refresh
         }
     }
 
@@ -130,7 +123,7 @@ class DiscoverViewModel(
 
 data class DiscoverUiState(
     val isLoading: Boolean = true,
-    val suggestions: List<ActivityFeedItem> = emptyList(),
+    val suggestions: List<PublicWatchlistItem> = emptyList(),
     val isEmpty: Boolean = false,
     val isLoggedIn: Boolean = true
 )
@@ -141,7 +134,7 @@ data class DiscoverUiState(
 @Composable
 fun DiscoverScreen(
     repository: WatchItemRepository,
-    onItemClick: (ActivityFeedItem) -> Unit
+    onItemClick: (PublicWatchlistItem) -> Unit
 ) {
     val context = LocalContext.current
     val viewModel: DiscoverViewModel = viewModel(factory = DiscoverViewModel.Factory(context, repository))
@@ -189,11 +182,10 @@ fun DiscoverScreen(
                     verticalItemSpacing = 8.dp,
                     contentPadding = PaddingValues(top = 8.dp, bottom = 100.dp)
                 ) {
-                    items(uiState.suggestions, key = { it.id }) { item ->
+                    items(uiState.suggestions, key = { it.user_id + "_" + it.imdb_id }) { item ->
                         DiscoverCard(
                             item = item,
-                            onClick = { onItemClick(item) },
-                            onAdd = { viewModel.addToList(item) }
+                            onClick = { onItemClick(item) }
                         )
                     }
                 }
@@ -203,7 +195,7 @@ fun DiscoverScreen(
 }
 
 @Composable
-private fun DiscoverCard(item: ActivityFeedItem, onClick: () -> Unit, onAdd: () -> Unit) {
+private fun DiscoverCard(item: PublicWatchlistItem, onClick: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -211,10 +203,10 @@ private fun DiscoverCard(item: ActivityFeedItem, onClick: () -> Unit, onAdd: () 
             .background(SurfaceElevated)
             .clickable(onClick = onClick)
     ) {
-        if (!item.item_poster_url.isNullOrBlank()) {
+        if (!item.poster_url.isNullOrBlank()) {
             AsyncImage(
-                model = item.item_poster_url,
-                contentDescription = item.item_title,
+                model = item.poster_url,
+                contentDescription = item.title,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -231,7 +223,7 @@ private fun DiscoverCard(item: ActivityFeedItem, onClick: () -> Unit, onAdd: () 
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = if (item.item_type == "SERIES") Icons.Filled.Tv else Icons.Filled.Movie,
+                    imageVector = if (item.type.uppercase() == "SERIES") Icons.Filled.Tv else Icons.Filled.Movie,
                     contentDescription = null,
                     tint = TextTertiary,
                     modifier = Modifier.size(28.dp)
@@ -245,20 +237,35 @@ private fun DiscoverCard(item: ActivityFeedItem, onClick: () -> Unit, onAdd: () 
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    item.item_title ?: "",
+                    item.title,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = TextPrimary,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
-                if (!item.item_type.isNullOrBlank()) {
-                    Spacer(Modifier.height(2.dp))
+                Spacer(Modifier.height(2.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        item.item_type.lowercase().replaceFirstChar { it.uppercase() },
+                        item.type.lowercase().replaceFirstChar { it.uppercase() },
                         fontSize = 10.sp,
                         color = TextTertiary
                     )
+                    if (item.rating > 0f) {
+                        Spacer(Modifier.width(6.dp))
+                        Icon(
+                            imageVector = Icons.Filled.Star,
+                            contentDescription = "Rating",
+                            tint = androidx.compose.ui.graphics.Color(0xFFFFC107),
+                            modifier = Modifier.size(10.dp)
+                        )
+                        Spacer(Modifier.width(2.dp))
+                        Text(
+                            text = String.format("%.1f", item.rating),
+                            fontSize = 10.sp,
+                            color = TextTertiary
+                        )
+                    }
                 }
             }
         }
