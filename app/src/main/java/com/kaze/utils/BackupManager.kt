@@ -54,6 +54,7 @@ data class WatchItemBackup(
 @Keep
 data class EpisodeProgressBackup(
     val imdbId: String,         // stable foreign key — not the DB autoincrement id
+    val fallbackKey: String = "",
     val season: Int,
     val episodeNumber: Int,
     val isWatched: Boolean,
@@ -92,6 +93,7 @@ class BackupManager(
                     progressByWatchItemId[item.id].orEmpty().map { progress ->
                         EpisodeProgressBackup(
                             imdbId        = item.imdbId,
+                            fallbackKey   = "${item.title}_${item.year}_${item.type.name}",
                             season        = progress.season,
                             episodeNumber = progress.episodeNumber,
                             isWatched     = progress.isWatched,
@@ -130,23 +132,28 @@ class BackupManager(
             // Atomic replace — returns new DB ids in insertion order
             val newIds: List<Long> = repository.restoreItems(watchItems)
 
-            // Build imdbId → new DB id map for episode progress remapping
             val imdbToNewId: Map<String, Long> = watchItems
                 .mapIndexed { index, item -> item.imdbId to newIds[index] }
                 .filter { it.first.isNotBlank() }
                 .toMap()
 
+            val fallbackToNewId: Map<String, Long> = watchItems
+                .mapIndexed { index, item -> "${item.title}_${item.year}_${item.type.name}" to newIds[index] }
+                .toMap()
+
             // Restore episode progress with remapped IDs
-            if (payload.episodeProgress.isNotEmpty() && imdbToNewId.isNotEmpty()) {
+            if (payload.episodeProgress.isNotEmpty()) {
                 val progressRows = payload.episodeProgress.mapNotNull { ep ->
-                    val newId = imdbToNewId[ep.imdbId] ?: return@mapNotNull null
-                    EpisodeProgress(
-                        watchItemId   = newId,
-                        season        = ep.season,
-                        episodeNumber = ep.episodeNumber,
-                        isWatched     = ep.isWatched,
-                        watchedAt     = ep.watchedAt
-                    )
+                    val newId = if (ep.imdbId.isNotBlank()) imdbToNewId[ep.imdbId] else fallbackToNewId[ep.fallbackKey]
+                    newId?.let {
+                        EpisodeProgress(
+                            watchItemId   = it,
+                            season        = ep.season,
+                            episodeNumber = ep.episodeNumber,
+                            isWatched     = ep.isWatched,
+                            watchedAt     = ep.watchedAt
+                        )
+                    }
                 }
                 repository.restoreEpisodeProgress(progressRows)
             }
@@ -169,6 +176,9 @@ class BackupManager(
         val repo = userRepository ?: error("UserRepository not provided")
         val items = repository.getAllItemsSnapshot()
         repo.syncWatchlist(userId, items)
+        
+        val progress = repository.getAllEpisodeProgressSnapshot()
+        repo.syncEpisodeProgress(userId, progress, items)
         items.size
     }
 
@@ -190,7 +200,19 @@ class BackupManager(
         val notes: String? = null,
         val poster_url: String? = null,
         val genres: String? = null,
-        val date_added: Long
+        val date_added: Long,
+        val last_updated: Long = 0L
+    )
+
+    @Serializable
+    private data class CloudEpisodeProgress(
+        val imdb_id: String,
+        val series_title: String,
+        val season: Int,
+        val episode_number: Int,
+        val is_watched: Boolean,
+        val watched_at: Long? = null,
+        val last_updated: Long = 0L
     )
 
     suspend fun restoreFromCloud(userId: String): Int = withContext(Dispatchers.IO) {
@@ -198,19 +220,31 @@ class BackupManager(
             .select { filter { eq("user_id", userId) } }
             .decodeList<CloudItem>()
 
+        val remoteProgress = try {
+            SupabaseApi.client.from("public_episode_progress")
+                .select { filter { eq("user_id", userId) } }
+                .decodeList<CloudEpisodeProgress>()
+        } catch (_: Exception) { emptyList() }
+
         val localItems = repository.getAllItemsSnapshot()
-        val localSet = buildSet<String> {
+        val localMap = buildMap {
             localItems.forEach { item ->
-                if (item.imdbId.isNotBlank()) add(item.imdbId)
-                add("${item.title}_${item.year}_${item.type.name}")
+                if (item.imdbId.isNotBlank()) put(item.imdbId, item)
+                put("${item.title}_${item.year}_${item.type.name}", item)
             }
         }
 
-        val newItems = remoteItems.filter { r ->
+        var insertedCount = 0
+        var updatedCount = 0
+        val newItems = mutableListOf<WatchItem>()
+        val updatedItems = mutableListOf<WatchItem>()
+
+        remoteItems.forEach { r ->
             val dedupeKey = "${r.title}_${r.year}_${r.type}"
-            r.imdb_id.isBlank() || r.imdb_id !in localSet && dedupeKey !in localSet
-        }.map { r ->
-            WatchItem(
+            val existing = localMap[r.imdb_id] ?: localMap[dedupeKey]
+
+            val remoteItem = WatchItem(
+                id = existing?.id ?: 0L,
                 imdbId    = r.imdb_id,
                 title     = r.title,
                 year      = r.year,
@@ -222,14 +256,49 @@ class BackupManager(
                 notes     = r.notes.orEmpty(),
                 posterUrl = r.poster_url,
                 genres    = r.genres.orEmpty(),
-                dateAdded = r.date_added
+                dateAdded = r.date_added,
+                lastUpdated = r.last_updated
             )
+
+            if (existing == null) {
+                newItems.add(remoteItem)
+            } else if (remoteItem.lastUpdated > existing.lastUpdated) {
+                updatedItems.add(remoteItem)
+            }
         }
 
         if (newItems.isNotEmpty()) {
             repository.restoreItems(newItems)
+            insertedCount = newItems.size
         }
-        newItems.size
+        if (updatedItems.isNotEmpty()) {
+            updatedItems.forEach { repository.updateItem(it) }
+            updatedCount = updatedItems.size
+        }
+
+        if (remoteProgress.isNotEmpty()) {
+            val finalLocalItems = repository.getAllItemsSnapshot()
+            val finalLocalMap = buildMap {
+                finalLocalItems.forEach { item ->
+                    if (item.imdbId.isNotBlank()) put(item.imdbId, item.id)
+                    put("${item.title}_${item.year}_${item.type.name}", item.id)
+                }
+            }
+
+            val progressRows = remoteProgress.mapNotNull { r ->
+                val itemId = finalLocalMap[r.imdb_id] ?: return@mapNotNull null
+                EpisodeProgress(
+                    watchItemId = itemId,
+                    season = r.season,
+                    episodeNumber = r.episode_number,
+                    isWatched = r.is_watched,
+                    watchedAt = r.watched_at
+                )
+            }
+            repository.restoreEpisodeProgress(progressRows)
+        }
+
+        insertedCount + updatedCount
     }
 
     // ── Internal helpers ───────────────────────────────────────────────────

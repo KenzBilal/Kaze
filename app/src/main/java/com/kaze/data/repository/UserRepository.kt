@@ -46,6 +46,18 @@ data class PublicWatchlistItem(
 )
 
 @Serializable
+data class PublicEpisodeProgress(
+    val user_id: String,
+    val imdb_id: String,
+    val series_title: String,
+    val season: Int,
+    val episode_number: Int,
+    val is_watched: Boolean,
+    val watched_at: Long?,
+    val last_updated: Long
+)
+
+@Serializable
 data class FollowRelation(
     val follower_id: String,
     val following_id: String
@@ -470,6 +482,59 @@ class UserRepository(private val context: Context) {
                         inner.printStackTrace()
                     }
                 }
+            }
+        }
+    }
+
+    suspend fun syncEpisodeProgress(userId: String, progressList: List<com.kaze.data.local.EpisodeProgress>, items: List<WatchItem>) {
+        if (progressList.isEmpty()) return
+        withContext(Dispatchers.IO) {
+            val itemMap = items.associateBy { it.id }
+            
+            // Map to cloud models
+            val payload = progressList.mapNotNull { local ->
+                val item = itemMap[local.watchItemId] ?: return@mapNotNull null
+                val stableId = item.imdbId.ifBlank { "${item.title}_${item.year}_${item.type.name}" }
+                PublicEpisodeProgress(
+                    user_id = userId,
+                    imdb_id = stableId,
+                    series_title = item.title,
+                    season = local.season,
+                    episode_number = local.episodeNumber,
+                    is_watched = local.isWatched,
+                    watched_at = local.watchedAt,
+                    last_updated = local.watchedAt ?: System.currentTimeMillis() // Assuming watchedAt is updated when toggled
+                )
+            }
+
+            try {
+                // Fetch server timestamps
+                val serverTimestamps: Map<String, Long> = try {
+                    SupabaseApi.client.from("public_episode_progress")
+                        .select(columns = io.github.jan.supabase.postgrest.query.Columns.list("imdb_id", "season", "episode_number", "last_updated")) {
+                            filter { eq("user_id", userId) }
+                        }
+                        .decodeList<PublicEpisodeProgress>()
+                        .associateBy(
+                            keySelector = { "${it.imdb_id}_${it.season}_${it.episode_number}" },
+                            valueTransform = { it.last_updated }
+                        )
+                } catch (_: Exception) { emptyMap() }
+
+                // Only upload if local is newer or not present on server
+                val upsertPayload = payload.filter {
+                    val key = "${it.imdb_id}_${it.season}_${it.episode_number}"
+                    val serverTs = serverTimestamps[key] ?: 0L
+                    it.last_updated > serverTs
+                }
+
+                if (upsertPayload.isNotEmpty()) {
+                    SupabaseApi.client.from("public_episode_progress").upsert(upsertPayload) {
+                        onConflict = "user_id,imdb_id,season,episode_number"
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }

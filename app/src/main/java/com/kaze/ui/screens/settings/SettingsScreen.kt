@@ -1,5 +1,8 @@
 package com.kaze.ui.screens.settings
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -10,6 +13,8 @@ import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.CloudUpload
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Upload
 import androidx.compose.foundation.clickable
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -40,6 +45,46 @@ fun SettingsScreen(onBack: () -> Unit) {
     var soundEnabled by remember { mutableStateOf(prefs.soundEnabled) }
     var isSyncing by remember { mutableStateOf(false) }
     var isBackingUp by remember { mutableStateOf(false) }
+    
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json")
+    ) { uri: Uri? ->
+        uri?.let {
+            scope.launch {
+                try {
+                    val result = app.container.backupManager.exportToUri(it)
+                    when (result) {
+                        is com.kaze.utils.BackupResult.Success -> snackbarHostState.showSnackbar(result.message)
+                        is com.kaze.utils.BackupResult.Error -> snackbarHostState.showSnackbar(result.message)
+                    }
+                } catch (e: Exception) {
+                    snackbarHostState.showSnackbar("Export failed: ${e.message}")
+                }
+            }
+        }
+    }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        uri?.let {
+            scope.launch {
+                try {
+                    val json = context.contentResolver.openInputStream(it)?.bufferedReader()?.use { reader ->
+                        reader.readText()
+                    } ?: throw Exception("Could not read file")
+                    
+                    val result = app.container.backupManager.importFromJson(json)
+                    when (result) {
+                        is com.kaze.utils.RestoreResult.Success -> snackbarHostState.showSnackbar("Restored ${result.count} items successfully")
+                        is com.kaze.utils.RestoreResult.Error -> snackbarHostState.showSnackbar("Restore failed: ${result.message}")
+                    }
+                } catch (e: Exception) {
+                    snackbarHostState.showSnackbar("Import failed: ${e.message}")
+                }
+            }
+        }
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -158,6 +203,38 @@ fun SettingsScreen(onBack: () -> Unit) {
                                 isBackingUp = false
                             }
                         }
+                    }
+                )
+            }
+
+            item { Spacer(Modifier.height(28.dp)) }
+
+            item {
+                SettingsSectionLabel("LOCAL BACKUP")
+                Spacer(Modifier.height(10.dp))
+            }
+
+            item {
+                SettingsActionRow(
+                    icon = Icons.Filled.Upload,
+                    title = "Export to File",
+                    subtitle = "Save watchlist as JSON",
+                    onClick = {
+                        val fileName = "Kaze_Backup_${System.currentTimeMillis()}.json"
+                        exportLauncher.launch(fileName)
+                    }
+                )
+            }
+
+            item { Spacer(Modifier.height(10.dp)) }
+
+            item {
+                SettingsActionRow(
+                    icon = Icons.Filled.Download,
+                    title = "Import from File",
+                    subtitle = "Restore watchlist from JSON",
+                    onClick = {
+                        importLauncher.launch(arrayOf("application/json", "*/*"))
                     }
                 )
             }
