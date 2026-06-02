@@ -157,6 +157,16 @@ class UserRepository(private val context: Context) {
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+                val payload = "${favMovie.orEmpty()}|||${favSeries.orEmpty()}|||${favGenre.orEmpty()}"
+                val dao = com.kaze.data.local.WatchLaterDatabase.getInstance(context).pendingActionDao()
+                dao.insert(
+                    com.kaze.data.local.PendingAction(
+                        actionType = com.kaze.data.local.ActionType.UPDATE_PROFILE,
+                        userId = userId,
+                        payload = payload
+                    )
+                )
+                com.kaze.worker.SyncWorker.enqueue(context)
             }
         }
     }
@@ -421,6 +431,15 @@ class UserRepository(private val context: Context) {
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+                val dao = com.kaze.data.local.WatchLaterDatabase.getInstance(context).pendingActionDao()
+                dao.insert(
+                    com.kaze.data.local.PendingAction(
+                        actionType = com.kaze.data.local.ActionType.DELETE_WATCHLIST,
+                        userId = userId,
+                        payload = kotlinx.serialization.json.Json.encodeToString(item)
+                    )
+                )
+                com.kaze.worker.SyncWorker.enqueue(context)
             }
         }
     }
@@ -480,6 +499,14 @@ class UserRepository(private val context: Context) {
                         }
                     } catch (inner: Exception) {
                         inner.printStackTrace()
+                        val dao = com.kaze.data.local.WatchLaterDatabase.getInstance(context).pendingActionDao()
+                        dao.insert(
+                            com.kaze.data.local.PendingAction(
+                                actionType = com.kaze.data.local.ActionType.SYNC_WATCHLIST,
+                                userId = userId
+                            )
+                        )
+                        com.kaze.worker.SyncWorker.enqueue(context)
                     }
                 }
             }
@@ -535,6 +562,14 @@ class UserRepository(private val context: Context) {
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+                val dao = com.kaze.data.local.WatchLaterDatabase.getInstance(context).pendingActionDao()
+                dao.insert(
+                    com.kaze.data.local.PendingAction(
+                        actionType = com.kaze.data.local.ActionType.SYNC_EPISODE_PROGRESS,
+                        userId = userId
+                    )
+                )
+                com.kaze.worker.SyncWorker.enqueue(context)
             }
         }
     }

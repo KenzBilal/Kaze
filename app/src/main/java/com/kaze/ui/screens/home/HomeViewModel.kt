@@ -28,7 +28,8 @@ class HomeViewModel(
     private val seriesRepository: SeriesRepository,
     private val userRepository: UserRepository,
     private val userPreferences: UserPreferences,
-    private val updateManager: UpdateManager
+    private val updateManager: UpdateManager,
+    private val backupManager: com.kaze.utils.BackupManager
 ) : ViewModel() {
 
     private val _sortFilterState = MutableStateFlow(SortFilterState())
@@ -90,6 +91,9 @@ class HomeViewModel(
         viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             try {
                 userRepository.getLocalUserId()?.let { uid ->
+                    // First, pull from cloud to ensure we have latest updates from other devices
+                    backupManager.restoreFromCloud(uid)
+                    
                     val allItems = repository.getAllItemsSnapshot()
                     if (allItems.isNotEmpty()) {
                         userRepository.syncWatchlist(uid, allItems)
@@ -135,7 +139,12 @@ class HomeViewModel(
     }
 
     fun deleteItem(item: WatchItem) {
-        viewModelScope.launch { repository.deleteItem(item) }
+        viewModelScope.launch { 
+            repository.deleteItem(item)
+            userRepository.getLocalUserId()?.let { uid ->
+                userRepository.deleteFromWatchlist(uid, item)
+            }
+        }
     }
 
     class Factory(
@@ -143,10 +152,11 @@ class HomeViewModel(
         private val seriesRepository: SeriesRepository,
         private val userRepository: UserRepository,
         private val userPreferences: UserPreferences,
-        private val updateManager: UpdateManager
+        private val updateManager: UpdateManager,
+        private val backupManager: com.kaze.utils.BackupManager
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-            HomeViewModel(repository, seriesRepository, userRepository, userPreferences, updateManager) as T
+            HomeViewModel(repository, seriesRepository, userRepository, userPreferences, updateManager, backupManager) as T
     }
 }

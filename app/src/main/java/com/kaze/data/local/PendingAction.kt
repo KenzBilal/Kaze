@@ -22,4 +22,12 @@ data class PendingAction(
     val createdAt: Long = System.currentTimeMillis()
 )
 
-enum class ActionType { FOLLOW, UNFOLLOW, SYNC_WATCHLIST, POST_ACTIVITY }
+enum class ActionType { 
+    FOLLOW, 
+    UNFOLLOW, 
+    SYNC_WATCHLIST, 
+    POST_ACTIVITY,
+    DELETE_WATCHLIST,
+    SYNC_EPISODE_PROGRESS,
+    UPDATE_PROFILE
+}

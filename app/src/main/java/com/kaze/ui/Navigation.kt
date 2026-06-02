@@ -106,7 +106,8 @@ fun WatchLaterNavGraph(
                     seriesRepository = app.container.seriesRepository,
                     userRepository = app.container.userRepository,
                     userPreferences = app.container.userPreferences,
-                    updateManager = app.container.updateManager
+                    updateManager = app.container.updateManager,
+                    backupManager = app.container.backupManager
                 )
             )
             val addVm:  AddItemViewModel = viewModel(factory = AddItemViewModel.Factory(repo, app.container.omdbRepository, app.container.activityRepository, app.container.userRepository))
