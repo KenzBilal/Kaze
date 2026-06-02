@@ -66,9 +66,23 @@ class MyProfileViewModel(
 
     init { load() }
 
+    fun refresh() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isRefreshing = true) }
+            loadInternal()
+            _uiState.update { it.copy(isRefreshing = false) }
+        }
+    }
+
     private fun load() {
         viewModelScope.launch {
-            val userId = repository.getLocalUserId() ?: return@launch
+            _uiState.update { it.copy(isLoading = true) }
+            loadInternal()
+        }
+    }
+
+    private suspend fun loadInternal() {
+            val userId = repository.getLocalUserId() ?: return
             val user = repository.getUserById(userId)
             val allWatched = dao.getAllItemsOnce().filter { it.isWatched }
             val followersCount = repository.getFollowersCount(userId)
@@ -162,6 +176,7 @@ data class MyProfileUiState(
     val followersCount: Int = 0,
     val followingCount: Int = 0,
     val isEditing: Boolean = false,
+    val isRefreshing: Boolean = false,
     val pendingFavMovie: String = "",
     val pendingFavSeries: String = "",
     val pendingFavGenre: String = ""
@@ -234,10 +249,15 @@ fun MyProfileScreen(onSettingsClick: () -> Unit = {}) {
 
         val user = uiState.user ?: return@Scaffold
 
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(padding),
-            contentPadding = PaddingValues(bottom = 100.dp)
+        PullToRefreshBox(
+            isRefreshing = uiState.isRefreshing,
+            onRefresh = { viewModel.refresh() },
+            modifier = Modifier.fillMaxSize().padding(padding)
         ) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 100.dp)
+            ) {
             // ── Hero Header ───────────────────────────────────────────────────
             item {
                 ProfileHeroSection(user = user, uiState = uiState)
@@ -275,6 +295,7 @@ fun MyProfileScreen(onSettingsClick: () -> Unit = {}) {
                     Spacer(Modifier.height(16.dp))
                     FavouritesSection(user = user)
                 }
+            }
             }
         }
     }

@@ -51,6 +51,14 @@ class FriendsViewModel(private val repository: UserRepository) : ViewModel() {
         }
     }
 
+    fun refresh() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isRefreshing = true) }
+            loadAllUsers()
+            _uiState.update { it.copy(isRefreshing = false) }
+        }
+    }
+
     private suspend fun loadAllUsers() {
         _uiState.update { it.copy(isSearching = true) }
         try {
@@ -136,7 +144,8 @@ data class FriendsUiState(
     val allUsers: List<SupabaseUser> = emptyList(),
     val searchResults: List<SupabaseUser> = emptyList(),
     val followedIds: Set<String> = emptySet(),
-    val isSearching: Boolean = false
+    val isSearching: Boolean = false,
+    val isRefreshing: Boolean = false
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -163,12 +172,16 @@ fun FriendsScreen(
         },
         containerColor = Background
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 20.dp)
+        PullToRefreshBox(
+            isRefreshing = uiState.isRefreshing,
+            onRefresh = { viewModel.refresh() },
+            modifier = Modifier.fillMaxSize().padding(padding)
         ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 20.dp)
+            ) {
             Spacer(modifier = Modifier.height(8.dp))
 
             OutlinedTextField(

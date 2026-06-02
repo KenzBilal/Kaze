@@ -60,9 +60,22 @@ class UserProfileViewModel(
 
     init { loadProfile() }
 
+    fun refresh() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isRefreshing = true) }
+            loadProfileInternal()
+            _uiState.update { it.copy(isRefreshing = false) }
+        }
+    }
+
     private fun loadProfile() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
+            loadProfileInternal()
+        }
+    }
+
+    private suspend fun loadProfileInternal() {
             val localId = repository.getLocalUserId()
             val user = repository.getUserById(profileUserId)
             val watchlist = repository.getWatchlistByUserId(profileUserId)
@@ -145,6 +158,7 @@ class UserProfileViewModel(
 
 data class UserProfileUiState(
     val isLoading: Boolean = true,
+    val isRefreshing: Boolean = false,
     val user: SupabaseUser? = null,
     val watchlist: List<PublicWatchlistItem> = emptyList(),
     val followersCount: Int = 0,
@@ -215,13 +229,18 @@ fun UserProfileScreen(
                 val toWatchList = uniqueWatchlist.filter { !it.is_watched }.sortedByDescending { it.date_added }
                 val currentList = if (selectedTabIndex == 0) watchedList else toWatchList
 
-                LazyVerticalStaggeredGrid(
-                    columns = StaggeredGridCells.Fixed(2),
-                    modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalItemSpacing = 8.dp,
-                    contentPadding = PaddingValues(bottom = 100.dp)
+                PullToRefreshBox(
+                    isRefreshing = uiState.isRefreshing,
+                    onRefresh = { viewModel.refresh() },
+                    modifier = Modifier.fillMaxSize().padding(padding)
                 ) {
+                    LazyVerticalStaggeredGrid(
+                        columns = StaggeredGridCells.Fixed(2),
+                        modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalItemSpacing = 8.dp,
+                        contentPadding = PaddingValues(bottom = 100.dp)
+                    ) {
                     // Header spans full width
                     item(span = androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan.FullLine) {
                         ProfileHeader(
@@ -283,6 +302,7 @@ fun UserProfileScreen(
                                 onClick = { onItemClick(item) }
                             )
                         }
+                    }
                     }
                 }
             }

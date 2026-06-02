@@ -58,12 +58,25 @@ class DiscoverViewModel(
 
     init { load() }
 
+    fun refresh() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isRefreshing = true) }
+            loadInternal()
+            _uiState.update { it.copy(isRefreshing = false) }
+        }
+    }
+
     fun load() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
+            loadInternal()
+        }
+    }
+
+    private suspend fun loadInternal() {
             val userId = userRepo.getLocalUserId() ?: run {
                 _uiState.update { it.copy(isLoading = false, isEmpty = true, isLoggedIn = false) }
-                return@launch
+                return
             }
 
             // Get items user already has in their own list
@@ -107,7 +120,6 @@ class DiscoverViewModel(
                     isEmpty = suggestions.isEmpty()
                 )
             }
-        }
     }
 
     class Factory(private val context: android.content.Context, private val repository: WatchItemRepository) : ViewModelProvider.Factory {
@@ -124,6 +136,7 @@ class DiscoverViewModel(
 
 data class DiscoverUiState(
     val isLoading: Boolean = true,
+    val isRefreshing: Boolean = false,
     val suggestions: List<PublicWatchlistItem> = emptyList(),
     val isEmpty: Boolean = false,
     val isLoggedIn: Boolean = true
@@ -173,21 +186,26 @@ fun DiscoverScreen(
                 modifier = Modifier.fillMaxSize().padding(padding)
             )
             else -> {
-                LazyVerticalStaggeredGrid(
-                    columns = StaggeredGridCells.Fixed(2),
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding)
-                        .padding(horizontal = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalItemSpacing = 8.dp,
-                    contentPadding = PaddingValues(top = 8.dp, bottom = 100.dp)
+                PullToRefreshBox(
+                    isRefreshing = uiState.isRefreshing,
+                    onRefresh = { viewModel.refresh() },
+                    modifier = Modifier.fillMaxSize().padding(padding)
                 ) {
-                    items(uiState.suggestions, key = { it.user_id + "_" + it.imdb_id }) { item ->
-                        DiscoverCard(
-                            item = item,
-                            onClick = { onItemClick(item) }
-                        )
+                    LazyVerticalStaggeredGrid(
+                        columns = StaggeredGridCells.Fixed(2),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalItemSpacing = 8.dp,
+                        contentPadding = PaddingValues(top = 8.dp, bottom = 100.dp)
+                    ) {
+                        items(uiState.suggestions, key = { it.user_id + "_" + it.imdb_id }) { item ->
+                            DiscoverCard(
+                                item = item,
+                                onClick = { onItemClick(item) }
+                            )
+                        }
                     }
                 }
             }
