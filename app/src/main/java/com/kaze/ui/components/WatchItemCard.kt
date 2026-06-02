@@ -140,17 +140,25 @@ fun WatchItemCard(
             }
         }
 
-        // Progress gradient for in-progress series
-        if (item.type == MediaType.SERIES && !item.isWatched &&
-            (item.season != null && item.episode != null)) {
+        // Progress gradient for series
+        if (item.type == MediaType.SERIES && (item.isWatched || (item.season != null || item.episode != null))) {
+            val progressFraction = if (item.isWatched) 1f else {
+                val s = item.season ?: 1
+                val e = item.episode ?: 0
+                // Indeterminate progress logic when total episodes unknown
+                val frac = (s * 10f + e) / 100f
+                frac.coerceIn(0.05f, 0.95f)
+            }
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .fillMaxWidth(progressFraction)
                     .height(2.dp)
                     .background(
-                        Brush.horizontalGradient(
-                            listOf(AccentBlue.copy(alpha = 0.7f), AccentPurple.copy(alpha = 0.3f))
-                        )
+                        if (item.isWatched) {
+                            Brush.horizontalGradient(listOf(AccentBlue, AccentBlue))
+                        } else {
+                            Brush.horizontalGradient(listOf(AccentBlue.copy(alpha = 0.7f), AccentPurple.copy(alpha = 0.3f)))
+                        }
                     )
             )
         }

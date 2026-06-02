@@ -451,10 +451,12 @@ private fun PinterestCard(item: PublicWatchlistItem, isOwned: Boolean = false, o
                 item.title, fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
                 color = TextPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis
             )
-            Text(
-                "${item.year}", fontSize = 11.sp, color = TextTertiary,
-                modifier = Modifier.padding(top = 2.dp)
-            )
+            if (item.year > 0) {
+                Text(
+                    "${item.year}", fontSize = 11.sp, color = TextTertiary,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+            }
             if (item.rating > 0f) {
                 Text("★ ${item.rating}", fontSize = 11.sp, color = TextSecondary)
             }

@@ -65,7 +65,7 @@ interface WatchItemDao {
     @Query("""
         SELECT * FROM watch_items 
         WHERE type = 'SERIES' AND isWatched = 0 
-        AND (season IS NOT NULL OR episode IS NOT NULL)
+        AND ((season > 1) OR (season = 1 AND episode > 0))
         ORDER BY lastUpdated DESC
     """)
     fun getSeriesInProgress(): Flow<List<WatchItem>>

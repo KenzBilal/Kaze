@@ -520,40 +520,42 @@ private fun SeriesEpisodeSection(
         }
         else -> {
             // ── Progress summary ───────────────────────────────────────────
-            Row(
-                modifier              = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment     = Alignment.CenterVertically
-            ) {
-                Text(
-                    "$watchedCount / ${episodes.size} episodes watched",
-                    style      = MaterialTheme.typography.bodySmall,
-                    color      = TextTertiary,
-                    fontWeight = FontWeight.Medium
-                )
-                if (watchedCount < episodes.size && !uiState.isPreview) {
-                    TextButton(
-                        onClick        = onMarkSeasonWatched,
-                        contentPadding = PaddingValues(horizontal = 8.dp)
-                    ) {
-                        Text("Mark season watched", style = MaterialTheme.typography.bodySmall, color = AccentBlue, fontWeight = FontWeight.Medium)
+            if (!uiState.isPreview) {
+                Row(
+                    modifier              = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment     = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "$watchedCount / ${episodes.size} episodes watched",
+                        style      = MaterialTheme.typography.bodySmall,
+                        color      = TextTertiary,
+                        fontWeight = FontWeight.Medium
+                    )
+                    if (watchedCount < episodes.size) {
+                        TextButton(
+                            onClick        = onMarkSeasonWatched,
+                            contentPadding = PaddingValues(horizontal = 8.dp)
+                        ) {
+                            Text("Mark season watched", style = MaterialTheme.typography.bodySmall, color = AccentBlue, fontWeight = FontWeight.Medium)
+                        }
                     }
                 }
-            }
 
-            // Animated progress bar
-            val animatedProgress by animateFloatAsState(
-                targetValue    = progressFraction,
-                animationSpec  = tween(400, easing = FastOutSlowInEasing),
-                label          = "progress"
-            )
-            LinearProgressIndicator(
-                progress   = { animatedProgress },
-                modifier   = Modifier.fillMaxWidth().height(3.dp).clip(CircleShape),
-                color      = AccentBlue,
-                trackColor = SurfaceHighlight
-            )
-            Spacer(Modifier.height(12.dp))
+                // Animated progress bar
+                val animatedProgress by animateFloatAsState(
+                    targetValue    = progressFraction,
+                    animationSpec  = tween(400, easing = FastOutSlowInEasing),
+                    label          = "progress"
+                )
+                LinearProgressIndicator(
+                    progress   = { animatedProgress },
+                    modifier   = Modifier.fillMaxWidth().height(3.dp).clip(CircleShape),
+                    color      = AccentBlue,
+                    trackColor = SurfaceHighlight
+                )
+                Spacer(Modifier.height(12.dp))
+            }
 
             // ── Episode rows ───────────────────────────────────────────────
             episodes.forEachIndexed { index, ep ->

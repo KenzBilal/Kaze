@@ -49,9 +49,9 @@ sealed class Screen(val route: String) {
     object UserProfile : Screen("userProfile/{userId}") {
         fun createRoute(id: String) = "userProfile/$id"
     }
-    object DetailPreview : Screen("detail_preview/{imdbId}?title={title}&type={type}&poster={poster}&rating={rating}&notes={notes}") {
-        fun createRoute(imdbId: String, title: String, type: String, poster: String?, rating: Float = 0f, notes: String = "") =
-            "detail_preview/$imdbId?title=${android.net.Uri.encode(title)}&type=$type&poster=${android.net.Uri.encode(poster ?: "")}&rating=$rating&notes=${android.net.Uri.encode(notes)}"
+    object DetailPreview : Screen("detail_preview/{imdbId}?title={title}&type={type}&poster={poster}&rating={rating}&notes={notes}&genres={genres}") {
+        fun createRoute(imdbId: String, title: String, type: String, poster: String?, rating: Float = 0f, notes: String = "", genres: String = "") =
+            "detail_preview/$imdbId?title=${android.net.Uri.encode(title)}&type=$type&poster=${android.net.Uri.encode(poster ?: "")}&rating=$rating&notes=${android.net.Uri.encode(notes)}&genres=${android.net.Uri.encode(genres)}"
     }
 }
 
@@ -146,7 +146,8 @@ fun WatchLaterNavGraph(
                             type = item.type,
                             poster = item.poster_url,
                             rating = item.rating,
-                            notes = item.notes
+                            notes = item.notes,
+                            genres = item.genres
                         ))
                     }
                 }
@@ -213,7 +214,8 @@ fun WatchLaterNavGraph(
                             type = item.type,
                             poster = item.poster_url,
                             rating = item.rating,
-                            notes = item.notes
+                            notes = item.notes,
+                            genres = item.genres
                         ))
                     }
                 }
@@ -245,7 +247,8 @@ fun WatchLaterNavGraph(
                 navArgument("type") { type = NavType.StringType },
                 navArgument("poster") { type = NavType.StringType; nullable = true },
                 navArgument("rating") { type = NavType.FloatType; defaultValue = 0f },
-                navArgument("notes") { type = NavType.StringType; defaultValue = "" }
+                navArgument("notes") { type = NavType.StringType; defaultValue = "" },
+                navArgument("genres") { type = NavType.StringType; defaultValue = "" }
             )
         ) { backStack ->
             val imdbId = backStack.arguments!!.getString("imdbId") ?: ""
@@ -254,6 +257,7 @@ fun WatchLaterNavGraph(
             val poster = backStack.arguments!!.getString("poster")
             val rating = backStack.arguments!!.getFloat("rating")
             val notes  = backStack.arguments!!.getString("notes") ?: ""
+            val genres = backStack.arguments!!.getString("genres") ?: ""
 
             val detailVm: DetailViewModel = viewModel(
                 factory = DetailViewModel.Factory(
@@ -266,7 +270,8 @@ fun WatchLaterNavGraph(
                     previewType = type,
                     previewPoster = poster,
                     previewRating = rating,
-                    previewNotes = notes
+                    previewNotes = notes,
+                    previewGenres = genres
                 )
             )
             DetailScreen(

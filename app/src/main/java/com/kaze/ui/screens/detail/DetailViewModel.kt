@@ -48,7 +48,8 @@ class DetailViewModel(
     private val previewType: String? = null,
     private val previewPoster: String? = null,
     private val previewRating: Float = 0f,
-    private val previewNotes: String = ""
+    private val previewNotes: String = "",
+    private val previewGenres: String = ""
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DetailUiState())
@@ -68,6 +69,7 @@ class DetailViewModel(
                     year = 0,
                     type = mediaType,
                     posterUrl = previewPoster,
+                    genres = previewGenres,
                     dateAdded = System.currentTimeMillis(),
                     lastUpdated = System.currentTimeMillis()
                 )
@@ -393,10 +395,11 @@ class DetailViewModel(
         private val previewType: String? = null,
         private val previewPoster: String? = null,
         private val previewRating: Float = 0f,
-        private val previewNotes: String = ""
+        private val previewNotes: String = "",
+        private val previewGenres: String = ""
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-            DetailViewModel(repository, seriesRepository, userRepository, itemId, previewImdbId, previewTitle, previewType, previewPoster, previewRating, previewNotes) as T
+            DetailViewModel(repository, seriesRepository, userRepository, itemId, previewImdbId, previewTitle, previewType, previewPoster, previewRating, previewNotes, previewGenres) as T
     }
 }
