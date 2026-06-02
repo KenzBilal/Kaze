@@ -36,7 +36,7 @@ A professional-grade Android application for tracking movies and TV series, buil
 
 ## Over-The-Air (OTA) Auto-Updater
 
-Kaze includes a custom, zero-dependency in-app auto-updater (`com.watchlater.updater.UpdateManager`) connected to a fully automated CI/CD pipeline.
+Kaze includes a custom, zero-dependency in-app auto-updater (`com.kaze.updater.UpdateManager`) connected to a fully automated CI/CD pipeline.
 
 ### How the Updater Works:
 1. **The Check:** On app launch, `HomeViewModel` checks a public GitHub Gist URL (`UPDATE_JSON_URL` injected via `build.gradle.kts`).
@@ -53,8 +53,8 @@ You do not need to manually edit the Gist or build the APK. The entire release p
 2. Commit and push your code to the `master` branch.
 3. Tag the release and push the tag:
    ```bash
-   git tag v1.3.0
-   git push origin v1.3.0
+   git tag v2.3.10
+   git push origin v2.3.10
    ```
 4. **Automation takes over:**
    - The GitHub Action detects the `v*` tag.
