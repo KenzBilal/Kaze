@@ -302,7 +302,7 @@ class DiscoverViewModel(
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            val appContainer = (context.applicationContext as com.kaze.KazeApplication).container
+            val appContainer = (context.applicationContext as com.kaze.WatchLaterApp).container
             return DiscoverViewModel(
                 repository,
                 UserRepository(context),
@@ -408,7 +408,7 @@ fun DiscoverScreen(
                                 Button(
                                     onClick = { viewModel.loadMore() },
                                     enabled = !uiState.isLoadingMore,
-                                    colors = ButtonDefaults.buttonColors(containerColor = Primary)
+                                    colors = ButtonDefaults.buttonColors(containerColor = AccentBlue)
                                 ) {
                                     if (uiState.isLoadingMore) {
                                         CircularProgressIndicator(

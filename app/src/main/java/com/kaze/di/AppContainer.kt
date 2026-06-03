@@ -17,7 +17,7 @@ class AppContainer(context: Context) {
     val userRepository = com.kaze.data.repository.UserRepository(context)
     val userPreferences = com.kaze.utils.UserPreferences(context)
     val networkMonitor = com.kaze.utils.NetworkMonitor(context)
-    val discoverCacheRepository = com.kaze.data.repository.DiscoverCacheRepository(com.kaze.data.remote.SupabaseClient.client)
+    val discoverCacheRepository = com.kaze.data.repository.DiscoverCacheRepository(com.kaze.data.remote.SupabaseApi.client)
 
     val repository = WatchItemRepository(
         dao                = database.watchItemDao(),
