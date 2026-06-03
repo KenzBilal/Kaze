@@ -245,6 +245,10 @@ class SeriesRepository(
     ): Pair<Int, Int>? {
         for (s in 1..totalSeasons) {
             val episodes = seasonEpisodeDao.getSeason(imdbId, s)
+            if (episodes.isEmpty()) {
+                // If a season isn't in the DB, it hasn't been watched. Next unwatched is ep 1.
+                return Pair(s, 1)
+            }
             val progress = episodeProgressDao.getSeason(watchItemId, s)
                 .associateBy { it.episodeNumber }
             val next = episodes.firstOrNull { !(progress[it.episodeNumber]?.isWatched ?: false) }
