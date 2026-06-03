@@ -15,8 +15,8 @@ android {
         applicationId = "com.kaze"
         minSdk = 24
         targetSdk = 35
-        versionCode = 48
-        versionName = "2.3.15"
+        versionCode = 49
+        versionName = "2.4.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -24,6 +24,7 @@ android {
         buildConfigField("String", "OMDB_API_KEY", "\"${project.findProperty("omdb.api.key") ?: ""}\"")
         buildConfigField("String", "UPDATE_JSON_URL", "\"https://gist.githubusercontent.com/KenzBilal/7c19255da1430800f0030ba3c6e99765/raw/update.json\"")
         
+        buildConfigField("String", "TRAKT_CLIENT_ID", "\"efecc4439baf32f1155759541b79ef5f31b15050d539f703c74cff788d99abbd\"")
         buildConfigField("String", "SUPABASE_URL", "\"https://mzlxjobibskxhgywszff.supabase.co\"")
         buildConfigField("String", "SUPABASE_KEY", "\"sb_publishable_nKC_zzEY-e0szNHRGqy7ag_EAMQNYCW\"")
     }

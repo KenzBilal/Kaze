@@ -139,19 +139,21 @@ fun WatchLaterNavGraph(
         composable(Screen.Discover.route) {
             DiscoverScreen(
                 repository = repo,
+                traktRepository = app.container.traktRepository,
+                omdbRepository = app.container.omdbRepository,
                 onItemClick = { item ->
-                    if (item.imdb_id.isNotBlank()) {
+                    if (item.imdbId.isNotBlank()) {
                         navController.navigate(Screen.DetailPreview.createRoute(
-                            imdbId = item.imdb_id,
+                            imdbId = item.imdbId,
                             title = item.title,
                             type = item.type,
-                            poster = item.poster_url,
+                            poster = item.posterUrl,
                             rating = item.rating,
                             notes = item.notes,
                             genres = item.genres,
                             year = item.year,
-                            season = item.season ?: 1,
-                            episode = item.episode ?: 1
+                            season = item.season,
+                            episode = item.episode
                         ))
                     }
                 }

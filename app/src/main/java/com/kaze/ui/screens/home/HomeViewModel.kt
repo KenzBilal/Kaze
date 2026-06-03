@@ -131,28 +131,34 @@ class HomeViewModel(
     }
 
     fun toggleWatched(item: WatchItem) {
+        val updated = if (!item.isWatched && item.type == MediaType.SERIES) {
+            item.copy(isWatched = true, lastUpdated = System.currentTimeMillis())
+        } else {
+            item.copy(isWatched = !item.isWatched, lastUpdated = System.currentTimeMillis())
+        }
+
         viewModelScope.launch {
-            val updated = if (!item.isWatched && item.type == MediaType.SERIES) {
-                val totalSeasons = seriesRepository.getTotalSeasons(item.imdbId, item.title)
-                if (totalSeasons > 0) {
-                    seriesRepository.markAllSeriesWatched(item.id, item.imdbId, totalSeasons)
-                    // Sync episode progress to cloud
-                    userRepository.getLocalUserId()?.let { uid ->
-                        val allProgress = repository.getAllEpisodeProgressSnapshot()
-                        userRepository.syncEpisodeProgress(uid, allProgress, listOf(item))
-                    }
-                }
-                item.copy(isWatched = true, lastUpdated = System.currentTimeMillis())
-            } else {
-                item.copy(isWatched = !item.isWatched, lastUpdated = System.currentTimeMillis())
-            }
-            repository.updateItem(updated)
-            userRepository.getLocalUserId()?.let { uid ->
-                userRepository.pushWatchItem(uid, updated)
-            }
-            // Show rating prompt when item is marked as watched
+            // Show rating prompt immediately so UI reacts instantly without blocking
             if (updated.isWatched) {
                 _showRatingPromptForItem.emit(updated)
+            }
+
+            launch(Dispatchers.IO) {
+                if (!item.isWatched && item.type == MediaType.SERIES) {
+                    val totalSeasons = seriesRepository.getTotalSeasons(item.imdbId, item.title)
+                    if (totalSeasons > 0) {
+                        seriesRepository.markAllSeriesWatched(item.id, item.imdbId, totalSeasons)
+                        // Sync episode progress to cloud
+                        userRepository.getLocalUserId()?.let { uid ->
+                            val allProgress = repository.getAllEpisodeProgressSnapshot()
+                            userRepository.syncEpisodeProgress(uid, allProgress, listOf(item))
+                        }
+                    }
+                }
+                repository.updateItem(updated)
+                userRepository.getLocalUserId()?.let { uid ->
+                    userRepository.pushWatchItem(uid, updated)
+                }
             }
         }
     }

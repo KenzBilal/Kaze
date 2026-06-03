@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.staggeredgrid.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Tv
@@ -18,7 +17,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -33,16 +31,18 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
-import com.kaze.data.repository.ActivityFeedEntry
-import com.kaze.data.repository.ActivityRepository
+import com.kaze.data.remote.DiscoverItem
+import com.kaze.data.remote.OmdbRepository
+import com.kaze.data.remote.TraktMovie
+import com.kaze.data.remote.TraktRepository
+import com.kaze.data.remote.TraktShow
 import com.kaze.data.repository.PublicWatchlistItem
 import com.kaze.data.repository.UserRepository
 import com.kaze.data.repository.WatchItemRepository
-import com.kaze.model.MediaType
-import com.kaze.model.WatchItem
 import com.kaze.ui.components.EmptyState
 import com.kaze.ui.components.WatchLaterLoader
 import com.kaze.ui.theme.*
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -53,24 +53,32 @@ import kotlinx.coroutines.launch
 
 class DiscoverViewModel(
     private val repository: WatchItemRepository,
-    private val activityRepo: ActivityRepository,
-    private val userRepo: UserRepository
+    private val userRepo: UserRepository,
+    private val traktRepo: TraktRepository,
+    private val omdbRepo: OmdbRepository,
+    private val cacheRepo: com.kaze.data.repository.DiscoverCacheRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DiscoverUiState())
     val uiState: StateFlow<DiscoverUiState> = _uiState.asStateFlow()
 
     private var currentFriendsWatchlists: List<PublicWatchlistItem> = emptyList()
+    private var currentTraktMovies: MutableList<TraktMovie> = mutableListOf()
+    private var currentTraktShows: MutableList<TraktShow> = mutableListOf()
+    private val posterCache = mutableMapOf<String, String?>() // IMDB ID -> Poster URL
+    
+    private var currentPage = 1
+    private var isLoadingMore = false
 
     init { 
         load() 
-        
-        // Observe local database changes to dynamically filter suggestions
         viewModelScope.launch {
             repository.getAllItemsFlow().collect { ownItems ->
                 val ownImdbIds = ownItems.map { it.imdbId }.filter { it.isNotBlank() }.toSet()
                 _uiState.update { it.copy(ownImdbIds = ownImdbIds) }
-                recalculateSuggestions()
+                if (currentFriendsWatchlists.isNotEmpty() || currentTraktMovies.isNotEmpty()) {
+                    recalculateSuggestions()
+                }
             }
         }
     }
@@ -78,6 +86,9 @@ class DiscoverViewModel(
     fun refresh() {
         viewModelScope.launch {
             _uiState.update { it.copy(isRefreshing = true) }
+            currentPage = 1
+            currentTraktMovies.clear()
+            currentTraktShows.clear()
             loadInternal()
             _uiState.update { it.copy(isRefreshing = false) }
         }
@@ -86,76 +97,218 @@ class DiscoverViewModel(
     fun load() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
+            currentPage = 1
+            currentTraktMovies.clear()
+            currentTraktShows.clear()
             loadInternal()
+        }
+    }
+    
+    fun loadMore() {
+        if (isLoadingMore) return
+        isLoadingMore = true
+        _uiState.update { it.copy(isLoadingMore = true) }
+        viewModelScope.launch {
+            currentPage++
+            // Trakt pagination: limit 20. But the user asked for 30 (15 movies, 15 shows)
+            val limit = if (currentPage == 1) 25 else 15
+            
+            val moviesDeferred = async { traktRepo.getTrendingMovies(currentPage, limit) }
+            val showsDeferred = async { traktRepo.getTrendingShows(currentPage, limit) }
+            
+            val newMovies = moviesDeferred.await()
+            val newShows = showsDeferred.await()
+            
+            currentTraktMovies.addAll(newMovies)
+            currentTraktShows.addAll(newShows)
+            
+            recalculateSuggestions()
+            isLoadingMore = false
+            _uiState.update { it.copy(isLoadingMore = false) }
         }
     }
 
     private suspend fun loadInternal() {
-            val userId = userRepo.getLocalUserId() ?: run {
-                _uiState.update { it.copy(isLoading = false, isEmpty = true, isLoggedIn = false) }
-                return
-            }
+        val userId = userRepo.getLocalUserId() ?: run {
+            _uiState.update { it.copy(isLoading = false, isEmpty = true, isLoggedIn = false) }
+            return
+        }
 
-            // Get items user already has in their own list
-            val ownItems = repository.getAllItemsSnapshot()
-            val ownImdbIds = ownItems.map { it.imdbId }.filter { it.isNotBlank() }.toSet()
+        val ownItems = repository.getAllItemsSnapshot()
+        val ownImdbIds = ownItems.map { it.imdbId }.filter { it.isNotBlank() }.toSet()
 
-            // Calculate Top Genre
-            val topGenre = ownItems
-                .filter { it.isWatched }
-                .flatMap { it.genreList }
-                .groupingBy { it }
-                .eachCount()
-                .entries
-                .maxByOrNull { it.value }?.key ?: ""
-                
-            _uiState.update { it.copy(topGenre = topGenre) }
-
-            // Get followed users
-            val following = userRepo.getFollowingList(userId)
-            val followedIds = following.map { it.id }
-
-            // Fetch public watchlists of friends
-            currentFriendsWatchlists = userRepo.getWatchlistsByUserIds(followedIds)
+        val topGenre = ownItems
+            .filter { it.isWatched }
+            .flatMap { it.genreList }
+            .groupingBy { it }
+            .eachCount()
+            .entries
+            .maxByOrNull { it.value }?.key ?: ""
             
-            recalculateSuggestions()
+        _uiState.update { it.copy(topGenre = topGenre) }
+
+        val following = userRepo.getFollowingList(userId)
+        val followedIds = following.map { it.id }
+
+        // Fetch all data concurrently
+        // Initial limit is 25 per Trakt category so we get 50 total Trakt items + Friends items.
+        val friendsDeferred = viewModelScope.async { userRepo.getWatchlistsByUserIds(followedIds) }
+        val moviesDeferred = viewModelScope.async { traktRepo.getTrendingMovies(currentPage, 25) }
+        val showsDeferred = viewModelScope.async { traktRepo.getTrendingShows(currentPage, 25) }
+
+        currentFriendsWatchlists = friendsDeferred.await()
+        currentTraktMovies.addAll(moviesDeferred.await())
+        currentTraktShows.addAll(showsDeferred.await())
+        
+        recalculateSuggestions()
     }
     
-    private fun recalculateSuggestions() {
+    private suspend fun recalculateSuggestions() {
         val state = _uiState.value
         val ownImdbIds = state.ownImdbIds
         val topGenre = state.topGenre
 
-        // Filter out own items, then sort by genre match, then rating
-        val suggestions = currentFriendsWatchlists
+        // 1. Process Friends Items
+        val friendsSuggestions = currentFriendsWatchlists
             .filter { it.imdb_id !in ownImdbIds && it.imdb_id.isNotBlank() }
             .groupBy { it.imdb_id }
             .map { entry -> entry.value.maxByOrNull { it.rating }!! }
             .sortedWith(
-                compareByDescending<PublicWatchlistItem> { 
-                    topGenre.isNotEmpty() && it.genres.contains(topGenre, ignoreCase = true) 
-                }
+                compareByDescending<PublicWatchlistItem> { topGenre.isNotEmpty() && it.genres.contains(topGenre, ignoreCase = true) }
                 .thenByDescending { it.rating }
                 .thenByDescending { it.date_added }
             )
-            .take(50)
+            .take(30)
+            .map {
+                DiscoverItem(
+                    title = it.title,
+                    year = it.year,
+                    type = it.type,
+                    imdbId = it.imdb_id,
+                    posterUrl = it.poster_url,
+                    rating = it.rating,
+                    notes = "Recommended by friend",
+                    genres = it.genres
+                )
+            }
+            
+        friendsSuggestions.forEach { if (it.posterUrl != null) posterCache[it.imdbId] = it.posterUrl }
+
+        // 2. Process Trakt Movies
+        val traktMovies = currentTraktMovies
+            .filter { it.ids.imdb != null && it.ids.imdb !in ownImdbIds }
+            .map { 
+                DiscoverItem(
+                    title = it.title,
+                    year = it.year ?: 0,
+                    type = "MOVIE",
+                    imdbId = it.ids.imdb!!,
+                    posterUrl = posterCache[it.ids.imdb],
+                    notes = "Trending Movie"
+                )
+            }
+
+        // 3. Process Trakt Shows
+        val traktShows = currentTraktShows
+            .filter { it.ids.imdb != null && it.ids.imdb !in ownImdbIds }
+            .map { 
+                DiscoverItem(
+                    title = it.title,
+                    year = it.year ?: 0,
+                    type = "SERIES",
+                    imdbId = it.ids.imdb!!,
+                    posterUrl = posterCache[it.ids.imdb],
+                    notes = "Trending Series"
+                )
+            }
+
+        // 4. Mix them (Friends first, then alternate Movies/Shows)
+        val mixedList = mutableListOf<DiscoverItem>()
+        mixedList.addAll(friendsSuggestions)
+        
+        val maxLen = maxOf(traktMovies.size, traktShows.size)
+        for (i in 0 until maxLen) {
+            if (i < traktShows.size) mixedList.add(traktShows[i])
+            if (i < traktMovies.size) mixedList.add(traktMovies[i])
+        }
+
+        // Remove duplicates just in case
+        val finalSuggestions = mixedList.distinctBy { it.imdbId }
+        
+        // 5. Check global Supabase cache for missing posters before updating UI
+        val missingImdbIds = finalSuggestions.filter { it.posterUrl == null }.map { it.imdbId }
+        if (missingImdbIds.isNotEmpty()) {
+            val cachedMap = cacheRepo.getCachedItems(missingImdbIds)
+            cachedMap.forEach { (imdb, item) ->
+                if (item.posterUrl != null) posterCache[imdb] = item.posterUrl
+            }
+        }
+        
+        val suggestionsWithCachedPosters = finalSuggestions.map { 
+            if (it.posterUrl == null && posterCache[it.imdbId] != null) {
+                it.copy(posterUrl = posterCache[it.imdbId])
+            } else {
+                it
+            }
+        }
 
         _uiState.update {
             it.copy(
-                suggestions = suggestions,
+                suggestions = suggestionsWithCachedPosters,
                 isLoading = false,
-                isEmpty = suggestions.isEmpty()
+                isEmpty = suggestionsWithCachedPosters.isEmpty()
             )
+        }
+
+        // 6. Lazy load remaining missing posters from OMDB and save to Supabase Cache
+        val missingFromOmdb = suggestionsWithCachedPosters.filter { it.posterUrl == null }.take(15)
+        if (missingFromOmdb.isNotEmpty()) {
+            viewModelScope.launch {
+                missingFromOmdb.forEach { item ->
+                    try {
+                        val detail = omdbRepo.api.getDetail(item.imdbId, omdbRepo.apiKey)
+                        val poster = detail.poster?.takeIf { it != "N/A" }
+                        if (poster != null) {
+                            posterCache[item.imdbId] = poster
+                            
+                            val fullItem = item.copy(
+                                posterUrl = poster,
+                                genres = detail.genre ?: "",
+                                rating = detail.imdbRating?.toFloatOrNull() ?: 0f
+                            )
+                            
+                            // Save to global cache so others don't have to query OMDB
+                            cacheRepo.cacheItem(fullItem)
+                            
+                            // Trigger re-emit to update UI with fetched poster
+                            val updatedList = _uiState.value.suggestions.map { 
+                                if (it.imdbId == item.imdbId) fullItem else it
+                            }
+                            _uiState.update { it.copy(suggestions = updatedList) }
+                        }
+                    } catch (e: Exception) {
+                        // Ignore
+                    }
+                }
+            }
         }
     }
 
-    class Factory(private val context: android.content.Context, private val repository: WatchItemRepository) : ViewModelProvider.Factory {
+    class Factory(
+        private val context: android.content.Context, 
+        private val repository: WatchItemRepository,
+        private val traktRepository: TraktRepository,
+        private val omdbRepository: OmdbRepository
+    ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            val appContainer = (context.applicationContext as com.kaze.KazeApplication).container
             return DiscoverViewModel(
                 repository,
-                ActivityRepository(context),
-                UserRepository(context)
+                UserRepository(context),
+                traktRepository,
+                omdbRepository,
+                appContainer.discoverCacheRepository
             ) as T
         }
     }
@@ -164,7 +317,8 @@ class DiscoverViewModel(
 data class DiscoverUiState(
     val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
-    val suggestions: List<PublicWatchlistItem> = emptyList(),
+    val isLoadingMore: Boolean = false,
+    val suggestions: List<DiscoverItem> = emptyList(),
     val isEmpty: Boolean = false,
     val isLoggedIn: Boolean = true,
     val ownImdbIds: Set<String> = emptySet(),
@@ -177,11 +331,15 @@ data class DiscoverUiState(
 @Composable
 fun DiscoverScreen(
     repository: WatchItemRepository,
-    onItemClick: (PublicWatchlistItem) -> Unit
+    traktRepository: TraktRepository,
+    omdbRepository: OmdbRepository,
+    onItemClick: (DiscoverItem) -> Unit
 ) {
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
-    val viewModel: DiscoverViewModel = viewModel(factory = DiscoverViewModel.Factory(context, repository))
+    val viewModel: DiscoverViewModel = viewModel(
+        factory = DiscoverViewModel.Factory(context, repository, traktRepository, omdbRepository)
+    )
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Scaffold(
@@ -196,7 +354,7 @@ fun DiscoverScreen(
                             fontSize = 18.sp
                         )
                         Text(
-                            "From your friends' watchlists",
+                            "Trending and from friends",
                             color = TextTertiary,
                             fontSize = 11.sp
                         )
@@ -212,7 +370,7 @@ fun DiscoverScreen(
             uiState.isEmpty -> EmptyState(
                 icon = if (uiState.isLoggedIn) Icons.Outlined.Explore else Icons.Default.Movie,
                 title = if (uiState.isLoggedIn) "Nothing to discover yet" else "Not signed in",
-                subtitle = if (uiState.isLoggedIn) "Follow friends to see\nwhat they're watching" else "Sign in to see\nwhat friends are watching",
+                subtitle = if (uiState.isLoggedIn) "Check back later" else "Sign in to see\nwhat friends are watching",
                 modifier = Modifier.fillMaxSize().padding(padding)
             )
             else -> {
@@ -230,7 +388,7 @@ fun DiscoverScreen(
                         verticalItemSpacing = 8.dp,
                         contentPadding = PaddingValues(top = 8.dp, bottom = 100.dp)
                     ) {
-                        items(uiState.suggestions, key = { it.user_id + "_" + it.imdb_id }) { item ->
+                        items(uiState.suggestions, key = { it.imdbId }) { item ->
                             DiscoverCard(
                                 item = item,
                                 onClick = { 
@@ -238,6 +396,31 @@ fun DiscoverScreen(
                                     onItemClick(item) 
                                 }
                             )
+                        }
+                        
+                        item(span = StaggeredGridItemSpan.FullLine) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Button(
+                                    onClick = { viewModel.loadMore() },
+                                    enabled = !uiState.isLoadingMore,
+                                    colors = ButtonDefaults.buttonColors(containerColor = Primary)
+                                ) {
+                                    if (uiState.isLoadingMore) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(20.dp),
+                                            color = Background,
+                                            strokeWidth = 2.dp
+                                        )
+                                    } else {
+                                        Text("Load More", color = Background, fontWeight = FontWeight.SemiBold)
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -247,7 +430,7 @@ fun DiscoverScreen(
 }
 
 @Composable
-private fun DiscoverCard(item: PublicWatchlistItem, onClick: () -> Unit) {
+private fun DiscoverCard(item: DiscoverItem, onClick: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -255,9 +438,9 @@ private fun DiscoverCard(item: PublicWatchlistItem, onClick: () -> Unit) {
             .background(SurfaceElevated)
             .clickable(onClick = onClick)
     ) {
-        if (!item.poster_url.isNullOrBlank()) {
+        if (!item.posterUrl.isNullOrBlank()) {
             AsyncImage(
-                model = item.poster_url,
+                model = item.posterUrl,
                 contentDescription = item.title,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
@@ -269,7 +452,7 @@ private fun DiscoverCard(item: PublicWatchlistItem, onClick: () -> Unit) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(120.dp)
+                    .aspectRatio(2f / 3f)
                     .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
                     .background(SurfaceHighlight),
                 contentAlignment = Alignment.Center
@@ -323,3 +506,4 @@ private fun DiscoverCard(item: PublicWatchlistItem, onClick: () -> Unit) {
         }
     }
 }
+

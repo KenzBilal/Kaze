@@ -12,10 +12,12 @@ class AppContainer(context: Context) {
     val updateManager    = UpdateManager(context)
     private val database = WatchLaterDatabase.getInstance(context)
     val omdbRepository   = OmdbRepository()
+    val traktRepository  = com.kaze.data.remote.TraktRepository()
     val activityRepository = com.kaze.data.repository.ActivityRepository(context)
     val userRepository = com.kaze.data.repository.UserRepository(context)
     val userPreferences = com.kaze.utils.UserPreferences(context)
     val networkMonitor = com.kaze.utils.NetworkMonitor(context)
+    val discoverCacheRepository = com.kaze.data.repository.DiscoverCacheRepository(com.kaze.data.remote.SupabaseClient.client)
 
     val repository = WatchItemRepository(
         dao                = database.watchItemDao(),
