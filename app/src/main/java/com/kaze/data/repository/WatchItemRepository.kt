@@ -72,13 +72,26 @@ class WatchItemRepository(
     /**
      * Atomically replaces all watch_items.
      * Returns a map of (old index → new DB id) for episode progress remapping.
+     * Use ONLY for full local restores (e.g., JSON import). Never for cloud merge.
      */
     suspend fun restoreItems(items: List<WatchItem>): List<Long> =
         dao.replaceAll(items)
 
+    /**
+     * Inserts new items WITHOUT deleting existing ones.
+     * Safe for cloud merge — only adds items not already in local DB.
+     */
+    suspend fun insertNewItems(items: List<WatchItem>): List<Long> =
+        dao.insertAll(items)
+
     /** Restores episode progress rows after a backup import. */
     suspend fun restoreEpisodeProgress(list: List<EpisodeProgress>) {
         episodeProgressDao.insertAll(list)
+    }
+
+    /** Upserts episode progress rows — safe for cloud merge (no duplicates). */
+    suspend fun upsertEpisodeProgress(list: List<EpisodeProgress>) {
+        episodeProgressDao.upsertAll(list)
     }
 
     // ── Sorting & Filtering via SQLite ─────────────────────────────────────

@@ -22,6 +22,7 @@ import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun HomeScreen(
@@ -33,7 +34,7 @@ fun HomeScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedTab by rememberSaveable { mutableIntStateOf(uiState.selectedTab) }
     val haptic = LocalHapticFeedback.current
-    
+
     LaunchedEffect(selectedTab) {
         viewModel.setTab(selectedTab)
     }
@@ -41,6 +42,16 @@ fun HomeScreen(
     var showSortSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showMarkWatchedDialog by remember { mutableStateOf<WatchItem?>(null) }
+
+    // Rating prompt — shown after marking any item as watched from the card
+    var ratingDialogItem by remember { mutableStateOf<WatchItem?>(null) }
+    var pendingRating by remember { mutableFloatStateOf(0f) }
+    LaunchedEffect(viewModel) {
+        viewModel.showRatingPromptForItem.collectLatest { item ->
+            pendingRating = item.rating
+            ratingDialogItem = item
+        }
+    }
 
     Scaffold(
         containerColor = Background,
@@ -196,6 +207,46 @@ fun HomeScreen(
             dismissButton = {
                 TextButton(onClick = { showMarkWatchedDialog = null }) {
                     Text("Cancel", color = TextSecondary)
+                }
+            }
+        )
+    }
+
+    // ── Rating dialog (shown after marking watched from card) ──────────────────
+    if (ratingDialogItem != null) {
+        val item = ratingDialogItem!!
+        AlertDialog(
+            onDismissRequest = { ratingDialogItem = null },
+            containerColor = SurfaceContainer,
+            title = {
+                Text(
+                    text = "Rate \"${item.title}\"?",
+                    color = TextPrimary,
+                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.titleMedium
+                )
+            },
+            text = {
+                StarRatingSelector(
+                    rating = pendingRating,
+                    onRatingChange = { pendingRating = it }
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        if (pendingRating > 0f) viewModel.saveRating(item, pendingRating)
+                        ratingDialogItem = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentBlue, contentColor = Background)
+                ) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { ratingDialogItem = null }) {
+                    Text("Skip", color = TextSecondary)
                 }
             }
         )

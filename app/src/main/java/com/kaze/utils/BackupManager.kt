@@ -268,7 +268,7 @@ class BackupManager(
         }
 
         if (newItems.isNotEmpty()) {
-            repository.restoreItems(newItems)
+            repository.insertNewItems(newItems)  // Safe merge — no deleteAll
             insertedCount = newItems.size
         }
         if (updatedItems.isNotEmpty()) {
@@ -295,7 +295,8 @@ class BackupManager(
                     watchedAt = r.watched_at
                 )
             }
-            repository.restoreEpisodeProgress(progressRows)
+            // Use upsert so we never create duplicates during merge
+            repository.upsertEpisodeProgress(progressRows)
         }
 
         insertedCount + updatedCount
