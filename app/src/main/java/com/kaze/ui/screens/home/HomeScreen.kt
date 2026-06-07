@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.collectLatest
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
+    whatToWatchViewModel: WhatToWatchViewModel,
     onItemClick: (Long) -> Unit,
     onAddClick: () -> Unit,
     onSearchClick: () -> Unit
@@ -40,7 +41,9 @@ fun HomeScreen(
     }
     val tabs = listOf("TO WATCH", "WATCHED")
     var showSortSheet by remember { mutableStateOf(false) }
+    var showWhatToWatchSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val whatToWatchSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showMarkWatchedDialog by remember { mutableStateOf<WatchItem?>(null) }
 
     // Rating prompt — shown after marking any item as watched from the card
@@ -62,7 +65,12 @@ fun HomeScreen(
                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                     showSortSheet = true 
                 },
-                hasActiveFilter = uiState.sortFilterState.filter != FilterOption.ALL
+                onWhatToWatchClick = {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    showWhatToWatchSheet = true
+                },
+                hasActiveFilter = uiState.sortFilterState.filter != FilterOption.ALL,
+                showWandIcon = selectedTab == 0
             )
         },
         floatingActionButton = {
@@ -174,6 +182,24 @@ fun HomeScreen(
                 onSortChange = viewModel::updateSort,
                 onFilterChange = viewModel::updateFilter,
                 onDismiss = { showSortSheet = false }
+            )
+        }
+    }
+
+    if (showWhatToWatchSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showWhatToWatchSheet = false },
+            sheetState = whatToWatchSheetState,
+            containerColor = SurfaceContainer,
+            dragHandle = null
+        ) {
+            WhatToWatchBottomSheet(
+                viewModel = whatToWatchViewModel,
+                onDismiss = { showWhatToWatchSheet = false },
+                onItemClick = { id -> 
+                    showWhatToWatchSheet = false
+                    onItemClick(id) 
+                }
             )
         }
     }
@@ -382,7 +408,9 @@ private fun WatchItemList(
 private fun HomeTopBar(
     onSearchClick: () -> Unit,
     onFilterClick: () -> Unit,
-    hasActiveFilter: Boolean
+    onWhatToWatchClick: () -> Unit,
+    hasActiveFilter: Boolean,
+    showWandIcon: Boolean
 ) {
     TopAppBar(
         title = {
@@ -394,6 +422,11 @@ private fun HomeTopBar(
         },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = Background),
         actions = {
+            if (showWandIcon) {
+                IconButton(onClick = onWhatToWatchClick) {
+                    Icon(Icons.Default.AutoAwesome, contentDescription = "What to Watch", tint = AccentBlue)
+                }
+            }
             IconButton(onClick = onSearchClick) {
                 Icon(Icons.Default.Search, contentDescription = "Search", tint = TextSecondary)
             }

@@ -28,6 +28,7 @@ abstract class WatchLaterDatabase : RoomDatabase() {
     abstract fun seasonEpisodeDao(): SeasonEpisodeDao
     abstract fun episodeProgressDao(): EpisodeProgressDao
     abstract fun pendingActionDao(): PendingActionDao
+    abstract fun whatToWatchDao(): WhatToWatchDao
 
     companion object {
         private const val DATABASE_NAME = "watch_later.db"

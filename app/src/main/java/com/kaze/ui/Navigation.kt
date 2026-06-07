@@ -111,11 +111,17 @@ fun WatchLaterNavGraph(
                 )
             )
             val addVm:  AddItemViewModel = viewModel(factory = AddItemViewModel.Factory(repo, app.container.omdbRepository, app.container.activityRepository, app.container.userRepository))
+            val whatToWatchVm: com.kaze.ui.screens.home.WhatToWatchViewModel = viewModel(
+                factory = com.kaze.ui.screens.home.WhatToWatchViewModel.Factory(
+                    app.container.whatToWatchDao, repo
+                )
+            )
             var showAddSheet by remember { mutableStateOf(false) }
             val addSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
             HomeScreen(
                 viewModel    = homeVm,
+                whatToWatchViewModel = whatToWatchVm,
                 onItemClick  = { id -> navController.navigate(Screen.Detail.createRoute(id)) },
                 onAddClick   = { showAddSheet = true },
                 onSearchClick = { navController.navigate(Screen.Search.route) }

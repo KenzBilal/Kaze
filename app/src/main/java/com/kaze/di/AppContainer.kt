@@ -11,6 +11,7 @@ import com.kaze.utils.BackupManager
 class AppContainer(context: Context) {
     val updateManager    = UpdateManager(context)
     private val database = WatchLaterDatabase.getInstance(context)
+    val whatToWatchDao   = database.whatToWatchDao()
     val omdbRepository   = OmdbRepository()
     val traktRepository  = com.kaze.data.remote.TraktRepository()
     val activityRepository = com.kaze.data.repository.ActivityRepository(context)
