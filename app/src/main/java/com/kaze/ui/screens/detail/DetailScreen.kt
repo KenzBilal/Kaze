@@ -606,6 +606,10 @@ fun TapToPlayTrailer(trailerUrl: String) {
                         settings.domStorageEnabled = true
                         webViewClient = WebViewClient()
                         webChromeClient = WebChromeClient()
+                        layoutParams = android.view.ViewGroup.LayoutParams(
+                            android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                            android.view.ViewGroup.LayoutParams.MATCH_PARENT
+                        )
                         loadDataWithBaseURL(
                             "https://www.youtube.com",
                             embedHtml,
