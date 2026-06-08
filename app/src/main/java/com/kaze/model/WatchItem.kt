@@ -33,8 +33,11 @@ data class WatchItem(
     val genres: String = "",
     val imdbId: String = "",          // OMDB imdbID — used to fetch series data
     val dateAdded: Long = System.currentTimeMillis(),
-    val lastUpdated: Long = System.currentTimeMillis()
+    val lastUpdated: Long = System.currentTimeMillis(),
+    val plot: String = "",            // Short plot (series) or full plot (movie)
+    val trailerUrl: String = ""       // YouTube trailer URL from Trakt
 ) {
     val genreList: List<String> get() =
         genres.split(",").map { it.trim() }.filter { it.isNotEmpty() }
 }
+

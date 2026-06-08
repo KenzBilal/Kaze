@@ -3,6 +3,8 @@ package com.kaze.ui.screens.detail
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.kaze.data.remote.OmdbRepository
+import com.kaze.data.remote.TraktRepository
 import com.kaze.data.repository.EpisodeUiItem
 import com.kaze.data.repository.EpisodeValidationResult
 import com.kaze.data.repository.SeriesRepository
@@ -24,13 +26,21 @@ data class DetailUiState(
     val notes: String = "",
     // Series
     val totalSeasons: Int = 0,
-    val selectedSeason: Int = 1,
+    val selectedSeason: Int = 0,          // 0 = none selected
     val seasonEpisodes: List<EpisodeUiItem> = emptyList(),
     val isLoadingEpisodes: Boolean = false,
     val isMarkingAllWatched: Boolean = false,
     val markAllProgress: Int = 0,
     val currentSeason: Int = 1,
     val currentEpisode: Int = 1,
+    // Plot & Trailer
+    val trailerUrl: String = "",
+    val isLoadingTrailer: Boolean = false,
+    // Episode plot dialog
+    val episodePlotText: String = "",
+    val episodePlotTitle: String = "",
+    val isLoadingEpisodePlot: Boolean = false,
+    val showEpisodePlotDialog: Boolean = false,
     // UX feedback
     val toastMessage: String? = null,
     val showMarkAllSeriesDialog: Boolean = false,
@@ -42,6 +52,8 @@ class DetailViewModel(
     private val repository: WatchItemRepository,
     private val seriesRepository: SeriesRepository,
     private val userRepository: UserRepository,
+    private val omdbRepository: OmdbRepository,
+    private val traktRepository: TraktRepository,
     private val itemId: Long,
     private val previewImdbId: String? = null,
     private val previewTitle: String? = null,
@@ -86,6 +98,7 @@ class DetailViewModel(
                     isLoading = false
                 )
                 if (previewItem.type == MediaType.SERIES) loadSeriesData(previewItem)
+                else fetchTrailerAndPlot(previewItem)
                 return@launch
             }
 
@@ -100,10 +113,12 @@ class DetailViewModel(
                             notes          = item.notes,
                             currentSeason  = item.season ?: 1,
                             currentEpisode = item.episode ?: 1,
-                            selectedSeason = item.season ?: 1,
-                            isLoading      = false
+                            selectedSeason = 0,   // None selected by default
+                            isLoading      = false,
+                            trailerUrl     = item.trailerUrl
                         )
                         if (item.type == MediaType.SERIES) loadSeriesData(item)
+                        fetchTrailerAndPlot(item)
                     } else {
                         _uiState.value = DetailUiState(isLoading = false)
                     }
@@ -122,8 +137,91 @@ class DetailViewModel(
         viewModelScope.launch {
             val total = seriesRepository.getTotalSeasons(item.imdbId, item.title)
             _uiState.update { it.copy(totalSeasons = total) }
-            if (total > 0) loadSeasonEpisodes(item, _uiState.value.selectedSeason)
+            // Do NOT auto-load episodes — user must click a season chip
         }
+    }
+
+    // ── Trailer & Plot fetching ────────────────────────────────────────────
+
+    private fun fetchTrailerAndPlot(item: WatchItem) {
+        if (item.imdbId.isBlank()) return
+        viewModelScope.launch {
+            // Fetch trailer
+            val trailerUrl = if (item.trailerUrl.isBlank()) {
+                val url = traktRepository.fetchTrailerUrl(
+                    imdbId  = item.imdbId,
+                    isMovie = item.type == MediaType.MOVIE
+                )
+                if (url != null && !item.isPreview && itemId != -1L) {
+                    val updated = item.copy(trailerUrl = url)
+                    repository.updateItem(updated)
+                }
+                url ?: ""
+            } else item.trailerUrl
+
+            // Fetch plot (movie = full, series = short summary)
+            val plot = if (item.plot.isBlank()) {
+                val fetched = if (item.type == MediaType.MOVIE) {
+                    omdbRepository.fetchMoviePlot(item.imdbId)
+                } else {
+                    omdbRepository.fetchDetail(item.imdbId, plotLength = "short").plot
+                }
+                if (fetched.isNotBlank() && !item.isPreview && itemId != -1L) {
+                    val current = _uiState.value.item ?: item
+                    repository.updateItem(current.copy(plot = fetched, trailerUrl = trailerUrl))
+                }
+                fetched
+            } else item.plot
+
+            _uiState.update { state ->
+                state.copy(
+                    trailerUrl = trailerUrl,
+                    item = state.item?.copy(plot = plot, trailerUrl = trailerUrl)
+                )
+            }
+        }
+    }
+
+    // ── Episode plot (on-demand) ───────────────────────────────────────────
+
+    fun fetchEpisodePlot(episode: EpisodeUiItem) {
+        val item = _uiState.value.item ?: return
+        // Show cached plot immediately if available
+        if (episode.plot.isNotBlank()) {
+            _uiState.update { it.copy(
+                episodePlotText  = episode.plot,
+                episodePlotTitle = episode.title,
+                showEpisodePlotDialog = true
+            ) }
+            return
+        }
+        _uiState.update { it.copy(
+            isLoadingEpisodePlot = true,
+            episodePlotTitle     = episode.title,
+            showEpisodePlotDialog = true
+        ) }
+        viewModelScope.launch {
+            val plot = seriesRepository.fetchAndCacheEpisodePlot(
+                imdbId        = item.imdbId,
+                season        = episode.season,
+                episodeNumber = episode.episodeNumber
+            )
+            _uiState.update { state ->
+                state.copy(
+                    isLoadingEpisodePlot = false,
+                    episodePlotText = plot.ifBlank { "Plot unavailable." },
+                    // Also update the episode in the list so future taps use cache
+                    seasonEpisodes = state.seasonEpisodes.map {
+                        if (it.season == episode.season && it.episodeNumber == episode.episodeNumber)
+                            it.copy(plot = plot) else it
+                    }
+                )
+            }
+        }
+    }
+
+    fun dismissEpisodePlotDialog() {
+        _uiState.update { it.copy(showEpisodePlotDialog = false, episodePlotText = "", episodePlotTitle = "") }
     }
 
     fun selectSeason(season: Int) {
@@ -394,6 +492,8 @@ class DetailViewModel(
         private val repository: WatchItemRepository,
         private val seriesRepository: SeriesRepository,
         private val userRepository: UserRepository,
+        private val omdbRepository: OmdbRepository,
+        private val traktRepository: TraktRepository,
         private val itemId: Long,
         private val previewImdbId: String? = null,
         private val previewTitle: String? = null,
@@ -408,6 +508,6 @@ class DetailViewModel(
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-            DetailViewModel(repository, seriesRepository, userRepository, itemId, previewImdbId, previewTitle, previewType, previewPoster, previewRating, previewNotes, previewGenres, previewYear, previewSeason, previewEpisode) as T
+            DetailViewModel(repository, seriesRepository, userRepository, omdbRepository, traktRepository, itemId, previewImdbId, previewTitle, previewType, previewPoster, previewRating, previewNotes, previewGenres, previewYear, previewSeason, previewEpisode) as T
     }
 }

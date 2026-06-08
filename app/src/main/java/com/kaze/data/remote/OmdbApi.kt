@@ -16,7 +16,16 @@ interface OmdbApi {
     @GET("/")
     suspend fun getDetail(
         @Query("i")      imdbId: String,
-        @Query("apikey") apiKey: String
+        @Query("apikey") apiKey: String,
+        @Query("plot")   plot: String = "short"
+    ): OmdbDetailResponse
+
+    /** Get episode detail by IMDB ID — used for on-demand episode plot */
+    @GET("/")
+    suspend fun getEpisodeDetail(
+        @Query("i")      imdbId: String,
+        @Query("apikey") apiKey: String,
+        @Query("plot")   plot: String = "short"
     ): OmdbDetailResponse
 
     /** Get all episodes for a specific season */

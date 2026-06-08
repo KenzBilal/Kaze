@@ -30,6 +30,7 @@ data class OmdbDetailResponse(
     @SerializedName("Year")         val year: String?,          // "2008-2013" or "2021-"
     @SerializedName("Poster")       val poster: String?,
     @SerializedName("imdbRating")   val imdbRating: String?,
+    @SerializedName("Plot")         val plot: String?,
     @SerializedName("Response")     val response: String = "False"
 )
 

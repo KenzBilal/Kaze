@@ -1,5 +1,9 @@
 package com.kaze.ui.screens.detail
 
+import android.annotation.SuppressLint
+import android.webkit.WebChromeClient
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -26,10 +30,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.kaze.data.repository.EpisodeUiItem
@@ -51,7 +57,6 @@ fun DetailScreen(
     LaunchedEffect(Unit) {
         viewModel.savedEvent.collect { snackbarHost.showSnackbar("Saved ✓") }
     }
-    // Snackbar for toasts (errors / confirmations)
     LaunchedEffect(uiState.toastMessage) {
         uiState.toastMessage?.let {
             snackbarHost.showSnackbar(it)
@@ -62,7 +67,7 @@ fun DetailScreen(
         if (uiState.isDeleted) onBack()
     }
 
-    // Dialogs
+    // ── Dialogs ────────────────────────────────────────────────────────────
     if (uiState.showDeleteDialog) {
         ConfirmDeleteDialog(
             title     = uiState.item?.title ?: "",
@@ -89,9 +94,7 @@ fun DetailScreen(
                         viewModel.dismissMarkAllSeriesDialog()
                     },
                     colors  = ButtonDefaults.buttonColors(containerColor = WatchedGreen, contentColor = Background)
-                ) {
-                    Text("Yes, mark all", color = Color.Unspecified)
-                }
+                ) { Text("Yes, mark all", color = Color.Unspecified) }
             },
             dismissButton = {
                 TextButton(onClick = viewModel::dismissMarkAllSeriesDialog) {
@@ -115,10 +118,10 @@ fun DetailScreen(
                     )
                     Spacer(Modifier.height(16.dp))
                     StarRatingSelector(
-                        rating = uiState.rating, 
-                        onRatingChange = { r -> 
+                        rating = uiState.rating,
+                        onRatingChange = { r ->
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            viewModel.onRatingChange(r) 
+                            viewModel.onRatingChange(r)
                         }
                     )
                 }
@@ -131,16 +134,50 @@ fun DetailScreen(
                         viewModel.dismissRatingPrompt()
                     },
                     colors  = ButtonDefaults.buttonColors(containerColor = WatchedGreen, contentColor = Background)
-                ) {
-                    Text("Save", color = Color.Unspecified)
-                }
+                ) { Text("Save", color = Color.Unspecified) }
             },
             dismissButton = {
                 TextButton(onClick = {
                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                     viewModel.dismissRatingPrompt()
-                }) {
-                    Text("Rate Later", color = TextSecondary)
+                }) { Text("Rate Later", color = TextSecondary) }
+            }
+        )
+    }
+
+    // ── Episode Plot Dialog ────────────────────────────────────────────────
+    if (uiState.showEpisodePlotDialog) {
+        AlertDialog(
+            onDismissRequest = viewModel::dismissEpisodePlotDialog,
+            containerColor   = SurfaceContainer,
+            shape            = RoundedCornerShape(16.dp),
+            title = {
+                Text(
+                    uiState.episodePlotTitle,
+                    color      = TextPrimary,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize   = 15.sp,
+                    maxLines   = 2,
+                    overflow   = TextOverflow.Ellipsis
+                )
+            },
+            text = {
+                if (uiState.isLoadingEpisodePlot) {
+                    Box(Modifier.fillMaxWidth().height(60.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = AccentBlue, strokeWidth = 2.dp, modifier = Modifier.size(22.dp))
+                    }
+                } else {
+                    Text(
+                        uiState.episodePlotText,
+                        color  = TextSecondary,
+                        style  = MaterialTheme.typography.bodyMedium,
+                        lineHeight = 22.sp
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = viewModel::dismissEpisodePlotDialog) {
+                    Text("Close", color = AccentBlue, fontWeight = FontWeight.Medium)
                 }
             }
         )
@@ -246,7 +283,7 @@ fun DetailScreen(
                 ) {
                     Spacer(Modifier.height(8.dp))
 
-                    // ── Marking-all progress overlay ─────────────────────────
+                    // ── Marking-all progress overlay ────────────────────────
                     AnimatedVisibility(visible = uiState.isMarkingAllWatched) {
                         Box(
                             modifier = Modifier
@@ -276,7 +313,7 @@ fun DetailScreen(
                         }
                     }
 
-                    // ── Poster ───────────────────────────────────────────────
+                    // ── Poster ──────────────────────────────────────────────
                     if (item.posterUrl != null) {
                         Box(
                             modifier = Modifier
@@ -299,7 +336,7 @@ fun DetailScreen(
 
                     Column(modifier = Modifier.padding(horizontal = 20.dp)) {
 
-                        // ── Header ────────────────────────────────────────────
+                        // ── Header ──────────────────────────────────────────
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                             TypeBadge(item.type)
                             if (uiState.isWatched) WatchedPill(isWatched = true)
@@ -311,7 +348,7 @@ fun DetailScreen(
                             Text(item.year.toString(), style = MaterialTheme.typography.bodyLarge, color = TextTertiary)
                         }
 
-                        // ── Genres ────────────────────────────────────────────
+                        // ── Genres ──────────────────────────────────────────
                         val genres = item.genreList
                         if (genres.isNotEmpty()) {
                             Spacer(Modifier.height(12.dp))
@@ -324,43 +361,67 @@ fun DetailScreen(
                         SubtleDivider()
                         Spacer(Modifier.height(24.dp))
 
-                        // ── Series Episode Tracker ────────────────────────────
+                        // ── Movie Layout: Trailer → Plot → (rest) ──────────
+                        if (item.type == MediaType.MOVIE) {
+                            // Trailer
+                            if (uiState.trailerUrl.isNotBlank()) {
+                                TrailerPlayer(trailerUrl = uiState.trailerUrl)
+                                Spacer(Modifier.height(20.dp))
+                            }
+                            // Long plot for movies
+                            val plot = uiState.item?.plot ?: ""
+                            if (plot.isNotBlank()) {
+                                Text(
+                                    text       = plot,
+                                    style      = MaterialTheme.typography.bodyMedium,
+                                    color      = TextSecondary,
+                                    lineHeight = 22.sp
+                                )
+                                Spacer(Modifier.height(24.dp))
+                                SubtleDivider()
+                                Spacer(Modifier.height(24.dp))
+                            }
+                        }
+
+                        // ── Series Layout: Episodes heading → Trailer → Plot → Seasons ──
                         if (item.type == MediaType.SERIES && !uiState.isWatched) {
                             SeriesEpisodeSection(
                                 uiState              = uiState,
                                 onSeasonSelect       = viewModel::selectSeason,
-                                onEpisodeToggle      = { s, ep -> 
+                                onEpisodeToggle      = { s, ep ->
                                     if (!uiState.isPreview) {
                                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                        viewModel.toggleEpisode(s, ep) 
+                                        viewModel.toggleEpisode(s, ep)
                                     }
                                 },
-                                onMarkSeasonWatched  = { 
+                                onMarkSeasonWatched  = {
                                     if (!uiState.isPreview) {
                                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                        viewModel.markSeasonWatched() 
+                                        viewModel.markSeasonWatched()
                                     }
-                                }
+                                },
+                                onEpisodePlotClick   = viewModel::fetchEpisodePlot,
+                                trailerUrl           = uiState.trailerUrl,
+                                seriesPlot           = uiState.item?.plot ?: ""
                             )
                             Spacer(Modifier.height(24.dp))
                             SubtleDivider()
                             Spacer(Modifier.height(24.dp))
                         }
 
+                        // ── Rating / Review ─────────────────────────────────
                         if (!uiState.isPreview && uiState.isWatched) {
-                            // ── Rating ────────────────────────────────────────────
                             SectionHeader("RATING")
                             Spacer(Modifier.height(16.dp))
                             StarRatingSelector(
-                                rating = uiState.rating, 
-                                onRatingChange = { r -> 
+                                rating = uiState.rating,
+                                onRatingChange = { r ->
                                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    viewModel.onRatingChange(r) 
+                                    viewModel.onRatingChange(r)
                                 }
                             )
                             Spacer(Modifier.height(32.dp))
-    
-                            // ── Review & Notes ────────────────────────────────────
+
                             SectionHeader("REVIEW & NOTES")
                             Spacer(Modifier.height(16.dp))
                             OutlinedTextField(
@@ -371,24 +432,30 @@ fun DetailScreen(
                                     .defaultMinSize(minHeight = 120.dp),
                                 placeholder = { Text("What did you think of it?", color = TextTertiary) },
                                 colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = AccentBlue,
-                                    unfocusedBorderColor = SurfaceHighlight,
-                                    focusedContainerColor = SurfaceElevated,
+                                    focusedBorderColor      = AccentBlue,
+                                    unfocusedBorderColor    = SurfaceHighlight,
+                                    focusedContainerColor   = SurfaceElevated,
                                     unfocusedContainerColor = SurfaceElevated,
-                                    focusedTextColor = TextPrimary,
-                                    unfocusedTextColor = TextPrimary
+                                    focusedTextColor        = TextPrimary,
+                                    unfocusedTextColor      = TextPrimary
                                 ),
                                 shape = RoundedCornerShape(12.dp)
                             )
                         } else if (uiState.rating > 0f || uiState.notes.isNotBlank()) {
-                            // ── Friend's Rating & Review ──────────────────────────
-                            SectionHeader("FRIEND'S REVIEW")
+                            val isFriendRecommendation = uiState.isPreview && uiState.notes.startsWith("Recommended by ")
+                            val headerText = if (isFriendRecommendation) {
+                                val friendName = uiState.notes.removePrefix("Recommended by ")
+                                "${friendName.uppercase()}'S RATING"
+                            } else {
+                                "RATING"
+                            }
+                            SectionHeader(headerText)
                             Spacer(Modifier.height(16.dp))
                             if (uiState.rating > 0f) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(Icons.Filled.Star, contentDescription = "Rating", tint = androidx.compose.ui.graphics.Color(0xFFFFC107), modifier = Modifier.size(24.dp))
                                     Spacer(Modifier.width(8.dp))
-                                    Text(text = "${"%g".format(uiState.rating)} / 5", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                    Text(text = "${"%.4g".format(uiState.rating)} / 5", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                                 }
                                 Spacer(Modifier.height(16.dp))
                             }
@@ -401,10 +468,10 @@ fun DetailScreen(
                                         .padding(16.dp)
                                 ) {
                                     Text(
-                                        text = "\"${uiState.notes}\"",
-                                        color = TextSecondary,
-                                        fontSize = 15.sp,
-                                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                                        text      = "\"${uiState.notes}\"",
+                                        color     = TextSecondary,
+                                        fontSize  = 15.sp,
+                                        fontStyle = FontStyle.Italic
                                     )
                                 }
                             }
@@ -417,6 +484,71 @@ fun DetailScreen(
     }
 }
 
+// ── Inline Trailer Player ──────────────────────────────────────────────────
+
+@SuppressLint("SetJavaScriptEnabled")
+@Composable
+fun TrailerPlayer(trailerUrl: String) {
+    // Extract YouTube video ID from various URL formats
+    val videoId = remember(trailerUrl) {
+        val patterns = listOf(
+            Regex("(?:youtube\\.com/watch\\?v=|youtu\\.be/|youtube\\.com/embed/)([A-Za-z0-9_-]{11})"),
+        )
+        patterns.firstNotNullOfOrNull { it.find(trailerUrl)?.groupValues?.getOrNull(1) }
+    } ?: return
+
+    val embedHtml = remember(videoId) {
+        """
+        <!DOCTYPE html>
+        <html>
+        <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+          * { margin: 0; padding: 0; background: #000; }
+          html, body { width: 100%; height: 100%; }
+          iframe { width: 100%; height: 100%; border: none; }
+        </style>
+        </head>
+        <body>
+        <iframe
+          src="https://www.youtube.com/embed/$videoId?autoplay=0&controls=1&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&disablekb=0&fs=0&playsinline=1"
+          allowfullscreen="false"
+          allow="autoplay; encrypted-media">
+        </iframe>
+        </body>
+        </html>
+        """.trimIndent()
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(16f / 9f)
+            .clip(RoundedCornerShape(14.dp))
+            .background(Color.Black)
+    ) {
+        AndroidView(
+            factory = { ctx ->
+                WebView(ctx).apply {
+                    settings.javaScriptEnabled = true
+                    settings.mediaPlaybackRequiresUserGesture = false
+                    settings.domStorageEnabled = true
+                    webViewClient = WebViewClient()
+                    webChromeClient = WebChromeClient()
+                    loadDataWithBaseURL(
+                        "https://www.youtube.com",
+                        embedHtml,
+                        "text/html",
+                        "utf-8",
+                        null
+                    )
+                }
+            },
+            modifier = Modifier.fillMaxSize()
+        )
+    }
+}
+
 // ── Series Episode Section ─────────────────────────────────────────────────
 
 @Composable
@@ -424,13 +556,15 @@ private fun SeriesEpisodeSection(
     uiState: DetailUiState,
     onSeasonSelect: (Int) -> Unit,
     onEpisodeToggle: (Int, Int) -> Unit,
-    onMarkSeasonWatched: () -> Unit
+    onMarkSeasonWatched: () -> Unit,
+    onEpisodePlotClick: (EpisodeUiItem) -> Unit,
+    trailerUrl: String,
+    seriesPlot: String
 ) {
     val totalSeasons   = uiState.totalSeasons
     val selectedSeason = uiState.selectedSeason
     val episodes       = uiState.seasonEpisodes
 
-    // derivedStateOf prevents recomposition when other state changes
     val watchedCount by remember(episodes) {
         derivedStateOf { episodes.count { it.isWatched } }
     }
@@ -441,25 +575,21 @@ private fun SeriesEpisodeSection(
     SectionHeader("EPISODES")
     Spacer(Modifier.height(14.dp))
 
-    // ── Current position badge ─────────────────────────────────────────────
-    if (uiState.currentSeason > 0 && uiState.currentEpisode > 0) {
-        Row(
-            verticalAlignment     = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier              = Modifier
-                .clip(RoundedCornerShape(8.dp))
-                .background(AccentBlue.copy(alpha = 0.09f))
-                .padding(horizontal = 10.dp, vertical = 7.dp)
-        ) {
-            Icon(Icons.Filled.PlayCircle, null, tint = AccentBlue, modifier = Modifier.size(16.dp))
-            Text(
-                "Currently at S${uiState.currentSeason} · E${uiState.currentEpisode}",
-                style      = MaterialTheme.typography.bodySmall,
-                color      = AccentBlue,
-                fontWeight = FontWeight.SemiBold
-            )
-        }
-        Spacer(Modifier.height(14.dp))
+    // ── Trailer (below heading) ────────────────────────────────────────────
+    if (trailerUrl.isNotBlank()) {
+        TrailerPlayer(trailerUrl = trailerUrl)
+        Spacer(Modifier.height(16.dp))
+    }
+
+    // ── Short series plot ──────────────────────────────────────────────────
+    if (seriesPlot.isNotBlank()) {
+        Text(
+            text       = seriesPlot,
+            style      = MaterialTheme.typography.bodyMedium,
+            color      = TextSecondary,
+            lineHeight = 22.sp
+        )
+        Spacer(Modifier.height(16.dp))
     }
 
     // ── Season tabs ────────────────────────────────────────────────────────
@@ -469,7 +599,7 @@ private fun SeriesEpisodeSection(
             contentPadding        = PaddingValues(end = 8.dp)
         ) {
             items(totalSeasons, key = { it + 1 }) { idx ->
-                val season    = idx + 1
+                val season     = idx + 1
                 val isSelected = season == selectedSeason
                 FilterChip(
                     selected  = isSelected,
@@ -491,6 +621,11 @@ private fun SeriesEpisodeSection(
             }
         }
         Spacer(Modifier.height(12.dp))
+    }
+
+    // ── No season selected state ───────────────────────────────────────────
+    if (selectedSeason == 0) {
+        return
     }
 
     // ── Loading / empty states ─────────────────────────────────────────────
@@ -519,7 +654,7 @@ private fun SeriesEpisodeSection(
             Text("No episodes found for Season $selectedSeason", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
         }
         else -> {
-            // ── Progress summary ───────────────────────────────────────────
+            // ── Progress summary ─────────────────────────────────────────
             if (!uiState.isPreview) {
                 Row(
                     modifier              = Modifier.fillMaxWidth(),
@@ -541,12 +676,10 @@ private fun SeriesEpisodeSection(
                         }
                     }
                 }
-
-                // Animated progress bar
                 val animatedProgress by animateFloatAsState(
-                    targetValue    = progressFraction,
-                    animationSpec  = tween(400, easing = FastOutSlowInEasing),
-                    label          = "progress"
+                    targetValue   = progressFraction,
+                    animationSpec = tween(400, easing = FastOutSlowInEasing),
+                    label         = "progress"
                 )
                 LinearProgressIndicator(
                     progress   = { animatedProgress },
@@ -557,14 +690,15 @@ private fun SeriesEpisodeSection(
                 Spacer(Modifier.height(12.dp))
             }
 
-            // ── Episode rows ───────────────────────────────────────────────
+            // ── Episode rows ─────────────────────────────────────────────
             episodes.forEachIndexed { index, ep ->
                 key(ep.season, ep.episodeNumber) {
                     EpisodeRow(
-                        episode   = ep,
-                        isCurrent = ep.season == uiState.currentSeason && ep.episodeNumber == uiState.currentEpisode,
-                        onToggle  = { onEpisodeToggle(ep.season, ep.episodeNumber) },
-                        isPreview = uiState.isPreview
+                        episode            = ep,
+                        isCurrent          = ep.season == uiState.currentSeason && ep.episodeNumber == uiState.currentEpisode,
+                        onToggle           = { onEpisodeToggle(ep.season, ep.episodeNumber) },
+                        onPlotClick        = { onEpisodePlotClick(ep) },
+                        isPreview          = uiState.isPreview
                     )
                     if (index < episodes.lastIndex) {
                         SubtleDivider(modifier = Modifier.padding(start = 56.dp))
@@ -583,9 +717,11 @@ private fun EpisodeRow(
     episode: EpisodeUiItem,
     isCurrent: Boolean,
     onToggle: () -> Unit,
+    onPlotClick: () -> Unit,
     isPreview: Boolean = false
 ) {
     val bgColor = if (isCurrent) AccentBlue.copy(alpha = 0.07f) else Color.Transparent
+    var menuExpanded by remember { mutableStateOf(false) }
 
     Row(
         modifier = Modifier
@@ -617,25 +753,57 @@ private fun EpisodeRow(
             )
         }
 
-        // Title + release
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text       = episode.title,
-                style      = MaterialTheme.typography.bodyMedium,
-                color      = if (episode.isWatched) TextSecondary else TextPrimary,
-                fontWeight = if (isCurrent) FontWeight.SemiBold else FontWeight.Normal,
-                maxLines   = 1,
-                overflow   = TextOverflow.Ellipsis
-            )
-            if (episode.released.isNotBlank()) {
-                Text(episode.released, style = MaterialTheme.typography.bodySmall, color = TextTertiary)
-            }
-        }
+        // Title only (no release date)
+        Text(
+            text       = episode.title,
+            modifier   = Modifier.weight(1f),
+            style      = MaterialTheme.typography.bodyMedium,
+            color      = if (episode.isWatched) TextSecondary else TextPrimary,
+            fontWeight = if (isCurrent) FontWeight.SemiBold else FontWeight.Normal,
+            maxLines   = 1,
+            overflow   = TextOverflow.Ellipsis
+        )
 
         if (!isPreview) {
+            // 3-dot menu
+            Box {
+                IconButton(
+                    onClick  = { menuExpanded = true },
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        Icons.Default.MoreVert,
+                        contentDescription = "More options",
+                        tint     = TextTertiary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                DropdownMenu(
+                    expanded         = menuExpanded,
+                    onDismissRequest = { menuExpanded = false },
+                    containerColor   = SurfaceContainer
+                ) {
+                    DropdownMenuItem(
+                        text    = {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Outlined.Info, null, tint = AccentBlue, modifier = Modifier.size(16.dp))
+                                Text("Plot", color = TextPrimary, style = MaterialTheme.typography.bodyMedium)
+                            }
+                        },
+                        onClick = {
+                            menuExpanded = false
+                            onPlotClick()
+                        }
+                    )
+                }
+            }
+
             // Animated checkbox
             AnimatedContent(
-                targetState  = episode.isWatched,
+                targetState = episode.isWatched,
                 transitionSpec = {
                     (scaleIn(initialScale = 0.6f, animationSpec = spring(Spring.DampingRatioMediumBouncy)) +
                         fadeIn()) togetherWith (scaleOut(targetScale = 0.6f) + fadeOut())

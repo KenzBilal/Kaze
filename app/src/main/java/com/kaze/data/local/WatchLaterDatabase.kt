@@ -17,7 +17,7 @@ import com.kaze.model.WatchItem
         EpisodeProgress::class,
         PendingAction::class
     ],
-    version = 7,
+    version = 8,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -140,6 +140,15 @@ abstract class WatchLaterDatabase : RoomDatabase() {
             }
         }
 
+        /** v7 → v8: add plot + trailerUrl to watch_items, plot to season_episodes */
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE watch_items ADD COLUMN plot TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE watch_items ADD COLUMN trailerUrl TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE season_episodes ADD COLUMN plot TEXT NOT NULL DEFAULT ''")
+            }
+        }
+
         @Volatile
         private var INSTANCE: WatchLaterDatabase? = null
 
@@ -150,7 +159,7 @@ abstract class WatchLaterDatabase : RoomDatabase() {
                     WatchLaterDatabase::class.java,
                     DATABASE_NAME
                 )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
                 .build()
                 INSTANCE = instance
                 instance

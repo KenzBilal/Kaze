@@ -168,6 +168,8 @@ class DiscoverViewModel(
         val ownImdbIds = state.ownImdbIds
         val topGenre = state.topGenre
 
+        val followingMap = userRepo.getFollowingList(userRepo.getLocalUserId() ?: "").associateBy({ it.id }, { it.username })
+        
         // 1. Process Friends Items
         val friendsSuggestions = currentFriendsWatchlists
             .filter { it.imdb_id !in ownImdbIds && it.imdb_id.isNotBlank() }
@@ -180,6 +182,7 @@ class DiscoverViewModel(
             )
             .take(30)
             .map {
+                val friendName = followingMap[it.user_id] ?: "friend"
                 DiscoverItem(
                     title = it.title,
                     year = it.year,
@@ -187,7 +190,7 @@ class DiscoverViewModel(
                     imdbId = it.imdb_id,
                     posterUrl = it.poster_url,
                     rating = it.rating,
-                    notes = "Recommended by friend",
+                    notes = "Recommended by $friendName",
                     genres = it.genres
                 )
             }

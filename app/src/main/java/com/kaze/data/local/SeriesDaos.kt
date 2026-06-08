@@ -29,6 +29,12 @@ interface SeasonEpisodeDao {
     @Query("SELECT * FROM season_episodes WHERE imdbId = :imdbId AND season = :season ORDER BY episodeNumber ASC")
     suspend fun getSeason(imdbId: String, season: Int): List<SeasonEpisode>
 
+    @Query("SELECT * FROM season_episodes WHERE imdbId = :imdbId AND season = :season AND episodeNumber = :episodeNumber LIMIT 1")
+    suspend fun getOne(imdbId: String, season: Int, episodeNumber: Int): SeasonEpisode?
+
+    @Update
+    suspend fun update(episode: SeasonEpisode)
+
     @Query("SELECT cachedAt FROM season_episodes WHERE imdbId = :imdbId AND season = :season LIMIT 1")
     suspend fun getCachedAt(imdbId: String, season: Int): Long?
 

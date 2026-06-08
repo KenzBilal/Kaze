@@ -28,6 +28,7 @@ data class SeasonEpisode(
     val title: String,
     val released: String = "",      // "2008-01-20" or "N/A"
     val imdbRating: String = "",    // "9.0" or "N/A"
+    val plot: String = "",          // Short plot cached on-demand
     val cachedAt: Long = System.currentTimeMillis()
 )
 

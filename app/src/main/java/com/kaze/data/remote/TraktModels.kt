@@ -34,7 +34,22 @@ data class TraktShow(
 @Keep
 data class TraktIds(
     @SerializedName("imdb") val imdb: String?,
-    @SerializedName("trakt") val trakt: Int
+    @SerializedName("trakt") val trakt: Int,
+    @SerializedName("slug") val slug: String? = null
+)
+
+// ── Trakt Summary Response (for trailer URL) ──────────────────────────────────
+
+@Keep
+data class TraktMovieSummary(
+    @SerializedName("title")   val title: String = "",
+    @SerializedName("trailer") val trailer: String? = null
+)
+
+@Keep
+data class TraktShowSummary(
+    @SerializedName("title")   val title: String = "",
+    @SerializedName("trailer") val trailer: String? = null
 )
 
 // ── Unified Discover Item ─────────────────────────────────────────────────────

@@ -245,7 +245,14 @@ fun WatchLaterNavGraph(
         ) { backStack ->
             val itemId = backStack.arguments!!.getLong("itemId")
             val detailVm: DetailViewModel = viewModel(
-                factory = DetailViewModel.Factory(repo, app.container.seriesRepository, app.container.userRepository, itemId)
+                factory = DetailViewModel.Factory(
+                    repository       = repo,
+                    seriesRepository = app.container.seriesRepository,
+                    userRepository   = app.container.userRepository,
+                    omdbRepository   = app.container.omdbRepository,
+                    traktRepository  = app.container.traktRepository,
+                    itemId           = itemId
+                )
             )
             DetailScreen(
                 viewModel = detailVm,
@@ -282,20 +289,22 @@ fun WatchLaterNavGraph(
 
             val detailVm: DetailViewModel = viewModel(
                 factory = DetailViewModel.Factory(
-                    repository = repo,
+                    repository       = repo,
                     seriesRepository = app.container.seriesRepository,
-                    userRepository = app.container.userRepository,
-                    itemId = -1L,
-                    previewImdbId = imdbId,
-                    previewTitle = title,
-                    previewType = type,
-                    previewPoster = poster,
-                    previewRating = rating,
-                    previewNotes = notes,
-                    previewGenres = genres,
-                    previewYear = year,
-                    previewSeason = season,
-                    previewEpisode = episode
+                    userRepository   = app.container.userRepository,
+                    omdbRepository   = app.container.omdbRepository,
+                    traktRepository  = app.container.traktRepository,
+                    itemId           = -1L,
+                    previewImdbId    = imdbId,
+                    previewTitle     = title,
+                    previewType      = type,
+                    previewPoster    = poster,
+                    previewRating    = rating,
+                    previewNotes     = notes,
+                    previewGenres    = genres,
+                    previewYear      = year,
+                    previewSeason    = season,
+                    previewEpisode   = episode
                 )
             )
             DetailScreen(

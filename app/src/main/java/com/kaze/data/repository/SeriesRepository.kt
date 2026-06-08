@@ -18,6 +18,8 @@ data class EpisodeUiItem(
     val title: String,
     val released: String,
     val imdbRating: String,
+    val imdbId: String = "",
+    val plot: String = "",
     val isWatched: Boolean
 )
 
@@ -106,6 +108,8 @@ class SeriesRepository(
                 title         = ep.title,
                 released      = ep.released,
                 imdbRating    = ep.imdbRating,
+                imdbId        = ep.imdbId,
+                plot          = ep.plot,
                 isWatched     = progress[ep.episodeNumber]?.isWatched ?: false
             )
         }
@@ -270,5 +274,23 @@ class SeriesRepository(
 
     suspend fun deleteProgress(watchItemId: Long) {
         episodeProgressDao.deleteAll(watchItemId)
+    }
+
+    /**
+     * Fetches the short plot for a specific episode by its IMDB ID.
+     * Caches the result in DB so it works offline after the first fetch.
+     */
+    suspend fun fetchAndCacheEpisodePlot(imdbId: String, season: Int, episodeNumber: Int): String {
+        // Return from DB cache if already fetched
+        val cached = seasonEpisodeDao.getOne(imdbId, season, episodeNumber)
+        if (cached != null && cached.plot.isNotBlank()) return cached.plot
+
+        // Fetch from OMDB using the episode IMDB ID stored in the episode row
+        val episodeImdbId = cached?.imdbId ?: return ""
+        val plot = omdbRepository.fetchEpisodePlot(episodeImdbId)
+        if (plot.isNotBlank() && cached != null) {
+            seasonEpisodeDao.update(cached.copy(plot = plot))
+        }
+        return plot
     }
 }

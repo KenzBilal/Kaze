@@ -58,18 +58,20 @@ class OmdbRepository {
         }
     }
 
-    data class SeriesMetadata(val genres: String, val totalSeasons: Int, val isFinished: Boolean)
+    data class SeriesMetadata(val genres: String, val totalSeasons: Int, val isFinished: Boolean, val plot: String = "")
 
     /**
      * A3 fix: Consolidated fetchGenre + fetchTotalSeasons into a single network call.
-     * Returns SeriesMetadata containing genres, total seasons, and finished status.
+     * Returns SeriesMetadata containing genres, total seasons, finished status, and plot.
+     * @param plotLength "short" for series overview, "full" for movies.
      */
-    suspend fun fetchDetail(omdbId: String): SeriesMetadata {
+    suspend fun fetchDetail(omdbId: String, plotLength: String = "short"): SeriesMetadata {
         if (!hasApiKey || omdbId.isBlank()) return SeriesMetadata("", 0, false)
         return try {
-            val detail = api.getDetail(imdbId = omdbId, apiKey = apiKey)
+            val detail = api.getDetail(imdbId = omdbId, apiKey = apiKey, plot = plotLength)
             val genres = detail.genre?.takeIf { it != "N/A" } ?: ""
             val seasons = detail.totalSeasons?.toIntOrNull() ?: 0
+            val plot = detail.plot?.takeIf { it != "N/A" } ?: ""
             
             val yearStr = detail.year ?: ""
             val isFinished = when {
@@ -79,7 +81,7 @@ class OmdbRepository {
                 else -> false
             }
             
-            SeriesMetadata(genres, seasons, isFinished)
+            SeriesMetadata(genres, seasons, isFinished, plot)
         } catch (e: CancellationException) { throw e
         } catch (e: Exception) {
             if (BuildConfig.DEBUG) Log.e("OmdbRepo", "fetchDetail failed: ${e.message}")
@@ -92,6 +94,32 @@ class OmdbRepository {
 
     /** Returns total seasons and isFinished for a series */
     suspend fun fetchSeriesMetadata(imdbId: String): SeriesMetadata = fetchDetail(imdbId)
+
+    /** Returns full plot for a movie */
+    suspend fun fetchMoviePlot(imdbId: String): String {
+        if (!hasApiKey || imdbId.isBlank()) return ""
+        return try {
+            val detail = api.getDetail(imdbId = imdbId, apiKey = apiKey, plot = "full")
+            detail.plot?.takeIf { it != "N/A" } ?: ""
+        } catch (e: CancellationException) { throw e
+        } catch (e: Exception) {
+            if (BuildConfig.DEBUG) Log.e("OmdbRepo", "fetchMoviePlot failed: ${e.message}")
+            ""
+        }
+    }
+
+    /** Returns short plot for a specific episode by its IMDB ID */
+    suspend fun fetchEpisodePlot(episodeImdbId: String): String {
+        if (!hasApiKey || episodeImdbId.isBlank()) return ""
+        return try {
+            val detail = api.getEpisodeDetail(imdbId = episodeImdbId, apiKey = apiKey, plot = "short")
+            detail.plot?.takeIf { it != "N/A" } ?: ""
+        } catch (e: CancellationException) { throw e
+        } catch (e: Exception) {
+            if (BuildConfig.DEBUG) Log.e("OmdbRepo", "fetchEpisodePlot failed: ${e.message}")
+            ""
+        }
+    }
 
     /** Returns episode list for one season */
     suspend fun fetchSeason(imdbId: String, season: Int): OmdbSeasonResponse? {

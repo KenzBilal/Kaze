@@ -53,4 +53,24 @@ class TraktRepository {
             emptyList()
         }
     }
+
+    /**
+     * Fetches the YouTube trailer URL for a movie or series by its IMDB ID.
+     * Returns null if unavailable or on error.
+     */
+    suspend fun fetchTrailerUrl(imdbId: String, isMovie: Boolean): String? {
+        if (imdbId.isBlank()) return null
+        return try {
+            val trailer = if (isMovie) {
+                api.getMovieSummary(imdbId = imdbId, clientId = clientId).trailer
+            } else {
+                api.getShowSummary(imdbId = imdbId, clientId = clientId).trailer
+            }
+            trailer?.takeIf { it.isNotBlank() }
+        } catch (e: CancellationException) { throw e
+        } catch (e: Exception) {
+            if (BuildConfig.DEBUG) Log.e("TraktRepo", "fetchTrailerUrl failed: ${e.message}")
+            null
+        }
+    }
 }
