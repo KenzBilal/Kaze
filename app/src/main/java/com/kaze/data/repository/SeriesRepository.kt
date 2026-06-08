@@ -289,7 +289,7 @@ class SeriesRepository(
         // Use the episode's own OMDB ID. If missing (old cache), re-fetch season to get it.
         var episodeImdbId = cached?.episodeImdbId?.takeIf { it.isNotBlank() }
         if (episodeImdbId == null) {
-            val omdbSeason = omdbRepository.fetchSeasonEpisodes(imdbId, season)
+            val omdbSeason = omdbRepository.fetchSeason(imdbId, season)
             val epData = omdbSeason?.episodes?.find { it.episode == episodeNumber.toString() }
             episodeImdbId = epData?.imdbId
             if (!episodeImdbId.isNullOrBlank() && cached != null) {
