@@ -152,7 +152,7 @@ class DetailViewModel(
                     imdbId  = item.imdbId,
                     isMovie = item.type == MediaType.MOVIE
                 )
-                if (url != null && !item.isPreview && itemId != -1L) {
+                if (url != null && !_uiState.value.isPreview && itemId != -1L) {
                     val updated = item.copy(trailerUrl = url)
                     repository.updateItem(updated)
                 }
@@ -166,7 +166,7 @@ class DetailViewModel(
                 } else {
                     omdbRepository.fetchDetail(item.imdbId, plotLength = "short").plot
                 }
-                if (fetched.isNotBlank() && !item.isPreview && itemId != -1L) {
+                if (fetched.isNotBlank() && !_uiState.value.isPreview && itemId != -1L) {
                     val current = _uiState.value.item ?: item
                     repository.updateItem(current.copy(plot = fetched, trailerUrl = trailerUrl))
                 }
