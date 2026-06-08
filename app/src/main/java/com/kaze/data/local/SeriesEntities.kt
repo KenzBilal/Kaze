@@ -22,13 +22,14 @@ data class SeriesCache(
     primaryKeys = ["imdbId", "season", "episodeNumber"]
 )
 data class SeasonEpisode(
-    val imdbId: String,
-    val season: Int,
-    val episodeNumber: Int,
+    val imdbId: String,           // series imdbId (PK)
+    val season: Int,              // (PK)
+    val episodeNumber: Int,       // (PK)
     val title: String,
-    val released: String = "",      // "2008-01-20" or "N/A"
-    val imdbRating: String = "",    // "9.0" or "N/A"
-    val plot: String = "",          // Short plot cached on-demand
+    val released: String = "",    // "2008-01-20" or "N/A"
+    val imdbRating: String = "",  // "9.0" or "N/A"
+    val episodeImdbId: String = "", // each episode's own OMDB ID for plot fetching
+    val plot: String = "",        // Short plot cached on-demand
     val cachedAt: Long = System.currentTimeMillis()
 )
 

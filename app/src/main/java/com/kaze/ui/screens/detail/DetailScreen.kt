@@ -361,29 +361,42 @@ fun DetailScreen(
                         SubtleDivider()
                         Spacer(Modifier.height(24.dp))
 
-                        // ── Movie Layout: Trailer → Plot → (rest) ──────────
-                        if (item.type == MediaType.MOVIE) {
-                            // Trailer
-                            if (uiState.trailerUrl.isNotBlank()) {
-                                TrailerPlayer(trailerUrl = uiState.trailerUrl)
-                                Spacer(Modifier.height(20.dp))
+                        // ── Trailer + Plot (shown for ALL items, movies and series, watched or not) ──
+                        val plot = uiState.item?.plot ?: ""
+                        val trailerUrl = uiState.trailerUrl
+
+                        if (trailerUrl.isNotBlank() || uiState.isLoadingTrailer) {
+                            if (uiState.isLoadingTrailer) {
+                                // Skeleton placeholder while trailer URL loads
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .aspectRatio(16f / 9f)
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(SurfaceElevated),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(color = AccentBlue, strokeWidth = 2.dp, modifier = Modifier.size(28.dp))
+                                }
+                            } else {
+                                TapToPlayTrailer(trailerUrl = trailerUrl)
                             }
-                            // Long plot for movies
-                            val plot = uiState.item?.plot ?: ""
-                            if (plot.isNotBlank()) {
-                                Text(
-                                    text       = plot,
-                                    style      = MaterialTheme.typography.bodyMedium,
-                                    color      = TextSecondary,
-                                    lineHeight = 22.sp
-                                )
-                                Spacer(Modifier.height(24.dp))
-                                SubtleDivider()
-                                Spacer(Modifier.height(24.dp))
-                            }
+                            Spacer(Modifier.height(20.dp))
                         }
 
-                        // ── Series Layout: Episodes heading → Trailer → Plot → Seasons ──
+                        if (plot.isNotBlank()) {
+                            Text(
+                                text       = plot,
+                                style      = MaterialTheme.typography.bodyMedium,
+                                color      = TextSecondary,
+                                lineHeight = 22.sp
+                            )
+                            Spacer(Modifier.height(24.dp))
+                            SubtleDivider()
+                            Spacer(Modifier.height(24.dp))
+                        }
+
+                        // ── Series episode section (only when not yet fully watched) ──
                         if (item.type == MediaType.SERIES && !uiState.isWatched) {
                             SeriesEpisodeSection(
                                 uiState              = uiState,
@@ -400,9 +413,7 @@ fun DetailScreen(
                                         viewModel.markSeasonWatched()
                                     }
                                 },
-                                onEpisodePlotClick   = viewModel::fetchEpisodePlot,
-                                trailerUrl           = uiState.trailerUrl,
-                                seriesPlot           = uiState.item?.plot ?: ""
+                                onEpisodePlotClick   = viewModel::fetchEpisodePlot
                             )
                             Spacer(Modifier.height(24.dp))
                             SubtleDivider()
@@ -484,18 +495,19 @@ fun DetailScreen(
     }
 }
 
-// ── Inline Trailer Player ──────────────────────────────────────────────────
+// ── Tap-to-Play Trailer ────────────────────────────────────────────────────
+// Shows a YouTube thumbnail + play button. Loads WebView only after user taps.
+// This avoids scroll jank caused by WebView intercepting touch events.
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-fun TrailerPlayer(trailerUrl: String) {
-    // Extract YouTube video ID from various URL formats
+fun TapToPlayTrailer(trailerUrl: String) {
     val videoId = remember(trailerUrl) {
-        val patterns = listOf(
-            Regex("(?:youtube\\.com/watch\\?v=|youtu\\.be/|youtube\\.com/embed/)([A-Za-z0-9_-]{11})"),
-        )
-        patterns.firstNotNullOfOrNull { it.find(trailerUrl)?.groupValues?.getOrNull(1) }
+        Regex("(?:youtube\\.com/watch\\?v=|youtu\\.be/|youtube\\.com/embed/)([A-Za-z0-9_-]{11})")
+            .find(trailerUrl)?.groupValues?.getOrNull(1)
     } ?: return
+
+    var playing by remember { mutableStateOf(false) }
 
     val embedHtml = remember(videoId) {
         """
@@ -511,9 +523,9 @@ fun TrailerPlayer(trailerUrl: String) {
         </head>
         <body>
         <iframe
-          src="https://www.youtube.com/embed/$videoId?autoplay=0&controls=1&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&disablekb=0&fs=0&playsinline=1"
-          allowfullscreen="false"
-          allow="autoplay; encrypted-media">
+          src="https://www.youtube.com/embed/$videoId?autoplay=1&controls=1&modestbranding=1&rel=0&playsinline=1"
+          allow="autoplay; encrypted-media"
+          allowfullscreen="true">
         </iframe>
         </body>
         </html>
@@ -525,27 +537,69 @@ fun TrailerPlayer(trailerUrl: String) {
             .fillMaxWidth()
             .aspectRatio(16f / 9f)
             .clip(RoundedCornerShape(14.dp))
-            .background(Color.Black)
+            .background(Color.Black),
+        contentAlignment = Alignment.Center
     ) {
-        AndroidView(
-            factory = { ctx ->
-                WebView(ctx).apply {
-                    settings.javaScriptEnabled = true
-                    settings.mediaPlaybackRequiresUserGesture = false
-                    settings.domStorageEnabled = true
-                    webViewClient = WebViewClient()
-                    webChromeClient = WebChromeClient()
-                    loadDataWithBaseURL(
-                        "https://www.youtube.com",
-                        embedHtml,
-                        "text/html",
-                        "utf-8",
-                        null
-                    )
-                }
-            },
-            modifier = Modifier.fillMaxSize()
-        )
+        if (!playing) {
+            // Static thumbnail — no scroll conflict
+            AsyncImage(
+                model              = "https://img.youtube.com/vi/$videoId/hqdefault.jpg",
+                contentDescription = "Trailer thumbnail",
+                contentScale       = ContentScale.Crop,
+                modifier           = Modifier.fillMaxSize()
+            )
+            // Dark overlay
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.35f))
+            )
+            // Play button + label
+            Column(
+                modifier              = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color.Black.copy(alpha = 0.6f))
+                    .clickable { playing = true }
+                    .padding(horizontal = 20.dp, vertical = 14.dp),
+                horizontalAlignment   = Alignment.CenterHorizontally,
+                verticalArrangement   = Arrangement.spacedBy(6.dp)
+            ) {
+                Icon(
+                    Icons.Filled.PlayArrow,
+                    contentDescription = "Play Trailer",
+                    tint     = Color.White,
+                    modifier = Modifier.size(36.dp)
+                )
+                Text(
+                    "WATCH TRAILER",
+                    color      = Color.White,
+                    fontSize   = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.5.sp
+                )
+            }
+        } else {
+            // WebView loads only after tap — no scroll jank
+            AndroidView(
+                factory = { ctx ->
+                    WebView(ctx).apply {
+                        settings.javaScriptEnabled = true
+                        settings.mediaPlaybackRequiresUserGesture = false
+                        settings.domStorageEnabled = true
+                        webViewClient = WebViewClient()
+                        webChromeClient = WebChromeClient()
+                        loadDataWithBaseURL(
+                            "https://www.youtube.com",
+                            embedHtml,
+                            "text/html",
+                            "utf-8",
+                            null
+                        )
+                    }
+                },
+                modifier = Modifier.fillMaxSize()
+            )
+        }
     }
 }
 
@@ -557,9 +611,7 @@ private fun SeriesEpisodeSection(
     onSeasonSelect: (Int) -> Unit,
     onEpisodeToggle: (Int, Int) -> Unit,
     onMarkSeasonWatched: () -> Unit,
-    onEpisodePlotClick: (EpisodeUiItem) -> Unit,
-    trailerUrl: String,
-    seriesPlot: String
+    onEpisodePlotClick: (EpisodeUiItem) -> Unit
 ) {
     val totalSeasons   = uiState.totalSeasons
     val selectedSeason = uiState.selectedSeason
@@ -574,23 +626,6 @@ private fun SeriesEpisodeSection(
 
     SectionHeader("EPISODES")
     Spacer(Modifier.height(14.dp))
-
-    // ── Trailer (below heading) ────────────────────────────────────────────
-    if (trailerUrl.isNotBlank()) {
-        TrailerPlayer(trailerUrl = trailerUrl)
-        Spacer(Modifier.height(16.dp))
-    }
-
-    // ── Short series plot ──────────────────────────────────────────────────
-    if (seriesPlot.isNotBlank()) {
-        Text(
-            text       = seriesPlot,
-            style      = MaterialTheme.typography.bodyMedium,
-            color      = TextSecondary,
-            lineHeight = 22.sp
-        )
-        Spacer(Modifier.height(16.dp))
-    }
 
     // ── Season tabs ────────────────────────────────────────────────────────
     if (totalSeasons > 0) {

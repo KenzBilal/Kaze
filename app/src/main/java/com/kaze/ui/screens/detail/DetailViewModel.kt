@@ -146,6 +146,8 @@ class DetailViewModel(
     private fun fetchTrailerAndPlot(item: WatchItem) {
         if (item.imdbId.isBlank()) return
         viewModelScope.launch {
+            // Show skeleton while fetching
+            _uiState.update { it.copy(isLoadingTrailer = item.trailerUrl.isBlank()) }
             // Fetch trailer
             val trailerUrl = if (item.trailerUrl.isBlank()) {
                 val url = traktRepository.fetchTrailerUrl(
@@ -164,7 +166,7 @@ class DetailViewModel(
                 val fetched = if (item.type == MediaType.MOVIE) {
                     omdbRepository.fetchMoviePlot(item.imdbId)
                 } else {
-                    omdbRepository.fetchDetail(item.imdbId, plotLength = "short").plot
+                    omdbRepository.fetchDetail(item.imdbId, plotLength = "full").plot
                 }
                 if (fetched.isNotBlank() && !_uiState.value.isPreview && itemId != -1L) {
                     val current = _uiState.value.item ?: item
@@ -175,7 +177,8 @@ class DetailViewModel(
 
             _uiState.update { state ->
                 state.copy(
-                    trailerUrl = trailerUrl,
+                    trailerUrl      = trailerUrl,
+                    isLoadingTrailer = false,
                     item = state.item?.copy(plot = plot, trailerUrl = trailerUrl)
                 )
             }
