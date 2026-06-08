@@ -365,9 +365,9 @@ fun DetailScreen(
                         val plot = uiState.item?.plot ?: ""
                         val trailerUrl = uiState.trailerUrl
 
-                        if (trailerUrl.isNotBlank() || uiState.isLoadingTrailer) {
-                            if (uiState.isLoadingTrailer) {
-                                // Skeleton placeholder while trailer URL loads
+                        when {
+                            uiState.isLoadingTrailer -> {
+                                // Skeleton while fetching
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -378,10 +378,28 @@ fun DetailScreen(
                                 ) {
                                     CircularProgressIndicator(color = AccentBlue, strokeWidth = 2.dp, modifier = Modifier.size(28.dp))
                                 }
-                            } else {
-                                TapToPlayTrailer(trailerUrl = trailerUrl)
+                                Spacer(Modifier.height(20.dp))
                             }
-                            Spacer(Modifier.height(20.dp))
+                            trailerUrl.isNotBlank() -> {
+                                TapToPlayTrailer(trailerUrl = trailerUrl)
+                                Spacer(Modifier.height(20.dp))
+                            }
+                            uiState.trailerChecked -> {
+                                // Fetch done, no trailer found — show clean "not available" row
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(SurfaceElevated)
+                                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    Icon(Icons.Outlined.OndemandVideo, null, tint = TextTertiary, modifier = Modifier.size(18.dp))
+                                    Text("Trailer not available", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
+                                }
+                                Spacer(Modifier.height(20.dp))
+                            }
                         }
 
                         if (plot.isNotBlank()) {

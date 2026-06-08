@@ -45,7 +45,8 @@ data class DetailUiState(
     val toastMessage: String? = null,
     val showMarkAllSeriesDialog: Boolean = false,
     val showRatingPrompt: Boolean = false,
-    val isPreview: Boolean = false
+    val isPreview: Boolean = false,
+    val trailerChecked: Boolean = false    // true once fetch completed (success or fail)
 )
 
 class DetailViewModel(
@@ -177,8 +178,9 @@ class DetailViewModel(
 
             _uiState.update { state ->
                 state.copy(
-                    trailerUrl      = trailerUrl,
+                    trailerUrl       = trailerUrl,
                     isLoadingTrailer = false,
+                    trailerChecked   = true,
                     item = state.item?.copy(plot = plot, trailerUrl = trailerUrl)
                 )
             }

@@ -286,8 +286,19 @@ class SeriesRepository(
         val cached = seasonEpisodeDao.getOne(imdbId, season, episodeNumber)
         if (cached != null && cached.plot.isNotBlank()) return cached.plot
 
-        // Use the episode's own OMDB ID (not the series ID)
-        val episodeImdbId = cached?.episodeImdbId?.takeIf { it.isNotBlank() } ?: return ""
+        // Use the episode's own OMDB ID. If missing (old cache), re-fetch season to get it.
+        var episodeImdbId = cached?.episodeImdbId?.takeIf { it.isNotBlank() }
+        if (episodeImdbId == null) {
+            val omdbSeason = omdbRepository.fetchSeasonEpisodes(imdbId, season)
+            val epData = omdbSeason?.episodes?.find { it.episode == episodeNumber.toString() }
+            episodeImdbId = epData?.imdbId
+            if (!episodeImdbId.isNullOrBlank() && cached != null) {
+                seasonEpisodeDao.update(cached.copy(episodeImdbId = episodeImdbId))
+            }
+        }
+
+        if (episodeImdbId.isNullOrBlank()) return ""
+
         val plot = omdbRepository.fetchEpisodePlot(episodeImdbId)
         if (plot.isNotBlank() && cached != null) {
             seasonEpisodeDao.update(cached.copy(plot = plot))
