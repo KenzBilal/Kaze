@@ -8,7 +8,6 @@ import androidx.compose.foundation.lazy.staggeredgrid.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.Casino
 import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.Forum
 import androidx.compose.material3.*
@@ -86,6 +85,10 @@ class DiscoverViewModel(
                 userRepo.getUserById(it)?.username
             } ?: ""
             _uiState.update { it.copy(isChatVisible = isChatEligible(localUsername)) }
+            if (_uiState.value.isChatVisible) {
+                val hasUnread = userRepo.hasUnreadGlobalChatMessages()
+                _uiState.update { it.copy(hasUnreadChat = hasUnread) }
+            }
             repository.getAllItemsFlow().collect { ownItems ->
                 val ownImdbIds = ownItems.map { it.imdbId }.filter { it.isNotBlank() }.toSet()
                 _uiState.update { it.copy(ownImdbIds = ownImdbIds) }
@@ -233,17 +236,24 @@ class DiscoverViewModel(
         // Fetch missing posters from Supabase cache
         val allItems = (friendsSuggestions + globalFinal)
         val missingIds = allItems.filter { it.posterUrl == null }.map { it.imdbId }
+        val ratingCache = mutableMapOf<String, Float>()
         if (missingIds.isNotEmpty()) {
             val cachedMap = cacheRepo.getCachedItems(missingIds)
-            cachedMap.forEach { (imdb, item) -> if (item.posterUrl != null) posterCache[imdb] = item.posterUrl }
+            cachedMap.forEach { (imdb, item) -> 
+                if (item.posterUrl != null) posterCache[imdb] = item.posterUrl
+                if (item.rating > 0f) ratingCache[imdb] = item.rating
+            }
         }
 
-        fun applyPosters(list: List<DiscoverItem>) = list.map {
-            if (it.posterUrl == null && posterCache[it.imdbId] != null) it.copy(posterUrl = posterCache[it.imdbId]) else it
+        fun applyCache(list: List<DiscoverItem>) = list.map {
+            var updated = it
+            if (updated.posterUrl == null && posterCache[updated.imdbId] != null) updated = updated.copy(posterUrl = posterCache[updated.imdbId])
+            if (updated.rating <= 0f && ratingCache[updated.imdbId] != null) updated = updated.copy(rating = ratingCache[updated.imdbId]!!)
+            updated
         }
 
-        val friendsFinal = applyPosters(friendsSuggestions)
-        val globalWithPosters = applyPosters(globalFinal)
+        val friendsFinal = applyCache(friendsSuggestions)
+        val globalWithPosters = applyCache(globalFinal)
 
         _uiState.update {
             it.copy(
@@ -317,7 +327,8 @@ data class DiscoverUiState(
     val isLoggedIn: Boolean = true,
     val ownImdbIds: Set<String> = emptySet(),
     val topGenre: String = "",
-    val isChatVisible: Boolean = false
+    val isChatVisible: Boolean = false,
+    val hasUnreadChat: Boolean = false
 )
 
 // ── Screen ────────────────────────────────────────────────────────────────────
@@ -338,7 +349,7 @@ fun DiscoverScreen(
     )
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    var showDiceResult by remember { mutableStateOf<DiscoverItem?>(null) }
+    var showDiscoverFilterSheet by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -347,12 +358,12 @@ fun DiscoverScreen(
                     Text("Discover", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                 },
                 actions = {
-                    // Dice roller icon
+                    // Discover Filter icon (Wand)
                     IconButton(onClick = {
                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        showDiceResult = viewModel.rollDice(uiState.activeTab)
+                        showDiscoverFilterSheet = true
                     }) {
-                        Icon(Icons.Outlined.Casino, "Discover Dice", tint = TextSecondary)
+                        Icon(Icons.Default.AutoAwesome, "Discover Filter", tint = TextSecondary)
                     }
                     // Secret Global Chat (only visible to eligible users)
                     if (uiState.isChatVisible) {
@@ -360,7 +371,17 @@ fun DiscoverScreen(
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             onChatClick()
                         }) {
-                            Icon(Icons.Outlined.Forum, "Global Chat", tint = AccentBlue)
+                            BadgedBox(
+                                badge = {
+                                    if (uiState.hasUnreadChat) {
+                                        Badge(containerColor = Background, modifier = Modifier.size(10.dp)) {
+                                            Box(modifier = Modifier.size(8.dp).clip(androidx.compose.foundation.shape.CircleShape).background(androidx.compose.ui.graphics.Color.White))
+                                        }
+                                    }
+                                }
+                            ) {
+                                Icon(Icons.Outlined.Forum, "Global Chat", tint = AccentBlue)
+                            }
                         }
                     }
                 },
@@ -370,16 +391,23 @@ fun DiscoverScreen(
         containerColor = Background
     ) { padding ->
 
-        // Dice result dialog
-        showDiceResult?.let { rolled ->
-            DiceResultDialog(
-                item = rolled,
-                onDismiss = { showDiceResult = null },
-                onAddToWatchlist = {
-                    onItemClick(rolled)
-                    showDiceResult = null
-                }
-            )
+        // Discover Filter bottom sheet
+        if (showDiscoverFilterSheet) {
+            val listToFilter = if (uiState.activeTab == DiscoverTab.FRIENDS) uiState.friendsItems else uiState.globalItems
+            ModalBottomSheet(
+                onDismissRequest = { showDiscoverFilterSheet = false },
+                containerColor = Background,
+                dragHandle = { BottomSheetDefaults.DragHandle(color = TextSecondary) }
+            ) {
+                com.kaze.ui.components.DiscoverFilterBottomSheet(
+                    items = listToFilter,
+                    onDismiss = { showDiscoverFilterSheet = false },
+                    onItemClick = { item ->
+                        onItemClick(item)
+                        showDiscoverFilterSheet = false
+                    }
+                )
+            }
         }
 
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {

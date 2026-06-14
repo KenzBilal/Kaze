@@ -618,6 +618,35 @@ class UserRepository(private val context: Context) {
             true
         } catch (_: Exception) { false }
     }
+
+    suspend fun removeFromGlobalChat(targetUserId: String): Boolean = withContext(Dispatchers.IO) {
+        try {
+            SupabaseApi.client.from("global_chat_members").delete {
+                filter { eq("user_id", targetUserId) }
+            }
+            true
+        } catch (_: Exception) { false }
+    }
+
+    suspend fun hasUnreadGlobalChatMessages(): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val prefs = context.getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
+            val lastRead = prefs.getLong("last_global_chat_read", 0L)
+            
+            val rows = SupabaseApi.client.from("global_chat_messages")
+                .select { 
+                    filter { gt("created_at", lastRead) }
+                    limit(1)
+                }
+                .decodeList<GlobalChatMessage>()
+            rows.isNotEmpty()
+        } catch (_: Exception) { false }
+    }
+
+    fun markGlobalChatAsRead() {
+        val prefs = context.getSharedPreferences("app_prefs", android.content.Context.MODE_PRIVATE)
+        prefs.edit().putLong("last_global_chat_read", System.currentTimeMillis()).apply()
+    }
 }
 
 // ── Global Chat Models ────────────────────────────────────────────────────────

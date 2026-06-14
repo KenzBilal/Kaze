@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Done
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -79,11 +80,13 @@ class GlobalChatViewModel(
 
     private suspend fun loadMessages() {
         val msgs = userRepo.fetchChatMessages()
+        userRepo.markGlobalChatAsRead()
         _uiState.update { it.copy(messages = msgs, isLoading = false) }
     }
 
     private suspend fun refreshMessages() {
         val msgs = userRepo.fetchChatMessages()
+        userRepo.markGlobalChatAsRead()
         _uiState.update { it.copy(messages = msgs) }
     }
 
@@ -257,12 +260,23 @@ private fun ChatBubble(msg: GlobalChatMessage, isOwn: Boolean) {
                     .background(if (isOwn) AccentBlue else SurfaceElevated)
                     .padding(horizontal = 14.dp, vertical = 10.dp)
             ) {
-                Text(
-                    msg.message,
-                    color = if (isOwn) Background else TextPrimary,
-                    fontSize = 14.sp,
-                    lineHeight = 20.sp
-                )
+                Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        msg.message,
+                        color = if (isOwn) Background else TextPrimary,
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                    if (isOwn) {
+                        Icon(
+                            Icons.Filled.Done,
+                            contentDescription = "Seen",
+                            tint = Background.copy(alpha = 0.8f),
+                            modifier = Modifier.size(14.dp).padding(bottom = 2.dp)
+                        )
+                    }
+                }
             }
         }
     }

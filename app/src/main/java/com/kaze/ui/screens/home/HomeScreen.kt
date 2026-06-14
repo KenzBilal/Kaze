@@ -125,48 +125,34 @@ fun HomeScreen(
                 }
             }
 
-            AnimatedContent(
-                targetState = selectedTab,
-                transitionSpec = {
-                    if (targetState > initialState) {
-                        slideInHorizontally { it } + fadeIn() togetherWith
-                                slideOutHorizontally { -it } + fadeOut()
-                    } else {
-                        slideInHorizontally { -it } + fadeIn() togetherWith
-                                slideOutHorizontally { it } + fadeOut()
+            when (selectedTab) {
+                0 -> WatchItemList(
+                    items = uiState.items,
+                    isLoading = uiState.isLoading,
+                    isFiltered = uiState.sortFilterState.filter != FilterOption.ALL,
+                    emptyIcon = Icons.Outlined.Bookmark,
+                    emptyTitle = "Your watchlist is empty",
+                    emptySubtitle = "Tap + to add movies and series\nyou want to watch",
+                    onItemClick = onItemClick,
+                    onToggleWatched = { item -> 
+                        if (item.type == com.kaze.model.MediaType.SERIES && !item.isWatched) showMarkWatchedDialog = item
+                        else viewModel.toggleWatched(item)
                     }
-                },
-                label = "tab_content"
-            ) { tab ->
-                when (tab) {
-                    0 -> WatchItemList(
-                        items = uiState.items,
-                        isLoading = uiState.isLoading,
-                        isFiltered = uiState.sortFilterState.filter != FilterOption.ALL,
-                        emptyIcon = Icons.Outlined.Bookmark,
-                        emptyTitle = "Your watchlist is empty",
-                        emptySubtitle = "Tap + to add movies and series\nyou want to watch",
-                        onItemClick = onItemClick,
-                        onToggleWatched = { item -> 
-                            if (item.type == com.kaze.model.MediaType.SERIES && !item.isWatched) showMarkWatchedDialog = item
-                            else viewModel.toggleWatched(item)
-                        }
-                    )
-                    1 -> WatchItemList(
-                        items = uiState.items,
-                        isLoading = uiState.isLoading,
-                        isFiltered = uiState.sortFilterState.filter != FilterOption.ALL,
-                        emptyIcon = Icons.Outlined.CheckCircle,
-                        emptyTitle = "Nothing watched yet",
-                        emptySubtitle = "Mark items as watched and\nthey'll appear here",
-                        onItemClick = onItemClick,
-                        onToggleWatched = { item -> 
-                            if (item.type == com.kaze.model.MediaType.SERIES && !item.isWatched) showMarkWatchedDialog = item
-                            else viewModel.toggleWatched(item)
-                        },
-                        onToggleFavorite = { item -> viewModel.toggleFavorite(item) }
-                    )
-                }
+                )
+                1 -> WatchItemList(
+                    items = uiState.items,
+                    isLoading = uiState.isLoading,
+                    isFiltered = uiState.sortFilterState.filter != FilterOption.ALL,
+                    emptyIcon = Icons.Outlined.CheckCircle,
+                    emptyTitle = "Nothing watched yet",
+                    emptySubtitle = "Mark items as watched and\nthey'll appear here",
+                    onItemClick = onItemClick,
+                    onToggleWatched = { item -> 
+                        if (item.type == com.kaze.model.MediaType.SERIES && !item.isWatched) showMarkWatchedDialog = item
+                        else viewModel.toggleWatched(item)
+                    },
+                    onToggleFavorite = { item -> viewModel.toggleFavorite(item) }
+                )
             }
         }
     }

@@ -105,7 +105,8 @@ class MyProfileViewModel(
                     watchedItems = allWatched,
                     followersCount = followersCount,
                     followingCount = followingCount,
-                    isLoading = false
+                    isLoading = false,
+                    isAdmin = user?.username.equals("kenzbilal", ignoreCase = true)
                 )
             }
     }
@@ -147,7 +148,8 @@ data class MyProfileUiState(
     val followingCount: Int = 0,
     val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
-    val isEditing: Boolean = false
+    val isEditing: Boolean = false,
+    val isAdmin: Boolean = false
 )
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -165,6 +167,8 @@ fun MyProfileScreen(onSettingsClick: () -> Unit = {}) {
     val context = LocalContext.current
     val viewModel: MyProfileViewModel = viewModel(factory = MyProfileViewModel.Factory(context))
     val uiState by viewModel.uiState.collectAsState()
+
+    var showAdminDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -254,9 +258,31 @@ fun MyProfileScreen(onSettingsClick: () -> Unit = {}) {
                         items(uiState.favoriteItems, key = { it.id }) { item ->
                             FavoriteCard(item = item, onClick = {})
                         }
+                        if (uiState.isAdmin) {
+                            item(span = StaggeredGridItemSpan.FullLine) {
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = SurfaceHighlight)
+                                SectionLabel("ADMIN")
+                                Spacer(Modifier.height(8.dp))
+                                Button(
+                                    onClick = { showAdminDialog = true },
+                                    colors = ButtonDefaults.buttonColors(containerColor = SurfaceHighlight, contentColor = TextPrimary),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text("Manage Global Chat Users")
+                                }
+                                Spacer(Modifier.height(16.dp))
+                            }
+                        }
                     }
                 }
             }
+        }
+
+        if (showAdminDialog) {
+            com.kaze.ui.components.AdminChatDialog(
+                userRepository = com.kaze.data.repository.UserRepository(context),
+                onDismiss = { showAdminDialog = false }
+            )
         }
     }
 }
