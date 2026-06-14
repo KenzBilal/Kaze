@@ -53,7 +53,7 @@ class GlobalChatViewModel(
 
     // Emoji-block regex
     private val emojiRegex = Regex(
-        "[\uD83C-\uDBFF\uDC00-\uDFFF]|[\u2600-\u26FF]|[\u2700-\u27BF]|[\u{1F000}-\u{1FFFF}]",
+        "[\uD83C-\uDBFF\uDC00-\uDFFF]|[\u2600-\u26FF]|[\u2700-\u27BF]|[\\x{1F000}-\\x{1FFFF}]",
         RegexOption.IGNORE_CASE
     )
 
