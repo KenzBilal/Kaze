@@ -1,10 +1,10 @@
 {
     "logs": [
         {
-            "outputFile": "com.watchlater.app-mergeReleaseResources-60:/values-night-v8/values-night-v8.xml",
+            "outputFile": "com.kaze.app-mergeReleaseResources-72:/values-night-v8/values-night-v8.xml",
             "map": [
                 {
-                    "source": "/home/kenz/.gradle/caches/8.9/transforms/3ae29fb1c1ec2400b49b0a7c09da644e/transformed/core-splashscreen-1.0.1/res/values-night-v8/values-night-v8.xml",
+                    "source": "/home/kenz/.gradle/caches/8.9/transforms/bb1bdf2e030e2325822fc047062634f9/transformed/core-splashscreen-1.0.1/res/values-night-v8/values-night-v8.xml",
                     "from": {
                         "startLines": "2",
                         "startColumns": "4",
@@ -14,7 +14,7 @@
                     }
                 },
                 {
-                    "source": "/home/kenz/.gradle/caches/8.9/transforms/6d566930699033d2773c5fe9d9f0898a/transformed/appcompat-1.7.0/res/values-night-v8/values-night-v8.xml",
+                    "source": "/home/kenz/.gradle/caches/8.9/transforms/8b2c79d87a803834a6b180b02a3d895f/transformed/appcompat-1.7.0/res/values-night-v8/values-night-v8.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9",
                         "startColumns": "4,4,4,4,4,4,4,4",

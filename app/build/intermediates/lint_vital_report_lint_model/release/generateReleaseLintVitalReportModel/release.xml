@@ -1,6 +1,6 @@
 <variant
     name="release"
-    package="com.watchlater"
+    package="com.kaze"
     minSdkVersion="24"
     targetSdkVersion="35"
     shrinking="true"
@@ -24,9 +24,9 @@
   <artifact
       classOutputs="build/intermediates/javac/release/compileReleaseJavaWithJavac/classes:build/tmp/kotlin-classes/release:build/kotlinToolingMetadata:build/generated/ksp/release/resources:build/intermediates/compile_and_runtime_not_namespaced_r_class_jar/release/processReleaseResources/R.jar"
       type="MAIN"
-      applicationId="com.watchlater"
+      applicationId="com.kaze"
       generatedSourceFolders="build/generated/ksp/release/java:build/generated/ksp/release/kotlin:build/generated/ap_generated_sources/release/out:build/generated/source/buildConfig/release"
-      generatedResourceFolders="build/generated/res/resValues/release"
-      desugaredMethodsFiles="/home/kenz/.gradle/caches/8.9/transforms/4f57f91cfa3a5ffbba53dd2fe5612b84/transformed/D8BackportedDesugaredMethods.txt">
+      generatedResourceFolders="build/generated/res/processReleaseGoogleServices:build/generated/res/resValues/release"
+      desugaredMethodsFiles="/home/kenz/.gradle/caches/8.9/transforms/c0ba376ab18c779a6c1cd8ea503e334a/transformed/D8BackportedDesugaredMethods.txt">
   </artifact>
 </variant>

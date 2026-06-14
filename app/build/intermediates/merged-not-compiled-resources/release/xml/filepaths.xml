@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    FileProvider paths — deliberately restricted to only what the OTA updater needs.
+    S4 fix: removed overly broad <external-path path="."> that exposed entire external storage.
+-->
 <paths>
-    <external-path name="external_files" path="."/>
-    <external-files-path name="external_files_path" path="."/>
-    <cache-path name="cache" path="."/>
-    <external-cache-path name="external_cache" path="."/>
-    <!-- The downloads folder where APKs will be saved -->
-    <public-external-path name="downloads" path="Download/"/>
+    <!-- App-specific external files dir — used by DownloadManager for update.apk -->
+    <external-files-path name="external_files_path" path="." />
+    <!-- Cache dir — used by Coil for image caching -->
+    <cache-path name="cache" path="." />
+    <external-cache-path name="external_cache" path="." />
 </paths>

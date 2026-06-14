@@ -34087,8 +34087,8 @@ HSPLandroidx/navigation/common/R$styleable;-><clinit>()V
 Landroidx/startup/AppInitializer;
 HSPLandroidx/startup/AppInitializer;-><clinit>()V
 HSPLandroidx/startup/AppInitializer;-><init>(Landroid/content/Context;)V
-HSPLandroidx/startup/AppInitializer;->discoverAndInitialize()V
 HSPLandroidx/startup/AppInitializer;->discoverAndInitialize(Landroid/os/Bundle;)V
+HSPLandroidx/startup/AppInitializer;->discoverAndInitialize(Ljava/lang/Class;)V
 HSPLandroidx/startup/AppInitializer;->doInitialize(Ljava/lang/Class;)Ljava/lang/Object;
 HSPLandroidx/startup/AppInitializer;->doInitialize(Ljava/lang/Class;Ljava/util/Set;)Ljava/lang/Object;
 HSPLandroidx/startup/AppInitializer;->getInstance(Landroid/content/Context;)Landroidx/startup/AppInitializer;

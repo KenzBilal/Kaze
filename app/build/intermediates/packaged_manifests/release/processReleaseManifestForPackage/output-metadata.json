@@ -4,15 +4,15 @@
     "type": "PACKAGED_MANIFESTS",
     "kind": "Directory"
   },
-  "applicationId": "com.watchlater",
+  "applicationId": "com.kaze",
   "variantName": "release",
   "elements": [
     {
       "type": "SINGLE",
       "filters": [],
       "attributes": [],
-      "versionCode": 5,
-      "versionName": "1.3.0",
+      "versionCode": 60,
+      "versionName": "2.7.4",
       "outputFile": "AndroidManifest.xml"
     }
   ],
