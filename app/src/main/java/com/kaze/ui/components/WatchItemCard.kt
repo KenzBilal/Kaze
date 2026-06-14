@@ -7,6 +7,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -146,8 +148,8 @@ fun WatchItemCard(
                         modifier = Modifier.size(36.dp)
                     ) {
                         Icon(
-                            imageVector = if (item.isFavorite) androidx.compose.material.icons.Icons.Filled.Favorite
-                                          else androidx.compose.material.icons.Icons.Outlined.FavoriteBorder,
+                            imageVector = if (item.isFavorite) Icons.Filled.Favorite
+                                          else Icons.Outlined.FavoriteBorder,
                             contentDescription = if (item.isFavorite) "Remove from favorites" else "Add to favorites",
                             tint = if (item.isFavorite) androidx.compose.ui.graphics.Color.Red else TextDisabled,
                             modifier = Modifier.size(22.dp)

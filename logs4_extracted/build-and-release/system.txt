@@ -1,0 +1,8 @@
+2026-06-14T16:43:23.2680000Z Requested labels: ubuntu-latest
+2026-06-14T16:43:23.2680000Z Job defined at: KenzBilal/Kaze/.github/workflows/release.yml@refs/tags/v2.7.3
+2026-06-14T16:43:23.2680000Z Waiting for a runner to pick up this job...
+2026-06-14T16:43:23.2680000Z Evaluating build-and-release.if
+2026-06-14T16:43:23.2680000Z Evaluating: success()
+2026-06-14T16:43:23.2680000Z Result: true
+2026-06-14T16:43:23.7580000Z Job is waiting for a hosted runner to come online.
+2026-06-14T16:43:23.7590000Z Job is about to start running on the hosted runner: GitHub Actions 1000000161
