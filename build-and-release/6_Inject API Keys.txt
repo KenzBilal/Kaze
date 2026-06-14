@@ -1,0 +1,10 @@
+﻿2026-06-14T16:28:50.1477804Z ##[group]Run echo "tmdb.api.key=${TMDB_API_KEY}" >> gradle.properties
+2026-06-14T16:28:50.1478226Z [36;1mecho "tmdb.api.key=${TMDB_API_KEY}" >> gradle.properties[0m
+2026-06-14T16:28:50.1478569Z [36;1mecho "omdb.api.key=${OMDB_API_KEY}" >> gradle.properties[0m
+2026-06-14T16:28:50.1505308Z shell: /usr/bin/bash -e {0}
+2026-06-14T16:28:50.1505529Z env:
+2026-06-14T16:28:50.1505792Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.19-10/x64
+2026-06-14T16:28:50.1506198Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.19-10/x64
+2026-06-14T16:28:50.1507573Z   TMDB_API_KEY: ***
+2026-06-14T16:28:50.1507778Z   OMDB_API_KEY: ***
+2026-06-14T16:28:50.1507970Z ##[endgroup]

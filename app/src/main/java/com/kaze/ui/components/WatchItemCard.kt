@@ -138,7 +138,6 @@ fun WatchItemCard(
                         StarRatingDisplay(rating = item.rating)
                     }
                 }
-                }
 
                 // Heart favorite toggle if provided and item is watched
                 if (onToggleFavorite != null && item.isWatched) {
