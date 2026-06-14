@@ -230,7 +230,7 @@ class DetailViewModel(
             val uiCast = traktCast.mapNotNull { member ->
                 val personName = member.person?.name ?: return@mapNotNull null
                 val charName = member.characters?.firstOrNull() ?: ""
-                var headshot = member.person.images?.headshot?.firstOrNull()
+                var headshot = member.person?.images?.headshot?.firstOrNull()
                 if (headshot != null && headshot.startsWith("media.trakt.tv")) {
                     headshot = "https://$headshot"
                 }
