@@ -45,6 +45,16 @@ fun SettingsScreen(onBack: () -> Unit) {
     var soundEnabled by remember { mutableStateOf(prefs.soundEnabled) }
     var isSyncing by remember { mutableStateOf(false) }
     var isBackingUp by remember { mutableStateOf(false) }
+    var isAdmin by remember { mutableStateOf(false) }
+    var showAdminDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val uid = app.container.userRepository.getLocalUserId()
+        if (uid != null) {
+            val user = app.container.userRepository.getUserById(uid)
+            isAdmin = user?.username.equals("kenzbilal", ignoreCase = true)
+        }
+    }
     
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
@@ -239,6 +249,24 @@ fun SettingsScreen(onBack: () -> Unit) {
                 )
             }
 
+            if (isAdmin) {
+                item { Spacer(Modifier.height(28.dp)) }
+
+                item {
+                    SettingsSectionLabel("ADMIN")
+                    Spacer(Modifier.height(10.dp))
+                }
+
+                item {
+                    SettingsActionRow(
+                        icon = Icons.Filled.GraphicEq, // Use an appropriate icon
+                        title = "Global Chat Settings",
+                        subtitle = "Manage chat access and rules",
+                        onClick = { showAdminDialog = true }
+                    )
+                }
+            }
+
             // ── Section: About ────────────────────────────────────────────────
             item {
                 Spacer(Modifier.height(28.dp))
@@ -262,6 +290,13 @@ fun SettingsScreen(onBack: () -> Unit) {
                     Text("v${com.kaze.BuildConfig.VERSION_NAME}", color = TextTertiary, fontSize = 12.sp)
                 }
             }
+        }
+
+        if (showAdminDialog) {
+            com.kaze.ui.components.AdminChatDialog(
+                userRepository = app.container.userRepository,
+                onDismiss = { showAdminDialog = false }
+            )
         }
     }
 }

@@ -50,12 +50,12 @@ fun SplashScreen(
         ) {
             Image(
                 painter = painterResource(id = R.drawable.ic_splash_logo),
-                contentDescription = "Kaze Logo",
+                contentDescription = "Wotchy Logo",
                 modifier = Modifier.size(120.dp)
             )
             Spacer(modifier = Modifier.height(24.dp))
             Text(
-                text = "Kaze",
+                text = "Wotchy",
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
                 color = TextPrimary,

@@ -95,6 +95,8 @@ class UserProfileViewModel(
             val followingCount = repository.getFollowingCount(profileUserId)
             val isFollowing = if (localId != null && localId != profileUserId)
                 repository.isFollowing(localId, profileUserId) else false
+            val localUser = if (localId != null) repository.getUserById(localId) else null
+            val isAdmin = localUser?.username.equals("kenzbilal", ignoreCase = true)
 
             _uiState.update {
                 it.copy(
@@ -105,7 +107,8 @@ class UserProfileViewModel(
                     isFollowing = isFollowing,
                     isOwnProfile = localId == profileUserId,
                     localUserId = localId,
-                    isLoading = false
+                    isLoading = false,
+                    isAdmin = isAdmin
                 )
             }
     }
@@ -133,6 +136,13 @@ class UserProfileViewModel(
                     )
                 }
             }
+        }
+    }
+
+    fun inviteToGlobalChat() {
+        viewModelScope.launch {
+            repository.inviteToGlobalChat(profileUserId)
+            // Optionally, show a success message via a snackbar or state
         }
     }
 
@@ -179,7 +189,8 @@ data class UserProfileUiState(
     val localUserId: String? = null,
     val listDialogTitle: String? = null,
     val listDialogUsers: List<SupabaseUser>? = null,
-    val ownImdbIds: Set<String> = emptySet()
+    val ownImdbIds: Set<String> = emptySet(),
+    val isAdmin: Boolean = false
 )
 
 // ── Screen ────────────────────────────────────────────────────────────────────
@@ -265,12 +276,17 @@ fun UserProfileScreen(
                             followingCount = uiState.followingCount,
                             isFollowing = uiState.isFollowing,
                             isOwnProfile = uiState.isOwnProfile,
+                            isAdmin = uiState.isAdmin,
                             onFollowClick = {
                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                 viewModel.toggleFollow()
                             },
                             onFollowersClick = viewModel::showFollowers,
-                            onFollowingClick = viewModel::showFollowing
+                            onFollowingClick = viewModel::showFollowing,
+                            onInviteClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                viewModel.inviteToGlobalChat()
+                            }
                         )
                     }
 
@@ -345,9 +361,11 @@ private fun ProfileHeader(
     followingCount: Int,
     isFollowing: Boolean,
     isOwnProfile: Boolean,
+    isAdmin: Boolean,
     onFollowClick: () -> Unit,
     onFollowersClick: () -> Unit,
-    onFollowingClick: () -> Unit
+    onFollowingClick: () -> Unit,
+    onInviteClick: () -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp),
@@ -383,17 +401,34 @@ private fun ProfileHeader(
 
         if (!isOwnProfile) {
             Spacer(Modifier.height(16.dp))
-            Button(
-                onClick = onFollowClick,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isFollowing) SurfaceElevated else TextPrimary,
-                    contentColor = if (isFollowing) TextPrimary else Background
-                ),
-                shape = RoundedCornerShape(8.dp),
-                modifier = Modifier.width(120.dp),
-                elevation = ButtonDefaults.buttonElevation(0.dp)
-            ) {
-                Text(if (isFollowing) "Following" else "Follow", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(
+                    onClick = onFollowClick,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isFollowing) SurfaceElevated else TextPrimary,
+                        contentColor = if (isFollowing) TextPrimary else Background
+                    ),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.width(120.dp),
+                    elevation = ButtonDefaults.buttonElevation(0.dp)
+                ) {
+                    Text(if (isFollowing) "Following" else "Follow", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                }
+
+                if (isAdmin) {
+                    Button(
+                        onClick = onInviteClick,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = AccentBlue,
+                            contentColor = Background
+                        ),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.width(120.dp),
+                        elevation = ButtonDefaults.buttonElevation(0.dp)
+                    ) {
+                        Text("Invite Chat", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                    }
+                }
             }
         }
 
