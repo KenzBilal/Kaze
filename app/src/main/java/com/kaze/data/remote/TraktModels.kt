@@ -52,6 +52,30 @@ data class TraktShowSummary(
     @SerializedName("trailer") val trailer: String? = null
 )
 
+// ── Trakt People Response ─────────────────────────────────────────────────────
+
+@Keep
+data class TraktPeopleResponse(
+    @SerializedName("cast") val cast: List<TraktCastMember>? = null
+)
+
+@Keep
+data class TraktCastMember(
+    @SerializedName("characters") val characters: List<String>?,
+    @SerializedName("person") val person: TraktPerson?
+)
+
+@Keep
+data class TraktPerson(
+    @SerializedName("name") val name: String,
+    @SerializedName("images") val images: TraktPersonImages?
+)
+
+@Keep
+data class TraktPersonImages(
+    @SerializedName("headshot") val headshot: List<String>?
+)
+
 // ── Unified Discover Item ─────────────────────────────────────────────────────
 
 data class DiscoverItem(

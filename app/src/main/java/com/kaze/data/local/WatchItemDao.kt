@@ -73,6 +73,12 @@ interface WatchItemDao {
     @Query("SELECT * FROM watch_items ORDER BY dateAdded DESC LIMIT :limit")
     fun getRecentlyAdded(limit: Int = 5): Flow<List<WatchItem>>
 
+    @Query("SELECT * FROM watch_items WHERE isFavorite = 1 AND isWatched = 1 ORDER BY lastUpdated DESC")
+    fun getFavoriteItems(): Flow<List<WatchItem>>
+
+    @Query("UPDATE watch_items SET isFavorite = :fav WHERE id = :id")
+    suspend fun setFavorite(id: Long, fav: Boolean)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(items: List<WatchItem>): List<Long>
 

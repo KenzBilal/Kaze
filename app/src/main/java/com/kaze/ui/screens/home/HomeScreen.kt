@@ -163,7 +163,8 @@ fun HomeScreen(
                         onToggleWatched = { item -> 
                             if (item.type == com.kaze.model.MediaType.SERIES && !item.isWatched) showMarkWatchedDialog = item
                             else viewModel.toggleWatched(item)
-                        }
+                        },
+                        onToggleFavorite = { item -> viewModel.toggleFavorite(item) }
                     )
                 }
             }
@@ -356,7 +357,8 @@ private fun WatchItemList(
     emptyTitle: String,
     emptySubtitle: String,
     onItemClick: (Long) -> Unit,
-    onToggleWatched: (WatchItem) -> Unit
+    onToggleWatched: (WatchItem) -> Unit,
+    onToggleFavorite: ((WatchItem) -> Unit)? = null
 ) {
     val haptic = LocalHapticFeedback.current
     when {
@@ -395,7 +397,11 @@ private fun WatchItemList(
                     onToggleWatched = { 
                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         onToggleWatched(item) 
-                    }
+                    },
+                    onToggleFavorite = if (onToggleFavorite != null) { { 
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        onToggleFavorite(item) 
+                    } } else null
                 )
             }
             item { Spacer(Modifier.height(80.dp)) }

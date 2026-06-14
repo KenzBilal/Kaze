@@ -36,4 +36,18 @@ interface TraktApi {
         @Header("trakt-api-version") version: String = "2",
         @Header("trakt-api-key") clientId: String
     ): TraktShowSummary
+
+    @GET("movies/{id}/people?extended=full")
+    suspend fun getMoviePeople(
+        @Path("id")      imdbId: String,
+        @Header("trakt-api-version") version: String = "2",
+        @Header("trakt-api-key") clientId: String
+    ): TraktPeopleResponse
+
+    @GET("shows/{id}/people?extended=full")
+    suspend fun getShowPeople(
+        @Path("id")      imdbId: String,
+        @Header("trakt-api-version") version: String = "2",
+        @Header("trakt-api-key") clientId: String
+    ): TraktPeopleResponse
 }

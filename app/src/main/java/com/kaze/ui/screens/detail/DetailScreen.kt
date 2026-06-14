@@ -33,6 +33,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -238,33 +239,36 @@ fun DetailScreen(
             )
         },
         bottomBar = {
-            Surface(color = Background, tonalElevation = 0.dp) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .navigationBarsPadding()
-                        .padding(horizontal = 20.dp, vertical = 14.dp)
-                ) {
-                    Button(
-                        onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            viewModel.saveItem(onSuccess = if (uiState.isPreview) onBack else null)
-                        },
-                        enabled  = !uiState.isSaving && !uiState.isLoading,
-                        modifier = Modifier.fillMaxWidth().height(52.dp),
-                        colors   = ButtonDefaults.buttonColors(containerColor = AccentBlue, contentColor = Background),
-                        shape    = MaterialTheme.shapes.medium
+            if (uiState.isPreview || uiState.item?.type != MediaType.MOVIE) {
+                Surface(color = Background, tonalElevation = 0.dp) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .navigationBarsPadding()
+                            .padding(horizontal = 20.dp, vertical = 14.dp)
                     ) {
-                        if (uiState.isSaving) {
-                            CircularProgressIndicator(color = Background, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
-                        } else {
-                            val btnText = if (uiState.isPreview) "Add to Watchlist" else "Save Changes"
-                            Text(btnText, fontWeight = FontWeight.SemiBold, color = Color.Unspecified)
+                        Button(
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                viewModel.saveItem(onSuccess = if (uiState.isPreview) onBack else null)
+                            },
+                            enabled  = !uiState.isSaving && !uiState.isLoading,
+                            modifier = Modifier.fillMaxWidth().height(52.dp),
+                            colors   = ButtonDefaults.buttonColors(containerColor = AccentBlue, contentColor = Background),
+                            shape    = MaterialTheme.shapes.medium
+                        ) {
+                            if (uiState.isSaving) {
+                                CircularProgressIndicator(color = Background, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
+                            } else {
+                                val btnText = if (uiState.isPreview) "Add to Watchlist" else "Save Changes"
+                                Text(btnText, fontWeight = FontWeight.SemiBold, color = Color.Unspecified)
+                            }
                         }
                     }
                 }
             }
         }
+
     ) { padding ->
         when {
             uiState.isLoading -> WatchLaterLoader()
@@ -414,6 +418,107 @@ fun DetailScreen(
                             Spacer(Modifier.height(24.dp))
                         }
 
+                        // ── OMDB Rating ──────────────────────────────────────
+                        if (uiState.omdbRating > 0f) {
+                            SectionHeader("IMDB RATING")
+                            Spacer(Modifier.height(16.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Filled.Star, contentDescription = "IMDb Rating", tint = androidx.compose.ui.graphics.Color(0xFFFFC107), modifier = Modifier.size(24.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Text(text = "${"%.1f".format(uiState.omdbRating / 2f)} / 5", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            }
+                            Spacer(Modifier.height(24.dp))
+                            SubtleDivider()
+                            Spacer(Modifier.height(24.dp))
+                        }
+
+                        // ── Cast & Crew ──────────────────────────────────────
+                        SectionHeader("CAST & CREW")
+                        Spacer(Modifier.height(16.dp))
+                        if (uiState.director.isNotBlank()) {
+                            Text(
+                                text = "Director: ${uiState.director}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = TextSecondary
+                            )
+                            Spacer(Modifier.height(12.dp))
+                        }
+                        
+                        if (!uiState.showCast) {
+                            OutlinedButton(
+                                onClick = viewModel::loadCast,
+                                modifier = Modifier.fillMaxWidth().height(48.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary)
+                            ) {
+                                Icon(Icons.Outlined.Group, contentDescription = "Show Cast")
+                                Spacer(Modifier.width(8.dp))
+                                Text("Show Cast", fontWeight = FontWeight.SemiBold)
+                            }
+                        } else if (uiState.isLoadingCast) {
+                            Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator(color = AccentBlue, strokeWidth = 2.dp, modifier = Modifier.size(28.dp))
+                            }
+                        } else if (uiState.cast.isNotEmpty()) {
+                            LazyRow(
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                contentPadding = PaddingValues(horizontal = 4.dp)
+                            ) {
+                                items(uiState.cast) { actor ->
+                                    Column(
+                                        modifier = Modifier.width(90.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        if (actor.imageUrl != null) {
+                                            AsyncImage(
+                                                model = actor.imageUrl,
+                                                contentDescription = actor.actorName,
+                                                contentScale = ContentScale.Crop,
+                                                modifier = Modifier
+                                                    .size(72.dp)
+                                                    .clip(CircleShape)
+                                                    .background(SurfaceHighlight)
+                                            )
+                                        } else {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(72.dp)
+                                                    .clip(CircleShape)
+                                                    .background(SurfaceHighlight),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Icon(Icons.Filled.Person, contentDescription = null, tint = TextTertiary, modifier = Modifier.size(32.dp))
+                                            }
+                                        }
+                                        Spacer(Modifier.height(8.dp))
+                                        Text(
+                                            text = actor.actorName,
+                                            color = TextPrimary,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            fontWeight = FontWeight.Medium,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            textAlign = TextAlign.Center
+                                        )
+                                        if (actor.characterName.isNotBlank()) {
+                                            Text(
+                                                text = actor.characterName,
+                                                color = TextTertiary,
+                                                fontSize = 10.sp,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis,
+                                                textAlign = TextAlign.Center
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+                        Spacer(Modifier.height(24.dp))
+                        SubtleDivider()
+                        Spacer(Modifier.height(24.dp))
+
                         // ── Series episode section (only when not yet fully watched) ──
                         if (item.type == MediaType.SERIES && !uiState.isWatched) {
                             SeriesEpisodeSection(
@@ -429,6 +534,12 @@ fun DetailScreen(
                                     if (!uiState.isPreview) {
                                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                         viewModel.markSeasonWatched()
+                                    }
+                                },
+                                onMarkAllPrevious    = { s, ep ->
+                                    if (!uiState.isPreview) {
+                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        viewModel.markAllPreviousWatched(s, ep)
                                     }
                                 },
                                 onEpisodePlotClick   = viewModel::fetchEpisodePlot
@@ -633,6 +744,7 @@ private fun SeriesEpisodeSection(
     onSeasonSelect: (Int) -> Unit,
     onEpisodeToggle: (Int, Int) -> Unit,
     onMarkSeasonWatched: () -> Unit,
+    onMarkAllPrevious: (Int, Int) -> Unit,
     onEpisodePlotClick: (EpisodeUiItem) -> Unit
 ) {
     val totalSeasons   = uiState.totalSeasons
@@ -755,6 +867,7 @@ private fun SeriesEpisodeSection(
                         isCurrent          = ep.season == uiState.currentSeason && ep.episodeNumber == uiState.currentEpisode,
                         onToggle           = { onEpisodeToggle(ep.season, ep.episodeNumber) },
                         onPlotClick        = { onEpisodePlotClick(ep) },
+                        onMarkAllPrevious  = { onMarkAllPrevious(ep.season, ep.episodeNumber) },
                         isPreview          = uiState.isPreview
                     )
                     if (index < episodes.lastIndex) {
@@ -775,6 +888,7 @@ private fun EpisodeRow(
     isCurrent: Boolean,
     onToggle: () -> Unit,
     onPlotClick: () -> Unit,
+    onMarkAllPrevious: () -> Unit,
     isPreview: Boolean = false
 ) {
     val bgColor = if (isCurrent) AccentBlue.copy(alpha = 0.07f) else Color.Transparent
@@ -841,20 +955,37 @@ private fun EpisodeRow(
                     containerColor   = SurfaceContainer
                 ) {
                     DropdownMenuItem(
-                        text    = {
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(Icons.Outlined.Info, null, tint = AccentBlue, modifier = Modifier.size(16.dp))
-                                Text("Plot", color = TextPrimary, style = MaterialTheme.typography.bodyMedium)
+                            text    = {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(Icons.Outlined.Info, null, tint = AccentBlue, modifier = Modifier.size(16.dp))
+                                    Text("Plot", color = TextPrimary, style = MaterialTheme.typography.bodyMedium)
+                                }
+                            },
+                            onClick = {
+                                menuExpanded = false
+                                onPlotClick()
                             }
-                        },
-                        onClick = {
-                            menuExpanded = false
-                            onPlotClick()
+                        )
+                        if (episode.episodeNumber > 1) {
+                            DropdownMenuItem(
+                                text = {
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(Icons.Filled.DoneAll, null, tint = WatchedGreen, modifier = Modifier.size(16.dp))
+                                        Text("Mark all previous watched", color = TextPrimary, style = MaterialTheme.typography.bodyMedium)
+                                    }
+                                },
+                                onClick = {
+                                    menuExpanded = false
+                                    onMarkAllPrevious()
+                                }
+                            )
                         }
-                    )
                 }
             }
 

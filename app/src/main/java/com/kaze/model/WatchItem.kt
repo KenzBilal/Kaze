@@ -35,7 +35,8 @@ data class WatchItem(
     val dateAdded: Long = System.currentTimeMillis(),
     val lastUpdated: Long = System.currentTimeMillis(),
     val plot: String = "",            // Short plot (series) or full plot (movie)
-    val trailerUrl: String = ""       // YouTube trailer URL from Trakt
+    val trailerUrl: String = "",       // YouTube trailer URL from Trakt
+    val isFavorite: Boolean = false    // User can heart-mark watched items as favorites
 ) {
     val genreList: List<String> get() =
         genres.split(",").map { it.trim() }.filter { it.isNotEmpty() }

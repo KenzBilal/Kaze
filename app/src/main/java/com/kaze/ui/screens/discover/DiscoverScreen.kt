@@ -7,10 +7,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.staggeredgrid.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Movie
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Tv
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.Casino
 import androidx.compose.material.icons.outlined.Explore
+import androidx.compose.material.icons.outlined.Forum
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
@@ -22,9 +22,11 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -49,6 +51,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+// ── Tab enum ──────────────────────────────────────────────────────────────────
+
+enum class DiscoverTab { FRIENDS, GLOBAL }
+
 // ── ViewModel ─────────────────────────────────────────────────────────────────
 
 class DiscoverViewModel(
@@ -65,22 +71,39 @@ class DiscoverViewModel(
     private var currentFriendsWatchlists: List<PublicWatchlistItem> = emptyList()
     private var currentTraktMovies: MutableList<TraktMovie> = mutableListOf()
     private var currentTraktShows: MutableList<TraktShow> = mutableListOf()
-    private val posterCache = mutableMapOf<String, String?>() // IMDB ID -> Poster URL
-    
+    private val posterCache = mutableMapOf<String, String?>()
+
     private var currentPage = 1
     private var isLoadingMore = false
 
-    init { 
-        load() 
+    // ── Chat visibility ────────────────────────────────────────────────────────
+    private var localUsername: String = ""
+
+    init {
+        load()
         viewModelScope.launch {
+            localUsername = userRepo.getLocalUserId()?.let {
+                userRepo.getUserById(it)?.username
+            } ?: ""
+            _uiState.update { it.copy(isChatVisible = isChatEligible(localUsername)) }
             repository.getAllItemsFlow().collect { ownItems ->
                 val ownImdbIds = ownItems.map { it.imdbId }.filter { it.isNotBlank() }.toSet()
                 _uiState.update { it.copy(ownImdbIds = ownImdbIds) }
-                if (currentFriendsWatchlists.isNotEmpty() || currentTraktMovies.isNotEmpty()) {
-                    recalculateSuggestions()
-                }
             }
         }
+    }
+
+    private suspend fun isChatEligible(username: String): Boolean {
+        if (username.equals("kenzbilal", ignoreCase = true)) return true
+        // Check if invited
+        return try {
+            val userId = userRepo.getLocalUserId() ?: return false
+            userRepo.isInGlobalChat(userId)
+        } catch (e: Exception) { false }
+    }
+
+    fun selectTab(tab: DiscoverTab) {
+        _uiState.update { it.copy(activeTab = tab) }
     }
 
     fun refresh() {
@@ -89,6 +112,7 @@ class DiscoverViewModel(
             currentPage = 1
             currentTraktMovies.clear()
             currentTraktShows.clear()
+            currentFriendsWatchlists = emptyList()
             loadInternal()
             _uiState.update { it.copy(isRefreshing = false) }
         }
@@ -103,25 +127,17 @@ class DiscoverViewModel(
             loadInternal()
         }
     }
-    
-    fun loadMore() {
+
+    fun loadMoreGlobal() {
         if (isLoadingMore) return
         isLoadingMore = true
         _uiState.update { it.copy(isLoadingMore = true) }
         viewModelScope.launch {
             currentPage++
-            // Trakt pagination: limit 20. But the user asked for 30 (15 movies, 15 shows)
-            val limit = if (currentPage == 1) 25 else 15
-            
-            val moviesDeferred = async { traktRepo.getTrendingMovies(currentPage, limit) }
-            val showsDeferred = async { traktRepo.getTrendingShows(currentPage, limit) }
-            
-            val newMovies = moviesDeferred.await()
-            val newShows = showsDeferred.await()
-            
-            currentTraktMovies.addAll(newMovies)
-            currentTraktShows.addAll(newShows)
-            
+            val moviesDeferred = async { traktRepo.getTrendingMovies(currentPage, 15) }
+            val showsDeferred = async { traktRepo.getTrendingShows(currentPage, 15) }
+            currentTraktMovies.addAll(moviesDeferred.await())
+            currentTraktShows.addAll(showsDeferred.await())
             recalculateSuggestions()
             isLoadingMore = false
             _uiState.update { it.copy(isLoadingMore = false) }
@@ -130,28 +146,22 @@ class DiscoverViewModel(
 
     private suspend fun loadInternal() {
         val userId = userRepo.getLocalUserId() ?: run {
-            _uiState.update { it.copy(isLoading = false, isEmpty = true, isLoggedIn = false) }
+            _uiState.update { it.copy(isLoading = false, isLoggedIn = false) }
             return
         }
 
         val ownItems = repository.getAllItemsSnapshot()
         val ownImdbIds = ownItems.map { it.imdbId }.filter { it.isNotBlank() }.toSet()
-
-        val topGenre = ownItems
-            .filter { it.isWatched }
+        val topGenre = ownItems.filter { it.isWatched }
             .flatMap { it.genreList }
-            .groupingBy { it }
-            .eachCount()
-            .entries
-            .maxByOrNull { it.value }?.key ?: ""
-            
-        _uiState.update { it.copy(topGenre = topGenre) }
+            .groupingBy { it }.eachCount()
+            .entries.maxByOrNull { it.value }?.key ?: ""
+
+        _uiState.update { it.copy(topGenre = topGenre, ownImdbIds = ownImdbIds) }
 
         val following = userRepo.getFollowingList(userId)
         val followedIds = following.map { it.id }
 
-        // Fetch all data concurrently
-        // Initial limit is 25 per Trakt category so we get 50 total Trakt items + Friends items.
         val friendsDeferred = viewModelScope.async { userRepo.getWatchlistsByUserIds(followedIds) }
         val moviesDeferred = viewModelScope.async { traktRepo.getTrendingMovies(currentPage, 25) }
         val showsDeferred = viewModelScope.async { traktRepo.getTrendingShows(currentPage, 25) }
@@ -159,112 +169,94 @@ class DiscoverViewModel(
         currentFriendsWatchlists = friendsDeferred.await()
         currentTraktMovies.addAll(moviesDeferred.await())
         currentTraktShows.addAll(showsDeferred.await())
-        
+
         recalculateSuggestions()
     }
-    
+
     private suspend fun recalculateSuggestions() {
         val state = _uiState.value
         val ownImdbIds = state.ownImdbIds
         val topGenre = state.topGenre
 
-        val followingMap = userRepo.getFollowingList(userRepo.getLocalUserId() ?: "").associateBy({ it.id }, { it.username })
-        
-        // 1. Process Friends Items
+        val followingMap = userRepo.getFollowingList(userRepo.getLocalUserId() ?: "")
+            .associateBy({ it.id }, { it.username })
+
+        // ── Friends tab items ──────────────────────────────────────────────
         val friendsSuggestions = currentFriendsWatchlists
             .filter { it.imdb_id !in ownImdbIds && it.imdb_id.isNotBlank() }
             .groupBy { it.imdb_id }
             .map { entry -> entry.value.maxByOrNull { it.rating }!! }
             .sortedWith(
                 compareByDescending<PublicWatchlistItem> { topGenre.isNotEmpty() && it.genres.contains(topGenre, ignoreCase = true) }
-                .thenByDescending { it.rating }
-                .thenByDescending { it.date_added }
+                    .thenByDescending { it.rating }
+                    .thenByDescending { it.date_added }
             )
             .take(30)
             .map {
                 val friendName = followingMap[it.user_id] ?: "friend"
                 DiscoverItem(
-                    title = it.title,
-                    year = it.year,
-                    type = it.type,
-                    imdbId = it.imdb_id,
-                    posterUrl = it.poster_url,
-                    rating = it.rating,
-                    notes = "Recommended by $friendName",
-                    genres = it.genres
+                    title = it.title, year = it.year, type = it.type,
+                    imdbId = it.imdb_id, posterUrl = it.poster_url,
+                    rating = it.rating, notes = "by $friendName", genres = it.genres
                 )
             }
-            
         friendsSuggestions.forEach { if (it.posterUrl != null) posterCache[it.imdbId] = it.posterUrl }
 
-        // 2. Process Trakt Movies
+        // ── Global tab items (Trakt) ───────────────────────────────────────
         val traktMovies = currentTraktMovies
             .filter { it.ids.imdb != null && it.ids.imdb !in ownImdbIds }
-            .map { 
+            .map {
                 DiscoverItem(
-                    title = it.title,
-                    year = it.year ?: 0,
-                    type = "MOVIE",
-                    imdbId = it.ids.imdb!!,
-                    posterUrl = posterCache[it.ids.imdb],
-                    notes = "Trending Movie"
+                    title = it.title, year = it.year ?: 0, type = "MOVIE",
+                    imdbId = it.ids.imdb!!, posterUrl = posterCache[it.ids.imdb],
+                    notes = "Trending"
                 )
             }
-
-        // 3. Process Trakt Shows
         val traktShows = currentTraktShows
             .filter { it.ids.imdb != null && it.ids.imdb !in ownImdbIds }
-            .map { 
+            .map {
                 DiscoverItem(
-                    title = it.title,
-                    year = it.year ?: 0,
-                    type = "SERIES",
-                    imdbId = it.ids.imdb!!,
-                    posterUrl = posterCache[it.ids.imdb],
-                    notes = "Trending Series"
+                    title = it.title, year = it.year ?: 0, type = "SERIES",
+                    imdbId = it.ids.imdb!!, posterUrl = posterCache[it.ids.imdb],
+                    notes = "Trending"
                 )
             }
 
-        // 4. Mix them (Friends first, then alternate Movies/Shows)
-        val mixedList = mutableListOf<DiscoverItem>()
-        mixedList.addAll(friendsSuggestions)
-        
+        val globalMixed = mutableListOf<DiscoverItem>()
         val maxLen = maxOf(traktMovies.size, traktShows.size)
         for (i in 0 until maxLen) {
-            if (i < traktShows.size) mixedList.add(traktShows[i])
-            if (i < traktMovies.size) mixedList.add(traktMovies[i])
+            if (i < traktShows.size) globalMixed.add(traktShows[i])
+            if (i < traktMovies.size) globalMixed.add(traktMovies[i])
+        }
+        val globalFinal = globalMixed.distinctBy { it.imdbId }
+
+        // Fetch missing posters from Supabase cache
+        val allItems = (friendsSuggestions + globalFinal)
+        val missingIds = allItems.filter { it.posterUrl == null }.map { it.imdbId }
+        if (missingIds.isNotEmpty()) {
+            val cachedMap = cacheRepo.getCachedItems(missingIds)
+            cachedMap.forEach { (imdb, item) -> if (item.posterUrl != null) posterCache[imdb] = item.posterUrl }
         }
 
-        // Remove duplicates just in case
-        val finalSuggestions = mixedList.distinctBy { it.imdbId }
-        
-        // 5. Check global Supabase cache for missing posters before updating UI
-        val missingImdbIds = finalSuggestions.filter { it.posterUrl == null }.map { it.imdbId }
-        if (missingImdbIds.isNotEmpty()) {
-            val cachedMap = cacheRepo.getCachedItems(missingImdbIds)
-            cachedMap.forEach { (imdb, item) ->
-                if (item.posterUrl != null) posterCache[imdb] = item.posterUrl
-            }
+        fun applyPosters(list: List<DiscoverItem>) = list.map {
+            if (it.posterUrl == null && posterCache[it.imdbId] != null) it.copy(posterUrl = posterCache[it.imdbId]) else it
         }
-        
-        val suggestionsWithCachedPosters = finalSuggestions.map { 
-            if (it.posterUrl == null && posterCache[it.imdbId] != null) {
-                it.copy(posterUrl = posterCache[it.imdbId])
-            } else {
-                it
-            }
-        }
+
+        val friendsFinal = applyPosters(friendsSuggestions)
+        val globalWithPosters = applyPosters(globalFinal)
 
         _uiState.update {
             it.copy(
-                suggestions = suggestionsWithCachedPosters,
+                friendsItems = friendsFinal,
+                globalItems = globalWithPosters,
                 isLoading = false,
-                isEmpty = suggestionsWithCachedPosters.isEmpty()
+                isFriendsEmpty = friendsFinal.isEmpty(),
+                isGlobalEmpty = globalWithPosters.isEmpty()
             )
         }
 
-        // 6. Lazy load remaining missing posters from OMDB and save to Supabase Cache
-        val missingFromOmdb = suggestionsWithCachedPosters.filter { it.posterUrl == null }.take(15)
+        // Lazy-load missing posters from OMDB
+        val missingFromOmdb = globalWithPosters.filter { it.posterUrl == null }.take(15)
         if (missingFromOmdb.isNotEmpty()) {
             viewModelScope.launch {
                 missingFromOmdb.forEach { item ->
@@ -273,32 +265,30 @@ class DiscoverViewModel(
                         val poster = detail.poster?.takeIf { it != "N/A" }
                         if (poster != null) {
                             posterCache[item.imdbId] = poster
-                            
-                            val fullItem = item.copy(
-                                posterUrl = poster,
-                                genres = detail.genre ?: "",
-                                rating = detail.imdbRating?.toFloatOrNull() ?: 0f
-                            )
-                            
-                            // Save to global cache so others don't have to query OMDB
+                            // Rating out of 5 (IMDB is /10)
+                            val rawRating = detail.imdbRating?.toFloatOrNull() ?: 0f
+                            val ratingOutOf5 = if (rawRating > 0) (rawRating / 2f) else 0f
+                            val fullItem = item.copy(posterUrl = poster, genres = detail.genre ?: "", rating = ratingOutOf5)
                             cacheRepo.cacheItem(fullItem)
-                            
-                            // Trigger re-emit to update UI with fetched poster
-                            val updatedList = _uiState.value.suggestions.map { 
-                                if (it.imdbId == item.imdbId) fullItem else it
-                            }
-                            _uiState.update { it.copy(suggestions = updatedList) }
+                            val updated = _uiState.value.globalItems.map { if (it.imdbId == item.imdbId) fullItem else it }
+                            _uiState.update { it.copy(globalItems = updated) }
                         }
-                    } catch (e: Exception) {
-                        // Ignore
-                    }
+                    } catch (e: Exception) { /* ignore */ }
                 }
             }
         }
     }
 
+    // ── Dice roller ────────────────────────────────────────────────────────────
+
+    fun rollDice(tab: DiscoverTab): DiscoverItem? {
+        val list = if (tab == DiscoverTab.FRIENDS) _uiState.value.friendsItems
+                   else _uiState.value.globalItems
+        return list.filter { it.posterUrl != null }.randomOrNull() ?: list.randomOrNull()
+    }
+
     class Factory(
-        private val context: android.content.Context, 
+        private val context: android.content.Context,
         private val repository: WatchItemRepository,
         private val traktRepository: TraktRepository,
         private val omdbRepository: OmdbRepository
@@ -307,10 +297,8 @@ class DiscoverViewModel(
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             val appContainer = (context.applicationContext as com.kaze.WatchLaterApp).container
             return DiscoverViewModel(
-                repository,
-                UserRepository(context),
-                traktRepository,
-                omdbRepository,
+                repository, UserRepository(context),
+                traktRepository, omdbRepository,
                 appContainer.discoverCacheRepository
             ) as T
         }
@@ -321,11 +309,15 @@ data class DiscoverUiState(
     val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
     val isLoadingMore: Boolean = false,
-    val suggestions: List<DiscoverItem> = emptyList(),
-    val isEmpty: Boolean = false,
+    val activeTab: DiscoverTab = DiscoverTab.FRIENDS,
+    val friendsItems: List<DiscoverItem> = emptyList(),
+    val globalItems: List<DiscoverItem> = emptyList(),
+    val isFriendsEmpty: Boolean = false,
+    val isGlobalEmpty: Boolean = false,
     val isLoggedIn: Boolean = true,
     val ownImdbIds: Set<String> = emptySet(),
-    val topGenre: String = ""
+    val topGenre: String = "",
+    val isChatVisible: Boolean = false
 )
 
 // ── Screen ────────────────────────────────────────────────────────────────────
@@ -336,7 +328,8 @@ fun DiscoverScreen(
     repository: WatchItemRepository,
     traktRepository: TraktRepository,
     omdbRepository: OmdbRepository,
-    onItemClick: (DiscoverItem) -> Unit
+    onItemClick: (DiscoverItem) -> Unit,
+    onChatClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
@@ -345,22 +338,30 @@ fun DiscoverScreen(
     )
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    var showDiceResult by remember { mutableStateOf<DiscoverItem?>(null) }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
-                        Text(
-                            "Discover",
-                            color = TextPrimary,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 18.sp
-                        )
-                        Text(
-                            "Trending and from friends",
-                            color = TextTertiary,
-                            fontSize = 11.sp
-                        )
+                    Text("Discover", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                },
+                actions = {
+                    // Dice roller icon
+                    IconButton(onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        showDiceResult = viewModel.rollDice(uiState.activeTab)
+                    }) {
+                        Icon(Icons.Outlined.Casino, "Discover Dice", tint = TextSecondary)
+                    }
+                    // Secret Global Chat (only visible to eligible users)
+                    if (uiState.isChatVisible) {
+                        IconButton(onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            onChatClick()
+                        }) {
+                            Icon(Icons.Outlined.Forum, "Global Chat", tint = AccentBlue)
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Background)
@@ -368,59 +369,112 @@ fun DiscoverScreen(
         },
         containerColor = Background
     ) { padding ->
-        when {
-            uiState.isLoading -> WatchLaterLoader()
-            uiState.isEmpty -> EmptyState(
-                icon = if (uiState.isLoggedIn) Icons.Outlined.Explore else Icons.Default.Movie,
-                title = if (uiState.isLoggedIn) "Nothing to discover yet" else "Not signed in",
-                subtitle = if (uiState.isLoggedIn) "Check back later" else "Sign in to see\nwhat friends are watching",
-                modifier = Modifier.fillMaxSize().padding(padding)
+
+        // Dice result dialog
+        showDiceResult?.let { rolled ->
+            DiceResultDialog(
+                item = rolled,
+                onDismiss = { showDiceResult = null },
+                onAddToWatchlist = {
+                    onItemClick(rolled)
+                    showDiceResult = null
+                }
             )
-            else -> {
-                PullToRefreshBox(
-                    isRefreshing = uiState.isRefreshing,
-                    onRefresh = { viewModel.refresh() },
-                    modifier = Modifier.fillMaxSize().padding(padding)
-                ) {
-                    LazyVerticalStaggeredGrid(
-                        columns = StaggeredGridCells.Fixed(2),
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalItemSpacing = 8.dp,
-                        contentPadding = PaddingValues(top = 8.dp, bottom = 100.dp)
-                    ) {
-                        items(uiState.suggestions, key = { it.imdbId }) { item ->
-                            DiscoverCard(
-                                item = item,
-                                onClick = { 
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    onItemClick(item) 
-                                }
-                            )
-                        }
-                        
-                        item(span = StaggeredGridItemSpan.FullLine) {
-                            Box(
+        }
+
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+
+            // ── Tab selector ────────────────────────────────────────────────
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(SurfaceElevated),
+                horizontalArrangement = Arrangement.spacedBy(0.dp)
+            ) {
+                DiscoverTabButton(
+                    label = "Friends",
+                    selected = uiState.activeTab == DiscoverTab.FRIENDS,
+                    onClick = { viewModel.selectTab(DiscoverTab.FRIENDS) },
+                    modifier = Modifier.weight(1f)
+                )
+                DiscoverTabButton(
+                    label = "Global",
+                    selected = uiState.activeTab == DiscoverTab.GLOBAL,
+                    onClick = { viewModel.selectTab(DiscoverTab.GLOBAL) },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            when {
+                uiState.isLoading -> WatchLaterLoader()
+                !uiState.isLoggedIn -> EmptyState(
+                    icon = Icons.Default.Person,
+                    title = "Not signed in",
+                    subtitle = "Sign in to see what friends are watching",
+                    modifier = Modifier.fillMaxSize()
+                )
+                else -> {
+                    val activeItems = if (uiState.activeTab == DiscoverTab.FRIENDS)
+                        uiState.friendsItems else uiState.globalItems
+                    val isEmpty = if (uiState.activeTab == DiscoverTab.FRIENDS)
+                        uiState.isFriendsEmpty else uiState.isGlobalEmpty
+
+                    if (isEmpty && !uiState.isRefreshing) {
+                        val (icon, title, subtitle) = if (uiState.activeTab == DiscoverTab.FRIENDS)
+                            Triple(Icons.Outlined.Explore, "No friends suggestions yet", "Follow people to see their watchlists here")
+                        else
+                            Triple(Icons.Default.TrendingUp, "Nothing trending", "Check back later")
+                        EmptyState(
+                            icon = icon,
+                            title = title,
+                            subtitle = subtitle,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        PullToRefreshBox(
+                            isRefreshing = uiState.isRefreshing,
+                            onRefresh = { viewModel.refresh() },
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            LazyVerticalStaggeredGrid(
+                                columns = StaggeredGridCells.Fixed(2),
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 16.dp),
-                                contentAlignment = Alignment.Center
+                                    .fillMaxSize()
+                                    .padding(horizontal = 8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalItemSpacing = 8.dp,
+                                contentPadding = PaddingValues(top = 8.dp, bottom = 100.dp)
                             ) {
-                                Button(
-                                    onClick = { viewModel.loadMore() },
-                                    enabled = !uiState.isLoadingMore,
-                                    colors = ButtonDefaults.buttonColors(containerColor = AccentBlue)
-                                ) {
-                                    if (uiState.isLoadingMore) {
-                                        CircularProgressIndicator(
-                                            modifier = Modifier.size(20.dp),
-                                            color = Background,
-                                            strokeWidth = 2.dp
-                                        )
-                                    } else {
-                                        Text("Load More", color = Background, fontWeight = FontWeight.SemiBold)
+                                items(activeItems, key = { it.imdbId }) { item ->
+                                    DiscoverCard(
+                                        item = item,
+                                        onClick = {
+                                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                            onItemClick(item)
+                                        }
+                                    )
+                                }
+
+                                // Load more (only Global tab uses API)
+                                if (uiState.activeTab == DiscoverTab.GLOBAL) {
+                                    item(span = StaggeredGridItemSpan.FullLine) {
+                                        Box(
+                                            modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Button(
+                                                onClick = { viewModel.loadMoreGlobal() },
+                                                enabled = !uiState.isLoadingMore,
+                                                colors = ButtonDefaults.buttonColors(containerColor = AccentBlue)
+                                            ) {
+                                                if (uiState.isLoadingMore)
+                                                    CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Background, strokeWidth = 2.dp)
+                                                else
+                                                    Text("Load More", color = Background, fontWeight = FontWeight.SemiBold)
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -431,6 +485,81 @@ fun DiscoverScreen(
         }
     }
 }
+
+// ── Tab button ────────────────────────────────────────────────────────────────
+
+@Composable
+private fun DiscoverTabButton(label: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(if (selected) AccentBlue else SurfaceElevated)
+            .clickable(onClick = onClick)
+            .padding(vertical = 10.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            label,
+            color = if (selected) Background else TextSecondary,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+            fontSize = 14.sp
+        )
+    }
+}
+
+// ── Dice result dialog ────────────────────────────────────────────────────────
+
+@Composable
+private fun DiceResultDialog(
+    item: DiscoverItem,
+    onDismiss: () -> Unit,
+    onAddToWatchlist: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(20.dp))
+                .background(SurfaceContainer)
+                .padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text("🎲 Your Pick", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            if (!item.posterUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = item.posterUrl,
+                    contentDescription = item.title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(240.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                )
+            }
+            Text(item.title, color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp, textAlign = TextAlign.Center)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(item.type.lowercase().replaceFirstChar { it.uppercase() }, color = TextTertiary, fontSize = 12.sp)
+                if (item.year > 0) Text("· ${item.year}", color = TextTertiary, fontSize = 12.sp)
+                if (item.rating > 0f) Text("· ★ ${"%.1f".format(item.rating)}/5", color = TextTertiary, fontSize = 12.sp)
+            }
+            Spacer(Modifier.height(4.dp))
+            Button(
+                onClick = onAddToWatchlist,
+                modifier = Modifier.fillMaxWidth().height(48.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = AccentBlue),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("Add to Watchlist", fontWeight = FontWeight.SemiBold, color = Background)
+            }
+            TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
+                Text("Dismiss", color = TextSecondary)
+            }
+        }
+    }
+}
+
+// ── Discover Card ─────────────────────────────────────────────────────────────
 
 @Composable
 private fun DiscoverCard(item: DiscoverItem, onClick: () -> Unit) {
@@ -499,14 +628,16 @@ private fun DiscoverCard(item: DiscoverItem, onClick: () -> Unit) {
                         )
                         Spacer(Modifier.width(2.dp))
                         Text(
-                            text = String.format("%.1f", item.rating),
+                            text = "${"%.1f".format(item.rating)}/5",
                             fontSize = 10.sp,
                             color = TextTertiary
                         )
                     }
                 }
+                if (item.notes.isNotBlank()) {
+                    Text(item.notes, fontSize = 9.sp, color = TextTertiary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
             }
         }
     }
 }
-

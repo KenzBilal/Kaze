@@ -73,4 +73,20 @@ class TraktRepository {
             null
         }
     }
+
+    suspend fun getPeople(imdbId: String, isMovie: Boolean): List<TraktCastMember> {
+        if (imdbId.isBlank()) return emptyList()
+        return try {
+            val response = if (isMovie) {
+                api.getMoviePeople(imdbId = imdbId, clientId = clientId)
+            } else {
+                api.getShowPeople(imdbId = imdbId, clientId = clientId)
+            }
+            response.cast ?: emptyList()
+        } catch (e: CancellationException) { throw e
+        } catch (e: Exception) {
+            if (BuildConfig.DEBUG) Log.e("TraktRepo", "getPeople failed: ${e.message}")
+            emptyList()
+        }
+    }
 }

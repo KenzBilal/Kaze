@@ -579,4 +579,60 @@ class UserRepository(private val context: Context) {
             }
         }
     }
+
+    // ── Global Chat ──────────────────────────────────────────────────────────
+
+    suspend fun isInGlobalChat(userId: String): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val rows = SupabaseApi.client.from("global_chat_members")
+                .select { filter { eq("user_id", userId) } }
+                .decodeList<GlobalChatMember>()
+            rows.isNotEmpty()
+        } catch (_: Exception) { false }
+    }
+
+    suspend fun fetchChatMessages(): List<GlobalChatMessage> = withContext(Dispatchers.IO) {
+        try {
+            SupabaseApi.client.from("global_chat_messages")
+                .select()
+                .decodeList<GlobalChatMessage>()
+                .sortedBy { it.created_at }
+                .takeLast(80)
+        } catch (_: Exception) { emptyList() }
+    }
+
+    suspend fun sendChatMessage(userId: String, username: String, message: String): Boolean = withContext(Dispatchers.IO) {
+        try {
+            SupabaseApi.client.from("global_chat_messages").insert(
+                GlobalChatMessage(user_id = userId, username = username, message = message)
+            )
+            true
+        } catch (_: Exception) { false }
+    }
+
+    suspend fun inviteToGlobalChat(targetUserId: String): Boolean = withContext(Dispatchers.IO) {
+        try {
+            SupabaseApi.client.from("global_chat_members").upsert(
+                GlobalChatMember(user_id = targetUserId)
+            ) { onConflict = "user_id" }
+            true
+        } catch (_: Exception) { false }
+    }
 }
+
+// ── Global Chat Models ────────────────────────────────────────────────────────
+
+@Serializable
+data class GlobalChatMember(
+    val user_id: String
+)
+
+@Serializable
+data class GlobalChatMessage(
+    val id: String = java.util.UUID.randomUUID().toString(),
+    val user_id: String,
+    val username: String,
+    val message: String,
+    val created_at: Long = System.currentTimeMillis()
+)
+

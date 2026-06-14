@@ -28,6 +28,7 @@ fun WatchItemCard(
     item: WatchItem,
     onClick: () -> Unit,
     onToggleWatched: () -> Unit,
+    onToggleFavorite: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -135,6 +136,23 @@ fun WatchItemCard(
                     }
                     if (item.rating > 0f) {
                         StarRatingDisplay(rating = item.rating)
+                    }
+                }
+                }
+
+                // Heart favorite toggle if provided and item is watched
+                if (onToggleFavorite != null && item.isWatched) {
+                    IconButton(
+                        onClick = onToggleFavorite,
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (item.isFavorite) androidx.compose.material.icons.Icons.Filled.Favorite
+                                          else androidx.compose.material.icons.Icons.Outlined.FavoriteBorder,
+                            contentDescription = if (item.isFavorite) "Remove from favorites" else "Add to favorites",
+                            tint = if (item.isFavorite) androidx.compose.ui.graphics.Color.Red else TextDisabled,
+                            modifier = Modifier.size(22.dp)
+                        )
                     }
                 }
             }

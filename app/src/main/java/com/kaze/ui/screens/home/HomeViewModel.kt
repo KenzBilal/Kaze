@@ -163,6 +163,16 @@ class HomeViewModel(
         }
     }
 
+    fun toggleFavorite(item: WatchItem) {
+        viewModelScope.launch {
+            val updated = item.copy(isFavorite = !item.isFavorite, lastUpdated = System.currentTimeMillis())
+            repository.updateItem(updated)
+            userRepository.getLocalUserId()?.let { uid ->
+                userRepository.pushWatchItem(uid, updated)
+            }
+        }
+    }
+
     fun saveRating(item: WatchItem, rating: Float) {
         viewModelScope.launch {
             val updated = item.copy(rating = rating, lastUpdated = System.currentTimeMillis())

@@ -100,6 +100,26 @@ fun StatsScreen(viewModel: StatsViewModel) {
                     )
                 }
 
+                // ── Total Time Spent ───────────────────────────────────────
+                item {
+                    StatCard(
+                        label = "Total Watch Time",
+                        value = "${uiState.totalHours} hrs",
+                        accent = AccentPurple,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                // ── Top Genres ─────────────────────────────────────────────
+                if (uiState.topGenres.isNotEmpty()) {
+                    item {
+                        SectionHeader(title = "TOP GENRES", subtitle = "Based on watched items")
+                    }
+                    item {
+                        TopGenresCard(genres = uiState.topGenres)
+                    }
+                }
+
                 // ── Series In Progress ────────────────────────────────────
                 if (uiState.seriesInProgress.isNotEmpty()) {
                     item {
@@ -253,8 +273,59 @@ private fun RecentlyAddedRow(item: WatchItem) {
         Spacer(Modifier.width(12.dp))
         Text(
             text = dateStr,
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.labelSmall,
             color = TextTertiary
         )
+    }
+}
+
+@Composable
+private fun TopGenresCard(genres: Map<String, Int>) {
+    val totalTags = genres.values.sum().coerceAtLeast(1)
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = SurfaceContainer),
+        shape = RoundedCornerShape(14.dp)
+    ) {
+        Column(modifier = Modifier.padding(18.dp)) {
+            // "Pie chart" using horizontal segments
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(12.dp)
+                    .clip(RoundedCornerShape(6.dp))
+            ) {
+                val colors = listOf(AccentBlue, WatchedGreen, AccentPurple, MovieBadgeFg, SeriesBadgeFg)
+                genres.entries.forEachIndexed { index, entry ->
+                    val weight = entry.value.toFloat() / totalTags
+                    Box(
+                        modifier = Modifier
+                            .weight(weight.coerceAtLeast(0.01f))
+                            .fillMaxHeight()
+                            .background(colors[index % colors.size])
+                    )
+                }
+            }
+            Spacer(Modifier.height(16.dp))
+            
+            // Legend
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                val colors = listOf(AccentBlue, WatchedGreen, AccentPurple, MovieBadgeFg, SeriesBadgeFg)
+                genres.entries.forEachIndexed { index, entry ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(modifier = Modifier.size(8.dp).clip(androidx.compose.foundation.shape.CircleShape).background(colors[index % colors.size]))
+                            Spacer(Modifier.width(8.dp))
+                            Text(entry.key, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                        }
+                        Text("${entry.value} items", style = MaterialTheme.typography.labelSmall, color = TextTertiary)
+                    }
+                }
+            }
+        }
     }
 }

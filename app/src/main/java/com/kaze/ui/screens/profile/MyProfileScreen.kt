@@ -65,7 +65,14 @@ class MyProfileViewModel(
     private val _uiState = MutableStateFlow(MyProfileUiState())
     val uiState: StateFlow<MyProfileUiState> = _uiState.asStateFlow()
 
-    init { load() }
+    init {
+        viewModelScope.launch {
+            dao.getFavoriteItems().collect { favs ->
+                _uiState.update { it.copy(favoriteItems = favs) }
+            }
+        }
+        load() 
+    }
 
     fun refresh() {
         viewModelScope.launch {
@@ -89,29 +96,9 @@ class MyProfileViewModel(
             val followersCount = repository.getFollowersCount(userId)
             val followingCount = repository.getFollowingCount(userId)
 
-            // Auto-clear favs if the item was deleted from the list
-            val watchedTitles = allWatched.map { it.title }.toSet()
-            val safeFavMovie  = user?.fav_movie?.takeIf { it in watchedTitles } ?: ""
-            val safeFavSeries = user?.fav_series?.takeIf { it in watchedTitles } ?: ""
-
-            // If either fav is stale, clean up in Supabase silently
-            if (user != null) {
-                val needsClean = safeFavMovie != (user.fav_movie ?: "") ||
-                                 safeFavSeries != (user.fav_series ?: "")
-                if (needsClean) {
-                    repository.updateProfile(
-                        userId,
-                        safeFavMovie.ifBlank { null },
-                        safeFavSeries.ifBlank { null },
-                        user.fav_genre
-                    )
-                }
-            }
-
             _uiState.update {
                 it.copy(
-                    user = user?.copy(fav_movie = safeFavMovie.ifBlank { null },
-                                     fav_series = safeFavSeries.ifBlank { null }),
+                    user = user,
                     userId = userId,
                     watchedItems = allWatched,
                     followersCount = followersCount,
@@ -125,17 +112,9 @@ class MyProfileViewModel(
         val s = _uiState.value
         val uid = s.userId ?: return
         viewModelScope.launch {
-            repository.updateProfile(uid,
-                s.pendingFavMovie.ifBlank { null },
-                s.pendingFavSeries.ifBlank { null },
-                s.pendingFavGenre.ifBlank { null })
+            repository.updateProfile(uid, null, null, null)
             _uiState.update {
                 it.copy(
-                    user = it.user?.copy(
-                        fav_movie  = s.pendingFavMovie.ifBlank { null },
-                        fav_series = s.pendingFavSeries.ifBlank { null },
-                        fav_genre  = s.pendingFavGenre.ifBlank { null }
-                    ),
                     isEditing = false
                 )
             }
@@ -143,21 +122,10 @@ class MyProfileViewModel(
     }
 
     fun startEditing() {
-        val u = _uiState.value.user
-        _uiState.update {
-            it.copy(
-                isEditing = true,
-                pendingFavMovie  = u?.fav_movie  ?: "",
-                pendingFavSeries = u?.fav_series ?: "",
-                pendingFavGenre  = u?.fav_genre  ?: ""
-            )
-        }
+        _uiState.update { it.copy(isEditing = true) }
     }
 
     fun cancelEditing() = _uiState.update { it.copy(isEditing = false) }
-    fun setPendingFavMovie(v: String)  = _uiState.update { it.copy(pendingFavMovie = v) }
-    fun setPendingFavSeries(v: String) = _uiState.update { it.copy(pendingFavSeries = v) }
-    fun setPendingFavGenre(v: String)  = _uiState.update { it.copy(pendingFavGenre = v) }
 
     class Factory(private val context: android.content.Context) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
@@ -169,17 +137,15 @@ class MyProfileViewModel(
 }
 
 data class MyProfileUiState(
-    val isLoading: Boolean = true,
-    val userId: String? = null,
     val user: SupabaseUser? = null,
+    val userId: String? = null,
     val watchedItems: List<WatchItem> = emptyList(),
+    val favoriteItems: List<WatchItem> = emptyList(),
     val followersCount: Int = 0,
     val followingCount: Int = 0,
-    val isEditing: Boolean = false,
+    val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
-    val pendingFavMovie: String = "",
-    val pendingFavSeries: String = "",
-    val pendingFavGenre: String = ""
+    val isEditing: Boolean = false
 )
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -201,7 +167,7 @@ fun MyProfileScreen(onSettingsClick: () -> Unit = {}) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { /* Empty — profile is self-evident */ },
+                title = { },
                 navigationIcon = {
                     IconButton(onClick = onSettingsClick) {
                         Icon(
@@ -214,8 +180,7 @@ fun MyProfileScreen(onSettingsClick: () -> Unit = {}) {
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Background),
                 actions = {
-                    if (!uiState.isEditing && uiState.user != null) {
-                        // Share profile link
+                    if (uiState.user != null) {
                         IconButton(onClick = {
                             val username = uiState.user?.username ?: ""
                             val profileUrl = "$DEEP_LINK_BASE/$username"
@@ -230,10 +195,6 @@ fun MyProfileScreen(onSettingsClick: () -> Unit = {}) {
                         }) {
                             Icon(Icons.Filled.Share, "Share Profile", tint = TextSecondary)
                         }
-                        // Edit button
-                        IconButton(onClick = viewModel::startEditing) {
-                            Icon(Icons.Filled.Edit, "Edit Profile", tint = TextSecondary)
-                        }
                     }
                 }
             )
@@ -247,55 +208,52 @@ fun MyProfileScreen(onSettingsClick: () -> Unit = {}) {
             return@Scaffold
         }
 
-        val user = uiState.user ?: return@Scaffold
-
         PullToRefreshBox(
             isRefreshing = uiState.isRefreshing,
             onRefresh = { viewModel.refresh() },
             modifier = Modifier.fillMaxSize().padding(padding)
         ) {
-            LazyColumn(
+            LazyVerticalStaggeredGrid(
+                columns = StaggeredGridCells.Fixed(2),
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 100.dp)
+                contentPadding = PaddingValues(16.dp),
+                verticalItemSpacing = 16.dp,
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-            // ── Hero Header ───────────────────────────────────────────────────
-            item {
-                ProfileHeroSection(user = user, uiState = uiState)
-            }
-
-            // ── Stats Bar ─────────────────────────────────────────────────────
-            item {
-                StatsBar(uiState = uiState)
-            }
-
-            // ── Divider ───────────────────────────────────────────────────────
-            item {
-                HorizontalDivider(
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
-                    color = SurfaceHighlight
-                )
-            }
-
-            // ── Edit or View mode ─────────────────────────────────────────────
-            if (uiState.isEditing) {
-                item {
-                    Spacer(Modifier.height(16.dp))
-                    EditFavSection(
-                        uiState = uiState,
-                        watchedItems = uiState.watchedItems,
-                        onFavMovieChange  = viewModel::setPendingFavMovie,
-                        onFavSeriesChange = viewModel::setPendingFavSeries,
-                        onFavGenreChange  = viewModel::setPendingFavGenre,
-                        onSave   = viewModel::saveProfile,
-                        onCancel = viewModel::cancelEditing
-                    )
+                val user = uiState.user
+                if (user != null) {
+                    item(span = StaggeredGridItemSpan.FullLine) {
+                        ProfileHeroSection(user = user, uiState = uiState)
+                    }
+                    item(span = StaggeredGridItemSpan.FullLine) {
+                        StatsBar(uiState = uiState)
+                    }
+                    item(span = StaggeredGridItemSpan.FullLine) {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(vertical = 4.dp),
+                            color = SurfaceHighlight
+                        )
+                    }
+                    item(span = StaggeredGridItemSpan.FullLine) {
+                        SectionLabel("FAVORITES")
+                        Spacer(Modifier.height(12.dp))
+                    }
+                    if (uiState.favoriteItems.isEmpty()) {
+                        item(span = StaggeredGridItemSpan.FullLine) {
+                            Text(
+                                text = "No favorites yet. Mark watched items with the heart icon to see them here.",
+                                color = TextTertiary,
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.padding(vertical = 20.dp),
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    } else {
+                        items(uiState.favoriteItems, key = { it.id }) { item ->
+                            FavoriteCard(item = item, onClick = {})
+                        }
+                    }
                 }
-            } else {
-                item {
-                    Spacer(Modifier.height(16.dp))
-                    FavouritesSection(user = user)
-                }
-            }
             }
         }
     }
@@ -306,13 +264,9 @@ fun MyProfileScreen(onSettingsClick: () -> Unit = {}) {
 @Composable
 private fun ProfileHeroSection(user: SupabaseUser, uiState: MyProfileUiState) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp)
-            .padding(top = 24.dp, bottom = 16.dp),
+        modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Large avatar with subtle ring
         Box(contentAlignment = Alignment.Center) {
             Box(
                 modifier = Modifier
@@ -322,9 +276,7 @@ private fun ProfileHeroSection(user: SupabaseUser, uiState: MyProfileUiState) {
             )
             UserAvatar(username = user.username, size = 88.dp, fontSize = 34.sp)
         }
-
         Spacer(Modifier.height(14.dp))
-
         Text(
             user.username,
             fontSize = 22.sp,
@@ -332,10 +284,7 @@ private fun ProfileHeroSection(user: SupabaseUser, uiState: MyProfileUiState) {
             color = TextPrimary,
             letterSpacing = (-0.5).sp
         )
-
         Spacer(Modifier.height(4.dp))
-
-        // Watched count label
         val movieCount  = uiState.watchedItems.count { it.type == MediaType.MOVIE }
         val seriesCount = uiState.watchedItems.count { it.type == MediaType.SERIES }
         Text(
@@ -353,7 +302,6 @@ private fun StatsBar(uiState: MyProfileUiState) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
             .clip(RoundedCornerShape(12.dp))
             .background(SurfaceElevated)
             .padding(vertical = 16.dp),
@@ -386,20 +334,64 @@ private fun StatDivider() {
     )
 }
 
-// ── Favourites Display ────────────────────────────────────────────────────────
-
 @Composable
-private fun FavouritesSection(user: SupabaseUser) {
+private fun FavoriteCard(item: WatchItem, onClick: () -> Unit) {
     Column(
-        modifier = Modifier.padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(SurfaceElevated)
+            .clickable(onClick = onClick)
     ) {
-        SectionLabel("FAVOURITES")
-        Spacer(Modifier.height(2.dp))
-
-        FavCard(label = "Movie",  value = user.fav_movie)
-        FavCard(label = "Series", value = user.fav_series)
-        FavCard(label = "Genre",  value = user.fav_genre)
+        Box {
+            if (item.posterUrl != null) {
+                AsyncImage(
+                    model = item.posterUrl,
+                    contentDescription = item.title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(2f / 3f)
+                        .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(2f / 3f)
+                        .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
+                        .background(SurfaceHighlight),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = if (item.type.name == "SERIES") Icons.Filled.Tv else Icons.Filled.Movie,
+                        contentDescription = null,
+                        tint = TextTertiary,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .padding(8.dp)
+                    .align(Alignment.TopEnd)
+                    .clip(CircleShape)
+                    .background(Background.copy(alpha = 0.7f))
+                    .padding(6.dp)
+            ) {
+                Icon(Icons.Filled.Favorite, null, tint = Color.Red, modifier = Modifier.size(16.dp))
+            }
+        }
+        Column(modifier = Modifier.padding(10.dp)) {
+            Text(
+                item.title,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = TextPrimary,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
     }
 }
 
@@ -413,328 +405,4 @@ private fun SectionLabel(text: String) {
         fontWeight = FontWeight.SemiBold,
         modifier = Modifier.padding(horizontal = 4.dp)
     )
-}
-
-@Composable
-private fun FavCard(label: String, value: String?) {
-    val hasValue = !value.isNullOrBlank()
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
-            .background(SurfaceElevated)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            label,
-            color = TextTertiary,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.width(56.dp)
-        )
-        Box(
-            modifier = Modifier
-                .width(1.dp)
-                .height(14.dp)
-                .background(SurfaceHighlight)
-        )
-        Spacer(Modifier.width(14.dp))
-        Text(
-            value?.takeIf { it.isNotBlank() } ?: "—",
-            color = if (hasValue) TextPrimary else TextTertiary,
-            fontSize = 14.sp,
-            fontWeight = if (hasValue) FontWeight.SemiBold else FontWeight.Normal
-        )
-    }
-}
-
-// ── Edit Favourites ───────────────────────────────────────────────────────────
-
-@Composable
-private fun EditFavSection(
-    uiState: MyProfileUiState,
-    watchedItems: List<WatchItem>,
-    onFavMovieChange: (String) -> Unit,
-    onFavSeriesChange: (String) -> Unit,
-    onFavGenreChange: (String) -> Unit,
-    onSave: () -> Unit,
-    onCancel: () -> Unit
-) {
-    val watchedMovies  = watchedItems.filter { it.type == MediaType.MOVIE }
-    val watchedSeries  = watchedItems.filter { it.type == MediaType.SERIES }
-
-    var showMoviePicker  by remember { mutableStateOf(false) }
-    var showSeriesPicker by remember { mutableStateOf(false) }
-
-    if (showMoviePicker) {
-        WatchItemPickerSheet(
-            title   = "Select Favourite Movie",
-            items   = watchedMovies,
-            onSelect = { onFavMovieChange(it); showMoviePicker = false },
-            onDismiss = { showMoviePicker = false }
-        )
-    }
-    if (showSeriesPicker) {
-        WatchItemPickerSheet(
-            title   = "Select Favourite Series",
-            items   = watchedSeries,
-            onSelect = { onFavSeriesChange(it); showSeriesPicker = false },
-            onDismiss = { showSeriesPicker = false }
-        )
-    }
-
-    Column(
-        modifier = Modifier.padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        SectionLabel("EDIT FAVOURITES")
-        Spacer(Modifier.height(2.dp))
-
-        SheetLauncherRow(
-            label    = "Movie",
-            selected = uiState.pendingFavMovie,
-            onClick  = { showMoviePicker = true }
-        )
-        SheetLauncherRow(
-            label    = "Series",
-            selected = uiState.pendingFavSeries,
-            onClick  = { showSeriesPicker = true }
-        )
-        GenrePickerRow(
-            selected = uiState.pendingFavGenre,
-            onSelect = onFavGenreChange
-        )
-
-        Spacer(Modifier.height(4.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            OutlinedButton(
-                onClick = onCancel,
-                modifier = Modifier.weight(1f).height(48.dp),
-                shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = TextSecondary)
-            ) { Text("Cancel", fontWeight = FontWeight.Medium) }
-
-            Button(
-                onClick = onSave,
-                modifier = Modifier.weight(1f).height(48.dp),
-                shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = TextPrimary,
-                    contentColor = Background
-                ),
-                elevation = ButtonDefaults.buttonElevation(0.dp)
-            ) { Text("Save", fontWeight = FontWeight.Bold) }
-        }
-        Spacer(Modifier.height(8.dp))
-    }
-}
-
-@Composable
-private fun SheetLauncherRow(label: String, selected: String, onClick: () -> Unit) {
-    val hasValue = selected.isNotBlank()
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
-            .background(SurfaceElevated)
-            .clickable { onClick() }
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            label,
-            color = TextTertiary,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.width(56.dp)
-        )
-        Box(Modifier.width(1.dp).height(14.dp).background(SurfaceHighlight))
-        Spacer(Modifier.width(14.dp))
-        Text(
-            if (hasValue) selected else "Tap to select…",
-            color = if (hasValue) TextPrimary else TextTertiary,
-            fontSize = 14.sp,
-            fontWeight = if (hasValue) FontWeight.SemiBold else FontWeight.Normal,
-            modifier = Modifier.weight(1f)
-        )
-        Text("›", color = TextTertiary, fontSize = 18.sp)
-    }
-}
-
-@Composable
-private fun GenrePickerRow(selected: String, onSelect: (String) -> Unit) {
-    var expanded by remember { mutableStateOf(false) }
-    val hasValue = selected.isNotBlank()
-
-    Box {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(10.dp))
-                .background(SurfaceElevated)
-                .clickable { expanded = true }
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                "Genre",
-                color = TextTertiary,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.width(56.dp)
-            )
-            Box(Modifier.width(1.dp).height(14.dp).background(SurfaceHighlight))
-            Spacer(Modifier.width(14.dp))
-            Text(
-                if (hasValue) selected else "Tap to select…",
-                color = if (hasValue) TextPrimary else TextTertiary,
-                fontSize = 14.sp,
-                fontWeight = if (hasValue) FontWeight.SemiBold else FontWeight.Normal,
-                modifier = Modifier.weight(1f)
-            )
-            Text("›", color = TextTertiary, fontSize = 18.sp)
-        }
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier.background(SurfaceContainer)
-        ) {
-            GENRES.forEach { genre ->
-                DropdownMenuItem(
-                    text = { Text(genre, color = TextPrimary, fontSize = 14.sp) },
-                    onClick = { onSelect(genre); expanded = false }
-                )
-            }
-        }
-    }
-}
-
-// ── Pinterest Picker Sheet ────────────────────────────────────────────────────
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun WatchItemPickerSheet(
-    title: String,
-    items: List<WatchItem>,
-    onSelect: (String) -> Unit,
-    onDismiss: () -> Unit
-) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        containerColor = SurfaceContainer,
-        dragHandle = {
-            Box(
-                modifier = Modifier
-                    .padding(top = 12.dp, bottom = 8.dp)
-                    .width(36.dp)
-                    .height(4.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(SurfaceHighlight)
-            )
-        }
-    ) {
-        Column(Modifier.fillMaxSize()) {
-            Text(
-                title,
-                color = TextPrimary,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-            )
-            HorizontalDivider(color = SurfaceHighlight)
-            Spacer(Modifier.height(8.dp))
-
-            if (items.isEmpty()) {
-                Box(
-                    Modifier.fillMaxSize().padding(40.dp),
-                    Alignment.Center
-                ) {
-                    Text(
-                        "Nothing watched yet",
-                        color = TextTertiary,
-                        textAlign = TextAlign.Center
-                    )
-                }
-            } else {
-                LazyVerticalStaggeredGrid(
-                    columns = StaggeredGridCells.Fixed(2),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalItemSpacing = 8.dp,
-                    contentPadding = PaddingValues(bottom = 24.dp)
-                ) {
-                    items(items) { item ->
-                        PinterestPickerCard(item = item, onClick = { onSelect(item.title) })
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun PinterestPickerCard(item: WatchItem, onClick: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
-            .background(SurfaceElevated)
-            .clickable(onClick = onClick)
-    ) {
-        if (!item.posterUrl.isNullOrBlank()) {
-            AsyncImage(
-                model = item.posterUrl,
-                contentDescription = item.title,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(2f / 3f)
-                    .clip(RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp))
-            )
-        } else {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(110.dp)
-                    .clip(RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp))
-                    .background(SurfaceHighlight),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = if (item.type == MediaType.SERIES) Icons.Filled.Tv else Icons.Filled.Movie,
-                    contentDescription = null,
-                    tint = TextTertiary,
-                    modifier = Modifier.size(28.dp)
-                )
-            }
-        }
-        Column(Modifier.padding(horizontal = 9.dp, vertical = 8.dp)) {
-            Text(
-                item.title,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = TextPrimary,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                "${item.year}",
-                fontSize = 11.sp,
-                color = TextTertiary,
-                modifier = Modifier.padding(top = 2.dp)
-            )
-            if (item.rating > 0f) {
-                Text("★ ${item.rating}", fontSize = 11.sp, color = TextSecondary)
-            }
-        }
-    }
 }

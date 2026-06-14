@@ -24,6 +24,11 @@ data class DetailUiState(
     val isSaving: Boolean = false,
     val showDeleteDialog: Boolean = false,
     val notes: String = "",
+    val omdbRating: Float = 0f,
+    val director: String = "",
+    val cast: List<CastUiItem> = emptyList(),
+    val showCast: Boolean = false,
+    val isLoadingCast: Boolean = false,
     // Series
     val totalSeasons: Int = 0,
     val selectedSeason: Int = 0,          // 0 = none selected
@@ -47,6 +52,12 @@ data class DetailUiState(
     val showRatingPrompt: Boolean = false,
     val isPreview: Boolean = false,
     val trailerChecked: Boolean = false    // true once fetch completed (success or fail)
+)
+
+data class CastUiItem(
+    val actorName: String,
+    val characterName: String,
+    val imageUrl: String?
 )
 
 class DetailViewModel(
@@ -162,28 +173,74 @@ class DetailViewModel(
                 url ?: ""
             } else item.trailerUrl
 
-            // Fetch plot (movie = full, series = short summary)
+            // Fetch plot, IMDB rating and director
+            var fetchedOmdbRating = 0f
+            var fetchedDirector = ""
+            
             val plot = if (item.plot.isBlank()) {
                 val fetched = if (item.type == MediaType.MOVIE) {
-                    omdbRepository.fetchMoviePlot(item.imdbId)
+                    val detail = omdbRepository.fetchDetail(item.imdbId, plotLength = "full")
+                    fetchedOmdbRating = detail.imdbRating
+                    fetchedDirector = detail.director
+                    detail.plot
                 } else {
-                    omdbRepository.fetchDetail(item.imdbId, plotLength = "full").plot
+                    val detail = omdbRepository.fetchDetail(item.imdbId, plotLength = "full")
+                    fetchedOmdbRating = detail.imdbRating
+                    fetchedDirector = detail.director
+                    detail.plot
                 }
                 if (fetched.isNotBlank() && !_uiState.value.isPreview && itemId != -1L) {
                     val current = _uiState.value.item ?: item
                     repository.updateItem(current.copy(plot = fetched, trailerUrl = trailerUrl))
                 }
                 fetched
-            } else item.plot
+            } else {
+                // If plot is already fetched, we still might need the rating/director for display
+                val detail = omdbRepository.fetchDetail(item.imdbId, plotLength = "short")
+                fetchedOmdbRating = detail.imdbRating
+                fetchedDirector = detail.director
+                item.plot
+            }
 
             _uiState.update { state ->
                 state.copy(
                     trailerUrl       = trailerUrl,
                     isLoadingTrailer = false,
                     trailerChecked   = true,
+                    omdbRating       = fetchedOmdbRating,
+                    director         = fetchedDirector,
                     item = state.item?.copy(plot = plot, trailerUrl = trailerUrl)
                 )
             }
+        }
+    }
+
+    fun loadCast() {
+        val item = _uiState.value.item ?: return
+        if (item.imdbId.isBlank() || _uiState.value.cast.isNotEmpty()) {
+            _uiState.update { it.copy(showCast = true) }
+            return
+        }
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingCast = true, showCast = true) }
+            val traktCast = traktRepository.getPeople(
+                imdbId = item.imdbId,
+                isMovie = item.type == MediaType.MOVIE
+            )
+            val uiCast = traktCast.mapNotNull { member ->
+                val personName = member.person?.name ?: return@mapNotNull null
+                val charName = member.characters?.firstOrNull() ?: ""
+                var headshot = member.person.images?.headshot?.firstOrNull()
+                if (headshot != null && headshot.startsWith("media.trakt.tv")) {
+                    headshot = "https://$headshot"
+                }
+                CastUiItem(
+                    actorName = personName,
+                    characterName = charName,
+                    imageUrl = headshot
+                )
+            }.take(15) // Limit to 15 to avoid massive UI lists
+            _uiState.update { it.copy(cast = uiCast, isLoadingCast = false) }
         }
     }
 
@@ -301,6 +358,29 @@ class DetailViewModel(
 
     fun showMarkAllSeriesDialog()    { _uiState.update { it.copy(showMarkAllSeriesDialog = true) } }
     fun dismissMarkAllSeriesDialog() { _uiState.update { it.copy(showMarkAllSeriesDialog = false) } }
+
+    /** Mark all episodes BEFORE (and excluding) the given episode as watched.
+     *  Includes all previous seasons fully. */
+    fun markAllPreviousWatched(targetSeason: Int, targetEpisodeNumber: Int) {
+        val item  = _uiState.value.item ?: return
+        val total = _uiState.value.totalSeasons
+        viewModelScope.launch {
+            // Mark all prior seasons fully
+            for (s in 1 until targetSeason) {
+                seriesRepository.markSeasonWatched(item.id, item.imdbId, s)
+            }
+            // Mark episodes in the current season BEFORE the target episode
+            val eps = seriesRepository.getSeasonEpisodes(item.imdbId, targetSeason, item.id)
+            eps.filter { it.episodeNumber < targetEpisodeNumber && !it.isWatched }.forEach { ep ->
+                seriesRepository.setEpisodeWatched(item.id, targetSeason, ep.episodeNumber, true)
+            }
+            // Reload current season in UI
+            loadSeasonEpisodes(item, _uiState.value.selectedSeason)
+            autoAdvancePosition(item)
+            _uiState.update { it.copy(toastMessage = "All previous episodes marked watched ✓") }
+        }
+    }
+
 
     fun markAllSeriesWatched() {
         val item  = _uiState.value.item ?: return
