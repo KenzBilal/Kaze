@@ -4,14 +4,6 @@
         "source": "/home/kenz/.gradle/daemon/8.9/com.kaze.app-main-79:/mipmap-mdpi/ic_launcher_foreground.png"
     },
     {
-        "merged": "com.kaze.app-debug-77:/mipmap-xxxhdpi_ic_launcher.png.flat",
-        "source": "com.kaze.app-main-79:/mipmap-xxxhdpi/ic_launcher.png"
-    },
-    {
-        "merged": "com.kaze.app-debug-77:/mipmap-xxhdpi_ic_launcher_round.png.flat",
-        "source": "com.kaze.app-main-79:/mipmap-xxhdpi/ic_launcher_round.png"
-    },
-    {
         "merged": "/home/kenz/.gradle/daemon/8.9/com.kaze.app-debug-77:/mipmap-xxhdpi_ic_launcher_foreground.png.flat",
         "source": "/home/kenz/.gradle/daemon/8.9/com.kaze.app-main-79:/mipmap-xxhdpi/ic_launcher_foreground.png"
     },
@@ -28,12 +20,16 @@
         "source": "/home/kenz/.gradle/daemon/8.9/com.kaze.app-main-79:/mipmap-hdpi/ic_launcher_foreground.png"
     },
     {
-        "merged": "/home/kenz/.gradle/daemon/8.9/com.kaze.app-debug-77:/mipmap-xxxhdpi_ic_launcher.png.flat",
-        "source": "/home/kenz/.gradle/daemon/8.9/com.kaze.app-main-79:/mipmap-xxxhdpi/ic_launcher.png"
+        "merged": "com.kaze.app-debug-77:/mipmap-hdpi_ic_launcher.webp.flat",
+        "source": "com.kaze.app-main-79:/mipmap-hdpi/ic_launcher.webp"
     },
     {
-        "merged": "com.kaze.app-debug-77:/mipmap-xhdpi_ic_launcher_round.png.flat",
-        "source": "com.kaze.app-main-79:/mipmap-xhdpi/ic_launcher_round.png"
+        "merged": "com.kaze.app-debug-77:/mipmap-mdpi_ic_launcher.webp.flat",
+        "source": "com.kaze.app-main-79:/mipmap-mdpi/ic_launcher.webp"
+    },
+    {
+        "merged": "/home/kenz/.gradle/daemon/8.9/com.kaze.app-debug-77:/mipmap-xxxhdpi_ic_launcher.png.flat",
+        "source": "/home/kenz/.gradle/daemon/8.9/com.kaze.app-main-79:/mipmap-xxxhdpi/ic_launcher.png"
     },
     {
         "merged": "/home/kenz/.gradle/daemon/8.9/com.kaze.app-debug-77:/mipmap-hdpi_ic_launcher.png.flat",
@@ -44,20 +40,16 @@
         "source": "/home/kenz/.gradle/daemon/8.9/com.kaze.app-main-79:/mipmap-mdpi/ic_launcher_round.png"
     },
     {
-        "merged": "com.kaze.app-debug-77:/mipmap-mdpi_ic_launcher_round.png.flat",
-        "source": "com.kaze.app-main-79:/mipmap-mdpi/ic_launcher_round.png"
-    },
-    {
-        "merged": "com.kaze.app-debug-77:/mipmap-xhdpi_ic_launcher.png.flat",
-        "source": "com.kaze.app-main-79:/mipmap-xhdpi/ic_launcher.png"
-    },
-    {
         "merged": "/home/kenz/.gradle/daemon/8.9/com.kaze.app-debug-77:/mipmap-xxhdpi_ic_launcher_round.png.flat",
         "source": "/home/kenz/.gradle/daemon/8.9/com.kaze.app-main-79:/mipmap-xxhdpi/ic_launcher_round.png"
     },
     {
-        "merged": "com.kaze.app-debug-77:/mipmap-mdpi_ic_launcher.png.flat",
-        "source": "com.kaze.app-main-79:/mipmap-mdpi/ic_launcher.png"
+        "merged": "com.kaze.app-debug-77:/mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "com.kaze.app-main-79:/mipmap-anydpi-v26/ic_launcher.xml"
+    },
+    {
+        "merged": "com.kaze.app-debug-77:/mipmap-xhdpi_ic_launcher.webp.flat",
+        "source": "com.kaze.app-main-79:/mipmap-xhdpi/ic_launcher.webp"
     },
     {
         "merged": "/home/kenz/.gradle/daemon/8.9/com.kaze.app-debug-77:/mipmap-xxxhdpi_ic_launcher_round.png.flat",
@@ -76,28 +68,52 @@
         "source": "/home/kenz/.gradle/daemon/8.9/com.kaze.app-main-79:/drawable/ic_launcher_foreground.xml"
     },
     {
-        "merged": "com.kaze.app-debug-77:/mipmap-xxhdpi_ic_launcher.png.flat",
-        "source": "com.kaze.app-main-79:/mipmap-xxhdpi/ic_launcher.png"
+        "merged": "com.kaze.app-debug-77:/mipmap-xxxhdpi_ic_launcher.webp.flat",
+        "source": "com.kaze.app-main-79:/mipmap-xxxhdpi/ic_launcher.webp"
     },
     {
-        "merged": "com.kaze.app-debug-77:/mipmap-anydpi-v26_ic_launcher.png.flat",
-        "source": "com.kaze.app-main-79:/mipmap-anydpi-v26/ic_launcher.png"
+        "merged": "/home/kenz/.gradle/daemon/8.9/com.kaze.app-debug-77:/mipmap-anydpi-v26_ic_launcher_round.png.flat",
+        "source": "/home/kenz/.gradle/daemon/8.9/com.kaze.app-main-79:/mipmap-anydpi-v26/ic_launcher_round.png"
+    },
+    {
+        "merged": "com.kaze.app-debug-77:/drawable_ic_launcher_foreground.png.flat",
+        "source": "com.kaze.app-main-79:/drawable/ic_launcher_foreground.png"
+    },
+    {
+        "merged": "com.kaze.app-debug-77:/mipmap-hdpi_ic_launcher_round.webp.flat",
+        "source": "com.kaze.app-main-79:/mipmap-hdpi/ic_launcher_round.webp"
     },
     {
         "merged": "/home/kenz/.gradle/daemon/8.9/com.kaze.app-debug-77:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
         "source": "/home/kenz/.gradle/daemon/8.9/com.kaze.app-main-79:/mipmap-anydpi-v26/ic_launcher_round.xml"
     },
     {
+        "merged": "com.kaze.app-debug-77:/drawable_ic_splash_logo.webp.flat",
+        "source": "com.kaze.app-main-79:/drawable/ic_splash_logo.webp"
+    },
+    {
         "merged": "/home/kenz/.gradle/daemon/8.9/com.kaze.app-debug-77:/mipmap-mdpi_ic_launcher.png.flat",
         "source": "/home/kenz/.gradle/daemon/8.9/com.kaze.app-main-79:/mipmap-mdpi/ic_launcher.png"
     },
     {
-        "merged": "com.kaze.app-debug-77:/mipmap-hdpi_ic_launcher_round.png.flat",
-        "source": "com.kaze.app-main-79:/mipmap-hdpi/ic_launcher_round.png"
+        "merged": "com.kaze.app-debug-77:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
+        "source": "com.kaze.app-main-79:/mipmap-anydpi-v26/ic_launcher_round.xml"
+    },
+    {
+        "merged": "com.kaze.app-debug-77:/mipmap-xxxhdpi_ic_launcher_round.webp.flat",
+        "source": "com.kaze.app-main-79:/mipmap-xxxhdpi/ic_launcher_round.webp"
+    },
+    {
+        "merged": "com.kaze.app-debug-77:/mipmap-xxhdpi_ic_launcher_round.webp.flat",
+        "source": "com.kaze.app-main-79:/mipmap-xxhdpi/ic_launcher_round.webp"
     },
     {
         "merged": "/home/kenz/.gradle/daemon/8.9/com.kaze.app-debug-77:/mipmap-xhdpi_ic_launcher_round.png.flat",
         "source": "/home/kenz/.gradle/daemon/8.9/com.kaze.app-main-79:/mipmap-xhdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "/home/kenz/.gradle/daemon/8.9/com.kaze.app-debug-77:/mipmap-anydpi-v26_ic_launcher.png.flat",
+        "source": "/home/kenz/.gradle/daemon/8.9/com.kaze.app-main-79:/mipmap-anydpi-v26/ic_launcher.png"
     },
     {
         "merged": "/home/kenz/.gradle/daemon/8.9/com.kaze.app-debug-77:/mipmap-anydpi-v26_ic_launcher.xml.flat",
@@ -108,8 +124,8 @@
         "source": "/home/kenz/.gradle/daemon/8.9/com.kaze.app-main-79:/mipmap-xxxhdpi/ic_launcher_foreground.png"
     },
     {
-        "merged": "com.kaze.app-debug-77:/mipmap-xxxhdpi_ic_launcher_round.png.flat",
-        "source": "com.kaze.app-main-79:/mipmap-xxxhdpi/ic_launcher_round.png"
+        "merged": "com.kaze.app-debug-77:/mipmap-xxhdpi_ic_launcher.webp.flat",
+        "source": "com.kaze.app-main-79:/mipmap-xxhdpi/ic_launcher.webp"
     },
     {
         "merged": "/home/kenz/.gradle/daemon/8.9/com.kaze.app-debug-77:/mipmap-xxhdpi_ic_launcher.png.flat",
@@ -120,11 +136,11 @@
         "source": "/home/kenz/.gradle/daemon/8.9/com.kaze.app-main-79:/drawable/ic_splash_logo.xml"
     },
     {
-        "merged": "com.kaze.app-debug-77:/mipmap-anydpi-v26_ic_launcher_round.png.flat",
-        "source": "com.kaze.app-main-79:/mipmap-anydpi-v26/ic_launcher_round.png"
+        "merged": "com.kaze.app-debug-77:/mipmap-xhdpi_ic_launcher_round.webp.flat",
+        "source": "com.kaze.app-main-79:/mipmap-xhdpi/ic_launcher_round.webp"
     },
     {
-        "merged": "com.kaze.app-debug-77:/mipmap-hdpi_ic_launcher.png.flat",
-        "source": "com.kaze.app-main-79:/mipmap-hdpi/ic_launcher.png"
+        "merged": "com.kaze.app-debug-77:/mipmap-mdpi_ic_launcher_round.webp.flat",
+        "source": "com.kaze.app-main-79:/mipmap-mdpi/ic_launcher_round.webp"
     }
 ]

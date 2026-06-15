@@ -39,10 +39,12 @@ public final class WatchLaterDatabase_Impl extends WatchLaterDatabase {
 
   private volatile WhatToWatchDao _whatToWatchDao;
 
+  private volatile CastCacheDao _castCacheDao;
+
   @Override
   @NonNull
   protected SupportSQLiteOpenHelper createOpenHelper(@NonNull final DatabaseConfiguration config) {
-    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(10) {
+    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(12) {
       @Override
       public void createAllTables(@NonNull final SupportSQLiteDatabase db) {
         db.execSQL("CREATE TABLE IF NOT EXISTS `watch_items` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT NOT NULL, `year` INTEGER NOT NULL, `type` TEXT NOT NULL, `isWatched` INTEGER NOT NULL, `rating` REAL NOT NULL, `season` INTEGER, `episode` INTEGER, `notes` TEXT NOT NULL, `posterUrl` TEXT, `genres` TEXT NOT NULL, `imdbId` TEXT NOT NULL, `dateAdded` INTEGER NOT NULL, `lastUpdated` INTEGER NOT NULL, `plot` TEXT NOT NULL, `trailerUrl` TEXT NOT NULL, `isFavorite` INTEGER NOT NULL)");
@@ -56,8 +58,10 @@ public final class WatchLaterDatabase_Impl extends WatchLaterDatabase {
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_episode_progress_watchItemId` ON `episode_progress` (`watchItemId`)");
         db.execSQL("CREATE TABLE IF NOT EXISTS `pending_actions` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `actionType` TEXT NOT NULL, `userId` TEXT NOT NULL, `targetId` TEXT NOT NULL, `payload` TEXT NOT NULL, `createdAt` INTEGER NOT NULL)");
         db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_pending_actions_actionType_userId_targetId_payload` ON `pending_actions` (`actionType`, `userId`, `targetId`, `payload`)");
+        db.execSQL("CREATE TABLE IF NOT EXISTS `cast_cache` (`imdbId` TEXT NOT NULL, `actorName` TEXT NOT NULL, `characterName` TEXT NOT NULL, `imageUrl` TEXT, `cachedAt` INTEGER NOT NULL, PRIMARY KEY(`imdbId`, `actorName`))");
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_cast_cache_imdbId` ON `cast_cache` (`imdbId`)");
         db.execSQL("CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)");
-        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'eeb598ec3bd5200f18118d4b4f72289d')");
+        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '3f8860486b90b5e2299b1dd944f1debc')");
       }
 
       @Override
@@ -67,6 +71,7 @@ public final class WatchLaterDatabase_Impl extends WatchLaterDatabase {
         db.execSQL("DROP TABLE IF EXISTS `season_episodes`");
         db.execSQL("DROP TABLE IF EXISTS `episode_progress`");
         db.execSQL("DROP TABLE IF EXISTS `pending_actions`");
+        db.execSQL("DROP TABLE IF EXISTS `cast_cache`");
         final List<? extends RoomDatabase.Callback> _callbacks = mCallbacks;
         if (_callbacks != null) {
           for (RoomDatabase.Callback _callback : _callbacks) {
@@ -210,9 +215,25 @@ public final class WatchLaterDatabase_Impl extends WatchLaterDatabase {
                   + " Expected:\n" + _infoPendingActions + "\n"
                   + " Found:\n" + _existingPendingActions);
         }
+        final HashMap<String, TableInfo.Column> _columnsCastCache = new HashMap<String, TableInfo.Column>(5);
+        _columnsCastCache.put("imdbId", new TableInfo.Column("imdbId", "TEXT", true, 1, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsCastCache.put("actorName", new TableInfo.Column("actorName", "TEXT", true, 2, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsCastCache.put("characterName", new TableInfo.Column("characterName", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsCastCache.put("imageUrl", new TableInfo.Column("imageUrl", "TEXT", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsCastCache.put("cachedAt", new TableInfo.Column("cachedAt", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        final HashSet<TableInfo.ForeignKey> _foreignKeysCastCache = new HashSet<TableInfo.ForeignKey>(0);
+        final HashSet<TableInfo.Index> _indicesCastCache = new HashSet<TableInfo.Index>(1);
+        _indicesCastCache.add(new TableInfo.Index("index_cast_cache_imdbId", false, Arrays.asList("imdbId"), Arrays.asList("ASC")));
+        final TableInfo _infoCastCache = new TableInfo("cast_cache", _columnsCastCache, _foreignKeysCastCache, _indicesCastCache);
+        final TableInfo _existingCastCache = TableInfo.read(db, "cast_cache");
+        if (!_infoCastCache.equals(_existingCastCache)) {
+          return new RoomOpenHelper.ValidationResult(false, "cast_cache(com.kaze.data.local.CastCacheEntity).\n"
+                  + " Expected:\n" + _infoCastCache + "\n"
+                  + " Found:\n" + _existingCastCache);
+        }
         return new RoomOpenHelper.ValidationResult(true, null);
       }
-    }, "eeb598ec3bd5200f18118d4b4f72289d", "f97315b694b55bef1eb840cbd0807642");
+    }, "3f8860486b90b5e2299b1dd944f1debc", "4a0265fff4fd5841d081eb3e6208e837");
     final SupportSQLiteOpenHelper.Configuration _sqliteConfig = SupportSQLiteOpenHelper.Configuration.builder(config.context).name(config.name).callback(_openCallback).build();
     final SupportSQLiteOpenHelper _helper = config.sqliteOpenHelperFactory.create(_sqliteConfig);
     return _helper;
@@ -223,7 +244,7 @@ public final class WatchLaterDatabase_Impl extends WatchLaterDatabase {
   protected InvalidationTracker createInvalidationTracker() {
     final HashMap<String, String> _shadowTablesMap = new HashMap<String, String>(0);
     final HashMap<String, Set<String>> _viewTables = new HashMap<String, Set<String>>(0);
-    return new InvalidationTracker(this, _shadowTablesMap, _viewTables, "watch_items","series_cache","season_episodes","episode_progress","pending_actions");
+    return new InvalidationTracker(this, _shadowTablesMap, _viewTables, "watch_items","series_cache","season_episodes","episode_progress","pending_actions","cast_cache");
   }
 
   @Override
@@ -244,6 +265,7 @@ public final class WatchLaterDatabase_Impl extends WatchLaterDatabase {
       _db.execSQL("DELETE FROM `season_episodes`");
       _db.execSQL("DELETE FROM `episode_progress`");
       _db.execSQL("DELETE FROM `pending_actions`");
+      _db.execSQL("DELETE FROM `cast_cache`");
       super.setTransactionSuccessful();
     } finally {
       super.endTransaction();
@@ -267,6 +289,7 @@ public final class WatchLaterDatabase_Impl extends WatchLaterDatabase {
     _typeConvertersMap.put(EpisodeProgressDao.class, EpisodeProgressDao_Impl.getRequiredConverters());
     _typeConvertersMap.put(PendingActionDao.class, PendingActionDao_Impl.getRequiredConverters());
     _typeConvertersMap.put(WhatToWatchDao.class, WhatToWatchDao_Impl.getRequiredConverters());
+    _typeConvertersMap.put(CastCacheDao.class, CastCacheDao_Impl.getRequiredConverters());
     return _typeConvertersMap;
   }
 
@@ -365,6 +388,20 @@ public final class WatchLaterDatabase_Impl extends WatchLaterDatabase {
           _whatToWatchDao = new WhatToWatchDao_Impl(this);
         }
         return _whatToWatchDao;
+      }
+    }
+  }
+
+  @Override
+  public CastCacheDao castCacheDao() {
+    if (_castCacheDao != null) {
+      return _castCacheDao;
+    } else {
+      synchronized(this) {
+        if(_castCacheDao == null) {
+          _castCacheDao = new CastCacheDao_Impl(this);
+        }
+        return _castCacheDao;
       }
     }
   }

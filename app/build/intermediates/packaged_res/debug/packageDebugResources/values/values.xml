@@ -2,6 +2,7 @@
 <resources>
     <color name="accent_blue">#FFFFFF</color>
     <color name="background">#000000</color>
+    <color name="ic_launcher_background">#000000</color>
     <color name="surface_container">#0F0F0F</color>
     <string name="app_name">Wotchy</string>
     <string name="gcm_defaultSenderId" translatable="false">306573353241</string>

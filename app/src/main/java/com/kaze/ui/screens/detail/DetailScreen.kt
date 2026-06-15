@@ -957,17 +957,12 @@ private fun EpisodeRow(
                     containerColor   = SurfaceContainer
                 ) {
                     DropdownMenuItem(
-                                    ) {
-                                        Icon(Icons.Filled.DoneAll, null, tint = WatchedGreen, modifier = Modifier.size(16.dp))
-                                        Text("Mark all previous watched", color = TextPrimary, style = MaterialTheme.typography.bodyMedium)
-                                    }
-                                },
-                                onClick = {
-                                    menuExpanded = false
-                                    onMarkAllPrevious()
-                                }
-                            )
+                        text = { Text("Plot summary", color = TextPrimary, style = MaterialTheme.typography.bodyMedium) },
+                        onClick = {
+                            menuExpanded = false
+                            onPlotClick()
                         }
+                    )
                 }
             }
 
