@@ -436,7 +436,10 @@ class DetailViewModel(
         val item  = _uiState.value.item ?: return
         viewModelScope.launch {
             for (s in 1 until targetSeason) {
-                seriesRepository.unmarkSeasonWatched(item.id, s)
+                val eps = seriesRepository.getSeasonEpisodes(item.imdbId, s, item.id)
+                eps.forEach { ep ->
+                    seriesRepository.setEpisodeWatched(item.id, s, ep.episodeNumber, false)
+                }
             }
             val eps = seriesRepository.getSeasonEpisodes(item.imdbId, targetSeason, item.id)
             eps.filter { it.episodeNumber < targetEpisodeNumber && it.isWatched }.forEach { ep ->

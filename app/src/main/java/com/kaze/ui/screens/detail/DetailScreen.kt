@@ -745,7 +745,9 @@ private fun SeriesEpisodeSection(
     onEpisodeToggle: (Int, Int) -> Unit,
     onMarkSeasonWatched: () -> Unit,
     onUnmarkSeasonWatched: () -> Unit,
-    onEpisodePlotClick: (EpisodeUiItem) -> Unit
+    onEpisodePlotClick: (EpisodeUiItem) -> Unit,
+    onMarkPreviousClick: (Int, Int) -> Unit,
+    onUnmarkPreviousClick: (Int, Int) -> Unit
 ) {
     val totalSeasons   = uiState.totalSeasons
     val selectedSeason = uiState.selectedSeason
@@ -871,8 +873,8 @@ private fun SeriesEpisodeSection(
                         isCurrent          = ep.season == uiState.currentSeason && ep.episodeNumber == uiState.currentEpisode,
                         onToggle           = { onEpisodeToggle(ep.season, ep.episodeNumber) },
                         onPlotClick        = { onEpisodePlotClick(ep) },
-                        onMarkPreviousClick = { viewModel.markAllPreviousWatched(ep.season, ep.episodeNumber) },
-                        onUnmarkPreviousClick = { viewModel.unmarkAllPreviousWatched(ep.season, ep.episodeNumber) },
+                        onMarkPreviousClick = { onMarkPreviousClick(ep.season, ep.episodeNumber) },
+                        onUnmarkPreviousClick = { onUnmarkPreviousClick(ep.season, ep.episodeNumber) },
                         isPreview          = uiState.isPreview
                     )
                     if (index < episodes.lastIndex) {
