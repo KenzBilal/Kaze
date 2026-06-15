@@ -105,7 +105,7 @@ fun StarRatingSelector(
 ) {
     Column(modifier = modifier) {
         Text(
-            text = if (rating == 0f) "Not rated" else "${"%g".format(rating)} / 5",
+            text = if (rating == 0f) "Not rated" else "${kotlin.math.round(rating).toInt()} / 5",
             style = MaterialTheme.typography.bodyMedium,
             color = if (rating == 0f) TextTertiary else TextPrimary,
             fontWeight = FontWeight.Medium

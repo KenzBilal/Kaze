@@ -569,7 +569,7 @@ private fun DiceResultDialog(
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(item.type.lowercase().replaceFirstChar { it.uppercase() }, color = TextTertiary, fontSize = 12.sp)
                 if (item.year > 0) Text("· ${item.year}", color = TextTertiary, fontSize = 12.sp)
-                if (item.rating > 0f) Text("· ★ ${"%.1f".format(item.rating)}/5", color = TextTertiary, fontSize = 12.sp)
+                if (item.rating > 0f) Text("· ★ ${kotlin.math.round(item.rating).toInt()}/5", color = TextTertiary, fontSize = 12.sp)
             }
             Spacer(Modifier.height(4.dp))
             Button(
@@ -656,7 +656,7 @@ private fun DiscoverCard(item: DiscoverItem, onClick: () -> Unit) {
                         )
                         Spacer(Modifier.width(2.dp))
                         Text(
-                            text = "${"%.1f".format(item.rating)}/5",
+                            text = "${kotlin.math.round(item.rating).toInt()}/5",
                             fontSize = 10.sp,
                             color = TextTertiary
                         )

@@ -493,7 +493,7 @@ private fun PinterestCard(item: PublicWatchlistItem, isOwned: Boolean = false, o
                 )
             }
             if (item.rating > 0f) {
-                Text("★ ${item.rating}", fontSize = 11.sp, color = TextSecondary)
+                Text("★ ${kotlin.math.round(item.rating).toInt()}", fontSize = 11.sp, color = TextSecondary)
             }
         }
     }

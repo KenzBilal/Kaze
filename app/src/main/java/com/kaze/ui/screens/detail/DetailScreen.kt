@@ -425,7 +425,7 @@ fun DetailScreen(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Filled.Star, contentDescription = "IMDb Rating", tint = androidx.compose.ui.graphics.Color(0xFFFFC107), modifier = Modifier.size(24.dp))
                                 Spacer(Modifier.width(8.dp))
-                                Text(text = "${"%.1f".format(uiState.omdbRating / 2f)} / 5", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                Text(text = "${kotlin.math.round(uiState.omdbRating / 2f).toInt()} / 5", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                             }
                             Spacer(Modifier.height(24.dp))
                             SubtleDivider()
@@ -595,7 +595,7 @@ fun DetailScreen(
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(Icons.Filled.Star, contentDescription = "Rating", tint = androidx.compose.ui.graphics.Color(0xFFFFC107), modifier = Modifier.size(24.dp))
                                     Spacer(Modifier.width(8.dp))
-                                    Text(text = "${"%.4g".format(uiState.rating)} / 5", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                    Text(text = "${kotlin.math.round(uiState.rating).toInt()} / 5", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                                 }
                                 Spacer(Modifier.height(16.dp))
                             }
