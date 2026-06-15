@@ -3,4 +3,5 @@
     <color name="background">#000000</color>
     <color name="surface_container">#0F0F0F</color>
     <color name="accent_blue">#FFFFFF</color>
+    <color name="ic_launcher_background">#000000</color>
 </resources>

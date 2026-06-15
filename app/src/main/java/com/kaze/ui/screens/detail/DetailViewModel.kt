@@ -3,6 +3,8 @@ package com.kaze.ui.screens.detail
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.kaze.data.local.CastCacheDao
+import com.kaze.data.local.CastCacheEntity
 import com.kaze.data.remote.OmdbRepository
 import com.kaze.data.remote.TraktRepository
 import com.kaze.data.repository.EpisodeUiItem
@@ -66,6 +68,7 @@ class DetailViewModel(
     private val userRepository: UserRepository,
     private val omdbRepository: OmdbRepository,
     private val traktRepository: TraktRepository,
+    private val castCacheDao: CastCacheDao,
     private val itemId: Long,
     private val previewImdbId: String? = null,
     private val previewTitle: String? = null,
@@ -223,6 +226,18 @@ class DetailViewModel(
         }
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingCast = true, showCast = true) }
+
+            // 1. Check local Room cache first
+            val cached = castCacheDao.getByImdbId(item.imdbId)
+            if (cached.isNotEmpty()) {
+                val uiCast = cached.map { e ->
+                    CastUiItem(actorName = e.actorName, characterName = e.characterName, imageUrl = e.imageUrl)
+                }
+                _uiState.update { it.copy(cast = uiCast, isLoadingCast = false) }
+                return@launch
+            }
+
+            // 2. Cache miss — fetch from Trakt
             val traktCast = traktRepository.getPeople(
                 imdbId = item.imdbId,
                 isMovie = item.type == MediaType.MOVIE
@@ -239,7 +254,22 @@ class DetailViewModel(
                     characterName = charName,
                     imageUrl = headshot
                 )
-            }.take(15) // Limit to 15 to avoid massive UI lists
+            }.take(15)
+
+            // 3. Save to local Room so next time (and next user) hits cache
+            if (uiCast.isNotEmpty()) {
+                val now = System.currentTimeMillis()
+                castCacheDao.insertAll(uiCast.map { c ->
+                    CastCacheEntity(
+                        imdbId = item.imdbId,
+                        actorName = c.actorName,
+                        characterName = c.characterName,
+                        imageUrl = c.imageUrl,
+                        cachedAt = now
+                    )
+                })
+            }
+
             _uiState.update { it.copy(cast = uiCast, isLoadingCast = false) }
         }
     }
@@ -315,17 +345,27 @@ class DetailViewModel(
             }
 
             val newWatched = !currentlyWatched
-            _uiState.update { state ->
-                state.copy(
-                    seasonEpisodes = state.seasonEpisodes.map {
-                        if (it.season == season && it.episodeNumber == episodeNumber)
-                            it.copy(isWatched = newWatched) else it
-                    }
-                )
+
+            if (newWatched) {
+                // Mark all previous seasons fully, and all previous episodes in this season
+                for (s in 1 until season) {
+                    seriesRepository.markSeasonWatched(item.id, item.imdbId, s)
+                }
+                val eps = seriesRepository.getSeasonEpisodes(item.imdbId, season, item.id)
+                eps.filter { it.episodeNumber < episodeNumber && !it.isWatched }.forEach { ep ->
+                    seriesRepository.setEpisodeWatched(item.id, season, ep.episodeNumber, true)
+                }
             }
 
+            // Toggle the tapped episode itself
             seriesRepository.setEpisodeWatched(item.id, season, episodeNumber, newWatched)
-            // BUG-03 Fix: Call autoAdvancePosition unconditionally to sync episode changes to Supabase
+
+            // Reload current season UI
+            val refreshed = seriesRepository.getSeasonEpisodes(item.imdbId, _uiState.value.selectedSeason, item.id)
+            _uiState.update { state ->
+                state.copy(seasonEpisodes = refreshed)
+            }
+
             autoAdvancePosition(item)
         }
     }
@@ -342,7 +382,6 @@ class DetailViewModel(
                 _uiState.update { it.copy(toastMessage = validation.reason) }
                 return@launch
             }
-            // BUG-08 fix: check whether the season actually had data before optimistic update
             val success = seriesRepository.markSeasonWatched(item.id, item.imdbId, season)
             if (!success) {
                 _uiState.update { it.copy(toastMessage = "Could not load Season $season episode data. Check your connection.") }
@@ -353,6 +392,22 @@ class DetailViewModel(
             }
             autoAdvancePosition(item)
             _uiState.update { it.copy(toastMessage = "Season $season marked as watched ✓") }
+        }
+    }
+
+    fun unmarkSeasonWatched() {
+        val item   = _uiState.value.item ?: return
+        val season = _uiState.value.selectedSeason
+        viewModelScope.launch {
+            val eps = seriesRepository.getSeasonEpisodes(item.imdbId, season, item.id)
+            eps.forEach { ep ->
+                seriesRepository.setEpisodeWatched(item.id, season, ep.episodeNumber, false)
+            }
+            _uiState.update { state ->
+                state.copy(seasonEpisodes = state.seasonEpisodes.map { it.copy(isWatched = false) })
+            }
+            autoAdvancePosition(item)
+            _uiState.update { it.copy(toastMessage = "Season $season unmarked ✓") }
         }
     }
 
@@ -579,6 +634,7 @@ class DetailViewModel(
         private val userRepository: UserRepository,
         private val omdbRepository: OmdbRepository,
         private val traktRepository: TraktRepository,
+        private val castCacheDao: CastCacheDao,
         private val itemId: Long,
         private val previewImdbId: String? = null,
         private val previewTitle: String? = null,
@@ -593,6 +649,6 @@ class DetailViewModel(
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T =
-            DetailViewModel(repository, seriesRepository, userRepository, omdbRepository, traktRepository, itemId, previewImdbId, previewTitle, previewType, previewPoster, previewRating, previewNotes, previewGenres, previewYear, previewSeason, previewEpisode) as T
+            DetailViewModel(repository, seriesRepository, userRepository, omdbRepository, traktRepository, castCacheDao, itemId, previewImdbId, previewTitle, previewType, previewPoster, previewRating, previewNotes, previewGenres, previewYear, previewSeason, previewEpisode) as T
     }
 }

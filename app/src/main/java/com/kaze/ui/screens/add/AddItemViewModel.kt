@@ -67,7 +67,7 @@ class AddItemViewModel(
         Log.d("AddItemVM", "onTitleChange: '${value}' len=${value.length} hasKey=${omdbRepository.hasApiKey}")
         if (value.length >= 2 && omdbRepository.hasApiKey) {
             searchJob = viewModelScope.launch {
-                delay(400)
+                delay(700)
                 _uiState.update { it.copy(isSearching = true, showSuggestions = true, titleError = null) }
                 try {
                     val results = omdbRepository.search(value.trim())

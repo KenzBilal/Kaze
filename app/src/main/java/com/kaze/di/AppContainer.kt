@@ -25,6 +25,8 @@ class AppContainer(context: Context) {
         episodeProgressDao = database.episodeProgressDao()
     )
 
+    val castCacheDao = database.castCacheDao()
+
     val seriesRepository = SeriesRepository(
         seriesCacheDao     = database.seriesCacheDao(),
         seasonEpisodeDao   = database.seasonEpisodeDao(),

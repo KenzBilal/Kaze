@@ -466,28 +466,38 @@ fun DiscoverScreen(
                             onRefresh = { viewModel.refresh() },
                             modifier = Modifier.fillMaxSize()
                         ) {
-                            LazyVerticalStaggeredGrid(
-                                columns = StaggeredGridCells.Fixed(2),
+                            LazyColumn(
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .padding(horizontal = 8.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalItemSpacing = 8.dp,
-                                contentPadding = PaddingValues(top = 8.dp, bottom = 100.dp)
+                                    .padding(horizontal = 16.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
+                                contentPadding = PaddingValues(top = 16.dp, bottom = 100.dp)
                             ) {
                                 items(activeItems, key = { it.imdbId }) { item ->
-                                    DiscoverCard(
-                                        item = item,
+                                    val mappedWatchItem = com.kaze.model.WatchItem(
+                                        title = item.title,
+                                        year = item.year,
+                                        type = if (item.type.uppercase() == "SERIES") com.kaze.model.MediaType.SERIES else com.kaze.model.MediaType.MOVIE,
+                                        rating = item.rating,
+                                        posterUrl = item.posterUrl,
+                                        genres = item.genres,
+                                        imdbId = item.imdbId,
+                                        season = if (item.type.uppercase() == "SERIES") item.season else null,
+                                        episode = if (item.type.uppercase() == "SERIES") item.episode else null
+                                    )
+                                    com.kaze.ui.components.WatchItemCard(
+                                        item = mappedWatchItem,
                                         onClick = {
                                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                             onItemClick(item)
-                                        }
+                                        },
+                                        onToggleWatched = {}
                                     )
                                 }
 
                                 // Load more (only Global tab uses API)
                                 if (uiState.activeTab == DiscoverTab.GLOBAL) {
-                                    item(span = StaggeredGridItemSpan.FullLine) {
+                                    item {
                                         Box(
                                             modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
                                             contentAlignment = Alignment.Center

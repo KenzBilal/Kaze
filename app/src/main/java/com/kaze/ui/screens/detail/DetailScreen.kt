@@ -425,7 +425,7 @@ fun DetailScreen(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Filled.Star, contentDescription = "IMDb Rating", tint = androidx.compose.ui.graphics.Color(0xFFFFC107), modifier = Modifier.size(24.dp))
                                 Spacer(Modifier.width(8.dp))
-                                Text(text = "${kotlin.math.round(uiState.omdbRating / 2f).toInt()} / 5", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                Text(text = "${kotlin.math.round((uiState.omdbRating / 2f).coerceIn(0f, 5f)).toInt()} / 5", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                             }
                             Spacer(Modifier.height(24.dp))
                             SubtleDivider()
@@ -536,10 +536,10 @@ fun DetailScreen(
                                         viewModel.markSeasonWatched()
                                     }
                                 },
-                                onMarkAllPrevious    = { s, ep ->
+                                onUnmarkSeasonWatched = {
                                     if (!uiState.isPreview) {
                                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                        viewModel.markAllPreviousWatched(s, ep)
+                                        viewModel.unmarkSeasonWatched()
                                     }
                                 },
                                 onEpisodePlotClick   = viewModel::fetchEpisodePlot
@@ -595,7 +595,7 @@ fun DetailScreen(
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(Icons.Filled.Star, contentDescription = "Rating", tint = androidx.compose.ui.graphics.Color(0xFFFFC107), modifier = Modifier.size(24.dp))
                                     Spacer(Modifier.width(8.dp))
-                                    Text(text = "${kotlin.math.round(uiState.rating).toInt()} / 5", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                    Text(text = "${kotlin.math.round(uiState.rating.coerceIn(0f, 5f)).toInt()} / 5", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                                 }
                                 Spacer(Modifier.height(16.dp))
                             }
@@ -744,7 +744,7 @@ private fun SeriesEpisodeSection(
     onSeasonSelect: (Int) -> Unit,
     onEpisodeToggle: (Int, Int) -> Unit,
     onMarkSeasonWatched: () -> Unit,
-    onMarkAllPrevious: (Int, Int) -> Unit,
+    onUnmarkSeasonWatched: () -> Unit,
     onEpisodePlotClick: (EpisodeUiItem) -> Unit
 ) {
     val totalSeasons   = uiState.totalSeasons
@@ -804,7 +804,7 @@ private fun SeriesEpisodeSection(
                 CircularProgressIndicator(color = AccentBlue, strokeWidth = 2.dp, modifier = Modifier.size(24.dp))
             }
         }
-        episodes.isEmpty() && totalSeasons == 0 -> {
+        episodes.isEmpty() -> {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -813,14 +813,11 @@ private fun SeriesEpisodeSection(
                     .padding(16.dp)
             ) {
                 Text(
-                    "Search and add this series via the '+' button to enable episode tracking",
+                    "No episodes found for Season $selectedSeason",
                     style = MaterialTheme.typography.bodySmall,
                     color = TextTertiary
                 )
             }
-        }
-        episodes.isEmpty() -> {
-            Text("No episodes found for Season $selectedSeason", style = MaterialTheme.typography.bodySmall, color = TextTertiary)
         }
         else -> {
             // ── Progress summary ─────────────────────────────────────────
@@ -842,6 +839,13 @@ private fun SeriesEpisodeSection(
                             contentPadding = PaddingValues(horizontal = 8.dp)
                         ) {
                             Text("Mark season watched", style = MaterialTheme.typography.bodySmall, color = AccentBlue, fontWeight = FontWeight.Medium)
+                        }
+                    } else {
+                        TextButton(
+                            onClick        = onUnmarkSeasonWatched,
+                            contentPadding = PaddingValues(horizontal = 8.dp)
+                        ) {
+                            Text("Unmark season", style = MaterialTheme.typography.bodySmall, color = TextTertiary, fontWeight = FontWeight.Medium)
                         }
                     }
                 }
@@ -867,7 +871,6 @@ private fun SeriesEpisodeSection(
                         isCurrent          = ep.season == uiState.currentSeason && ep.episodeNumber == uiState.currentEpisode,
                         onToggle           = { onEpisodeToggle(ep.season, ep.episodeNumber) },
                         onPlotClick        = { onEpisodePlotClick(ep) },
-                        onMarkAllPrevious  = { onMarkAllPrevious(ep.season, ep.episodeNumber) },
                         isPreview          = uiState.isPreview
                     )
                     if (index < episodes.lastIndex) {
@@ -888,7 +891,6 @@ private fun EpisodeRow(
     isCurrent: Boolean,
     onToggle: () -> Unit,
     onPlotClick: () -> Unit,
-    onMarkAllPrevious: () -> Unit,
     isPreview: Boolean = false
 ) {
     val bgColor = if (isCurrent) AccentBlue.copy(alpha = 0.07f) else Color.Transparent
@@ -955,26 +957,6 @@ private fun EpisodeRow(
                     containerColor   = SurfaceContainer
                 ) {
                     DropdownMenuItem(
-                            text    = {
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(Icons.Outlined.Info, null, tint = AccentBlue, modifier = Modifier.size(16.dp))
-                                    Text("Plot", color = TextPrimary, style = MaterialTheme.typography.bodyMedium)
-                                }
-                            },
-                            onClick = {
-                                menuExpanded = false
-                                onPlotClick()
-                            }
-                        )
-                        if (episode.episodeNumber > 1) {
-                            DropdownMenuItem(
-                                text = {
-                                    Row(
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Icon(Icons.Filled.DoneAll, null, tint = WatchedGreen, modifier = Modifier.size(16.dp))
                                         Text("Mark all previous watched", color = TextPrimary, style = MaterialTheme.typography.bodyMedium)

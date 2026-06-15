@@ -35,7 +35,18 @@ class DiscoverCacheRepository(
                     }
                 }.decodeList<DiscoverCacheDto>()
                 
-            response.associate { dto ->
+            val now = System.currentTimeMillis()
+            val twentyFourHoursMs = 24L * 60 * 60 * 1000
+
+            response.filter { dto ->
+                if (dto.created_at == null) return@filter false
+                try {
+                    val createdAtMs = java.time.Instant.parse(dto.created_at).toEpochMilli()
+                    (now - createdAtMs) < twentyFourHoursMs
+                } catch (e: Exception) {
+                    false
+                }
+            }.associate { dto ->
                 dto.imdb_id to DiscoverItem(
                     imdbId = dto.imdb_id,
                     title = dto.title,

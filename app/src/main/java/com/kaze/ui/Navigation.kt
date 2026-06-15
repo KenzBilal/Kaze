@@ -259,6 +259,7 @@ fun WatchLaterNavGraph(
                     userRepository   = app.container.userRepository,
                     omdbRepository   = app.container.omdbRepository,
                     traktRepository  = app.container.traktRepository,
+                    castCacheDao     = app.container.castCacheDao,
                     itemId           = itemId
                 )
             )
@@ -302,6 +303,7 @@ fun WatchLaterNavGraph(
                     userRepository   = app.container.userRepository,
                     omdbRepository   = app.container.omdbRepository,
                     traktRepository  = app.container.traktRepository,
+                    castCacheDao     = app.container.castCacheDao,
                     itemId           = -1L,
                     previewImdbId    = imdbId,
                     previewTitle     = title,

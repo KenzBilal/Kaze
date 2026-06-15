@@ -15,9 +15,10 @@ import com.kaze.model.WatchItem
         SeriesCache::class,
         SeasonEpisode::class,
         EpisodeProgress::class,
-        PendingAction::class
+        PendingAction::class,
+        com.kaze.data.local.CastCacheEntity::class
     ],
-    version = 10,
+    version = 12,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -29,6 +30,7 @@ abstract class WatchLaterDatabase : RoomDatabase() {
     abstract fun episodeProgressDao(): EpisodeProgressDao
     abstract fun pendingActionDao(): PendingActionDao
     abstract fun whatToWatchDao(): WhatToWatchDao
+    abstract fun castCacheDao(): CastCacheDao
 
     companion object {
         private const val DATABASE_NAME = "watch_later.db"
@@ -163,6 +165,30 @@ abstract class WatchLaterDatabase : RoomDatabase() {
             }
         }
 
+        /** v10 → v11: add cast_cache table for shared Trakt cast caching */
+        val MIGRATION_10_11 = object : Migration(10, 11) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS cast_cache (
+                        imdbId TEXT NOT NULL,
+                        actorName TEXT NOT NULL,
+                        characterName TEXT NOT NULL DEFAULT '',
+                        imageUrl TEXT,
+                        cachedAt INTEGER NOT NULL,
+                        PRIMARY KEY (imdbId, actorName)
+                    )
+                """.trimIndent())
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_cast_cache_imdbId ON cast_cache (imdbId)")
+            }
+        }
+
+        /** v11 → v12: clamp stored ratings > 5 (old 10-point scale data) by dividing by 2 */
+        val MIGRATION_11_12 = object : Migration(11, 12) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("UPDATE watch_items SET rating = ROUND(rating / 2.0) WHERE rating > 5")
+            }
+        }
+
         @Volatile
         private var INSTANCE: WatchLaterDatabase? = null
 
@@ -173,7 +199,7 @@ abstract class WatchLaterDatabase : RoomDatabase() {
                     WatchLaterDatabase::class.java,
                     DATABASE_NAME
                 )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12)
                 .build()
                 INSTANCE = instance
                 instance

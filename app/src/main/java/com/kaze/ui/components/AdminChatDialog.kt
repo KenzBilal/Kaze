@@ -25,17 +25,24 @@ fun AdminChatDialog(
     var users by remember { mutableStateOf<List<SupabaseUser>>(emptyList()) }
     var chatMembers by remember { mutableStateOf<Set<String>>(emptySet()) }
     var isLoading by remember { mutableStateOf(true) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
-        val allUsers = userRepository.searchUsers("") // Returns all limited users
-        val membersList = com.kaze.data.remote.SupabaseApi.client.postgrest["global_chat_members"]
-            .select().decodeList<com.kaze.data.repository.GlobalChatMember>()
-        val memberIds = membersList.map { it.user_id }.toSet()
-        users = allUsers
-        chatMembers = memberIds
-        isLoading = false
+        try {
+            val allUsers = userRepository.searchUsers("")
+            val membersList = com.kaze.data.remote.SupabaseApi.client.postgrest["global_chat_members"]
+                .select().decodeList<com.kaze.data.repository.GlobalChatMember>()
+            val memberIds = membersList.map { it.user_id }.toSet()
+            users = allUsers
+            chatMembers = memberIds
+        } catch (e: Exception) {
+            errorMessage = "Failed to load: ${e.message}"
+        } finally {
+            isLoading = false
+        }
     }
+
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -43,7 +50,11 @@ fun AdminChatDialog(
         title = { Text("Manage Chat Access", color = TextPrimary, fontWeight = FontWeight.Bold) },
         text = {
             if (isLoading) {
-                CircularProgressIndicator(color = AccentBlue)
+                Box(Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = AccentBlue)
+                }
+            } else if (errorMessage != null) {
+                Text(errorMessage ?: "Unknown error", color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(8.dp))
             } else {
                 LazyColumn(modifier = Modifier.fillMaxWidth().height(300.dp)) {
                     items(users, key = { it.id }) { u ->
@@ -78,6 +89,7 @@ fun AdminChatDialog(
                     }
                 }
             }
+
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
