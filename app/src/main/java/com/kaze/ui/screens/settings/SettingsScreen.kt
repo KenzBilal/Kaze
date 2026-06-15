@@ -46,7 +46,6 @@ fun SettingsScreen(onBack: () -> Unit) {
     var isSyncing by remember { mutableStateOf(false) }
     var isBackingUp by remember { mutableStateOf(false) }
     var isAdmin by remember { mutableStateOf(false) }
-    var showAdminDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         val uid = app.container.userRepository.getLocalUserId()
@@ -249,23 +248,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                 )
             }
 
-            if (isAdmin) {
-                item { Spacer(Modifier.height(28.dp)) }
 
-                item {
-                    SettingsSectionLabel("ADMIN")
-                    Spacer(Modifier.height(10.dp))
-                }
-
-                item {
-                    SettingsActionRow(
-                        icon = Icons.Filled.GraphicEq, // Use an appropriate icon
-                        title = "Global Chat Settings",
-                        subtitle = "Manage chat access and rules",
-                        onClick = { showAdminDialog = true }
-                    )
-                }
-            }
 
             // ── Section: About ────────────────────────────────────────────────
             item {
@@ -292,12 +275,6 @@ fun SettingsScreen(onBack: () -> Unit) {
             }
         }
 
-        if (showAdminDialog) {
-            com.kaze.ui.components.AdminChatDialog(
-                userRepository = app.container.userRepository,
-                onDismiss = { showAdminDialog = false }
-            )
-        }
     }
 }
 

@@ -15,8 +15,8 @@ android {
         applicationId = "com.kaze"
         minSdk = 24
         targetSdk = 35
-        versionCode = 67
-        versionName = "2.8.1"
+        versionCode = 68
+        versionName = "2.8.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -90,7 +90,7 @@ ksp {
 
 dependencies {
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
+
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
@@ -121,7 +121,6 @@ dependencies {
     implementation(libs.supabase.postgrest)
     implementation(libs.kotlinx.serialization.json)
     
-    implementation(libs.androidx.paging.compose)
     implementation(libs.androidx.work.runtime.ktx)
 
     // Firebase

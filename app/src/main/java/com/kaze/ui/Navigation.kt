@@ -30,7 +30,7 @@ import com.kaze.ui.screens.friends.FriendsScreen
 import com.kaze.ui.screens.friends.UserProfileScreen
 import com.kaze.ui.screens.onboarding.SetUsernameScreen
 import com.kaze.ui.screens.profile.MyProfileScreen
-import com.kaze.ui.screens.chat.GlobalChatScreen
+
 import com.kaze.ui.theme.SurfaceContainer
 
 sealed class Screen(val route: String) {
@@ -44,7 +44,7 @@ sealed class Screen(val route: String) {
     object MyProfile    : Screen("myProfile")
     object Settings     : Screen("settings")
     object Search       : Screen("search")
-    object GlobalChat   : Screen("globalChat")
+
     object Detail : Screen("detail/{itemId}") {
         fun createRoute(id: Long) = "detail/$id"
     }
@@ -149,7 +149,7 @@ fun WatchLaterNavGraph(
                 repository = repo,
                 traktRepository = app.container.traktRepository,
                 omdbRepository = app.container.omdbRepository,
-                onChatClick = { navController.navigate(Screen.GlobalChat.route) },
+
                 onItemClick = { item ->
                     if (item.imdbId.isNotBlank()) {
                         navController.navigate(Screen.DetailPreview.createRoute(
@@ -206,10 +206,7 @@ fun WatchLaterNavGraph(
             )
         }
 
-        // ── Global Chat ───────────────────────────────────────────────────
-        composable(Screen.GlobalChat.route) {
-            GlobalChatScreen(onBack = { navController.popBackStack() })
-        }
+
 
         // ── Settings ──────────────────────────────────────────────────────
         composable(Screen.Settings.route) {

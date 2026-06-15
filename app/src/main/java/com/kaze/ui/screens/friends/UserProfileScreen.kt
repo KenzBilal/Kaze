@@ -139,13 +139,6 @@ class UserProfileViewModel(
         }
     }
 
-    fun inviteToGlobalChat() {
-        viewModelScope.launch {
-            repository.inviteToGlobalChat(profileUserId)
-            // Optionally, show a success message via a snackbar or state
-        }
-    }
-
 
 
     fun showFollowers() {
@@ -283,10 +276,7 @@ fun UserProfileScreen(
                             },
                             onFollowersClick = viewModel::showFollowers,
                             onFollowingClick = viewModel::showFollowing,
-                            onInviteClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                viewModel.inviteToGlobalChat()
-                            }
+
                         )
                     }
 
@@ -364,8 +354,7 @@ private fun ProfileHeader(
     isAdmin: Boolean,
     onFollowClick: () -> Unit,
     onFollowersClick: () -> Unit,
-    onFollowingClick: () -> Unit,
-    onInviteClick: () -> Unit
+    onFollowingClick: () -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp),
@@ -415,20 +404,6 @@ private fun ProfileHeader(
                     Text(if (isFollowing) "Following" else "Follow", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
                 }
 
-                if (isAdmin) {
-                    Button(
-                        onClick = onInviteClick,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = AccentBlue,
-                            contentColor = Background
-                        ),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.width(120.dp),
-                        elevation = ButtonDefaults.buttonElevation(0.dp)
-                    ) {
-                        Text("Invite Chat", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-                    }
-                }
             }
         }
 

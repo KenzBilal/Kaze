@@ -81,7 +81,8 @@ class OmdbRepository {
                 else -> false
             }
             
-            val imdbRating = detail.imdbRating?.toFloatOrNull() ?: 0f
+            val rawImdbRating = detail.imdbRating?.toFloatOrNull() ?: 0f
+            val imdbRating = kotlin.math.round(rawImdbRating / 2f).toFloat()
             val cast = detail.actors?.takeIf { it != "N/A" } ?: ""
             val director = detail.director?.takeIf { it != "N/A" } ?: ""
             

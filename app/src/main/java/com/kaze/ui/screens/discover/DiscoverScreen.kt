@@ -82,14 +82,6 @@ class DiscoverViewModel(
     init {
         load()
         viewModelScope.launch {
-            localUsername = userRepo.getLocalUserId()?.let {
-                userRepo.getUserById(it)?.username
-            } ?: ""
-            _uiState.update { it.copy(isChatVisible = isChatEligible(localUsername)) }
-            if (_uiState.value.isChatVisible) {
-                val hasUnread = userRepo.hasUnreadGlobalChatMessages()
-                _uiState.update { it.copy(hasUnreadChat = hasUnread) }
-            }
             repository.getAllItemsFlow().collect { ownItems ->
                 val ownImdbIds = ownItems.map { it.imdbId }.filter { it.isNotBlank() }.toSet()
                 _uiState.update { it.copy(ownImdbIds = ownImdbIds) }
@@ -97,14 +89,7 @@ class DiscoverViewModel(
         }
     }
 
-    private suspend fun isChatEligible(username: String): Boolean {
-        if (username.equals("kenzbilal", ignoreCase = true)) return true
-        // Check if invited
-        return try {
-            val userId = userRepo.getLocalUserId() ?: return false
-            userRepo.isInGlobalChat(userId)
-        } catch (e: Exception) { false }
-    }
+
 
     fun selectTab(tab: DiscoverTab) {
         _uiState.update { it.copy(activeTab = tab) }
@@ -201,7 +186,7 @@ class DiscoverViewModel(
                 DiscoverItem(
                     title = it.title, year = it.year, type = it.type,
                     imdbId = it.imdb_id, posterUrl = it.poster_url,
-                    rating = it.rating, notes = "by $friendName", genres = it.genres
+                    rating = it.rating, notes = "", genres = it.genres
                 )
             }
         friendsSuggestions.forEach { if (it.posterUrl != null) posterCache[it.imdbId] = it.posterUrl }
@@ -213,7 +198,7 @@ class DiscoverViewModel(
                 DiscoverItem(
                     title = it.title, year = it.year ?: 0, type = "MOVIE",
                     imdbId = it.ids.imdb!!, posterUrl = posterCache[it.ids.imdb],
-                    notes = "Trending"
+                    notes = ""
                 )
             }
         val traktShows = currentTraktShows
@@ -222,7 +207,7 @@ class DiscoverViewModel(
                 DiscoverItem(
                     title = it.title, year = it.year ?: 0, type = "SERIES",
                     imdbId = it.ids.imdb!!, posterUrl = posterCache[it.ids.imdb],
-                    notes = "Trending"
+                    notes = ""
                 )
             }
 
@@ -278,7 +263,7 @@ class DiscoverViewModel(
                             posterCache[item.imdbId] = poster
                             // Rating out of 5 (IMDB is /10)
                             val rawRating = detail.imdbRating?.toFloatOrNull() ?: 0f
-                            val ratingOutOf5 = if (rawRating > 0) (rawRating / 2f) else 0f
+                            val ratingOutOf5 = if (rawRating > 0) kotlin.math.round(rawRating / 2f).toFloat() else 0f
                             val fullItem = item.copy(posterUrl = poster, genres = detail.genre ?: "", rating = ratingOutOf5)
                             cacheRepo.cacheItem(fullItem)
                             val updated = _uiState.value.globalItems.map { if (it.imdbId == item.imdbId) fullItem else it }
@@ -328,8 +313,7 @@ data class DiscoverUiState(
     val isLoggedIn: Boolean = true,
     val ownImdbIds: Set<String> = emptySet(),
     val topGenre: String = "",
-    val isChatVisible: Boolean = false,
-    val hasUnreadChat: Boolean = false
+
 )
 
 // ── Screen ────────────────────────────────────────────────────────────────────
@@ -341,7 +325,7 @@ fun DiscoverScreen(
     traktRepository: TraktRepository,
     omdbRepository: OmdbRepository,
     onItemClick: (DiscoverItem) -> Unit,
-    onChatClick: () -> Unit = {}
+
 ) {
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
@@ -366,25 +350,7 @@ fun DiscoverScreen(
                     }) {
                         Icon(Icons.Default.AutoAwesome, "Discover Filter", tint = TextSecondary)
                     }
-                    // Secret Global Chat (only visible to eligible users)
-                    if (uiState.isChatVisible) {
-                        IconButton(onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            onChatClick()
-                        }) {
-                            BadgedBox(
-                                badge = {
-                                    if (uiState.hasUnreadChat) {
-                                        Badge(containerColor = Background, modifier = Modifier.size(10.dp)) {
-                                            Box(modifier = Modifier.size(8.dp).clip(androidx.compose.foundation.shape.CircleShape).background(androidx.compose.ui.graphics.Color.White))
-                                        }
-                                    }
-                                }
-                            ) {
-                                Icon(Icons.Outlined.Forum, "Global Chat", tint = AccentBlue)
-                            }
-                        }
-                    }
+
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Background)
             )

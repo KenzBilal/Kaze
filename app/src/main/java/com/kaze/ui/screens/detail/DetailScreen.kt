@@ -425,7 +425,7 @@ fun DetailScreen(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Filled.Star, contentDescription = "IMDb Rating", tint = androidx.compose.ui.graphics.Color(0xFFFFC107), modifier = Modifier.size(24.dp))
                                 Spacer(Modifier.width(8.dp))
-                                Text(text = "${kotlin.math.round((uiState.omdbRating / 2f).coerceIn(0f, 5f)).toInt()} / 5", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                Text(text = "${kotlin.math.round(uiState.omdbRating).toInt()} / 5", color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                             }
                             Spacer(Modifier.height(24.dp))
                             SubtleDivider()
@@ -871,6 +871,8 @@ private fun SeriesEpisodeSection(
                         isCurrent          = ep.season == uiState.currentSeason && ep.episodeNumber == uiState.currentEpisode,
                         onToggle           = { onEpisodeToggle(ep.season, ep.episodeNumber) },
                         onPlotClick        = { onEpisodePlotClick(ep) },
+                        onMarkPreviousClick = { viewModel.markAllPreviousWatched(ep.season, ep.episodeNumber) },
+                        onUnmarkPreviousClick = { viewModel.unmarkAllPreviousWatched(ep.season, ep.episodeNumber) },
                         isPreview          = uiState.isPreview
                     )
                     if (index < episodes.lastIndex) {
@@ -891,6 +893,8 @@ private fun EpisodeRow(
     isCurrent: Boolean,
     onToggle: () -> Unit,
     onPlotClick: () -> Unit,
+    onMarkPreviousClick: () -> Unit = {},
+    onUnmarkPreviousClick: () -> Unit = {},
     isPreview: Boolean = false
 ) {
     val bgColor = if (isCurrent) AccentBlue.copy(alpha = 0.07f) else Color.Transparent
@@ -961,6 +965,20 @@ private fun EpisodeRow(
                         onClick = {
                             menuExpanded = false
                             onPlotClick()
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Mark all previous as watched", color = TextPrimary, style = MaterialTheme.typography.bodyMedium) },
+                        onClick = {
+                            menuExpanded = false
+                            onMarkPreviousClick()
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Clear all previous", color = TextPrimary, style = MaterialTheme.typography.bodyMedium) },
+                        onClick = {
+                            menuExpanded = false
+                            onUnmarkPreviousClick()
                         }
                     )
                 }

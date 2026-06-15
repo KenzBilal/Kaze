@@ -418,21 +418,33 @@ class DetailViewModel(
      *  Includes all previous seasons fully. */
     fun markAllPreviousWatched(targetSeason: Int, targetEpisodeNumber: Int) {
         val item  = _uiState.value.item ?: return
-        val total = _uiState.value.totalSeasons
         viewModelScope.launch {
-            // Mark all prior seasons fully
             for (s in 1 until targetSeason) {
                 seriesRepository.markSeasonWatched(item.id, item.imdbId, s)
             }
-            // Mark episodes in the current season BEFORE the target episode
             val eps = seriesRepository.getSeasonEpisodes(item.imdbId, targetSeason, item.id)
             eps.filter { it.episodeNumber < targetEpisodeNumber && !it.isWatched }.forEach { ep ->
                 seriesRepository.setEpisodeWatched(item.id, targetSeason, ep.episodeNumber, true)
             }
-            // Reload current season in UI
             loadSeasonEpisodes(item, _uiState.value.selectedSeason)
             autoAdvancePosition(item)
             _uiState.update { it.copy(toastMessage = "All previous episodes marked watched ✓") }
+        }
+    }
+
+    fun unmarkAllPreviousWatched(targetSeason: Int, targetEpisodeNumber: Int) {
+        val item  = _uiState.value.item ?: return
+        viewModelScope.launch {
+            for (s in 1 until targetSeason) {
+                seriesRepository.unmarkSeasonWatched(item.id, s)
+            }
+            val eps = seriesRepository.getSeasonEpisodes(item.imdbId, targetSeason, item.id)
+            eps.filter { it.episodeNumber < targetEpisodeNumber && it.isWatched }.forEach { ep ->
+                seriesRepository.setEpisodeWatched(item.id, targetSeason, ep.episodeNumber, false)
+            }
+            loadSeasonEpisodes(item, _uiState.value.selectedSeason)
+            autoAdvancePosition(item)
+            _uiState.update { it.copy(toastMessage = "All previous episodes unmarked ✓") }
         }
     }
 
