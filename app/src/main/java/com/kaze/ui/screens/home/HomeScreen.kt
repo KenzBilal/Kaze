@@ -407,7 +407,7 @@ private fun HomeTopBar(
     TopAppBar(
         title = {
             Text(
-                text = "Kaze",
+                text = "Wotchy",
                 style = MaterialTheme.typography.headlineSmall,
                 color = TextPrimary
             )

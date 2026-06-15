@@ -151,7 +151,7 @@ fun SetUsernameScreen(onAccountCreated: () -> Unit) {
         ) {
             // App name header
             Text(
-                text = "Kaze",
+                text = "Wotchy",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
                 color = Color(0xFF888888),

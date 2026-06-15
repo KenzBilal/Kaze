@@ -89,13 +89,26 @@ fun DiscoverFilterBottomSheet(
         if (showResult) {
             if (suggestedItem != null) {
                 val item = suggestedItem!!
-                // Full discover card matching the main discover grid style
-                DiscoverSuggestionCard(
-                    item = item,
+                // Map to WatchItem so we can reuse WatchItemCard precisely like the home page suggestion
+                val mappedWatchItem = com.kaze.model.WatchItem(
+                    title = item.title,
+                    year = item.year,
+                    type = if (item.type.uppercase() == "SERIES") com.kaze.model.MediaType.SERIES else com.kaze.model.MediaType.MOVIE,
+                    rating = item.rating,
+                    posterUrl = item.posterUrl,
+                    genres = item.genres,
+                    imdbId = item.imdbId,
+                    season = if (item.type.uppercase() == "SERIES") item.season else null,
+                    episode = if (item.type.uppercase() == "SERIES") item.episode else null
+                )
+
+                WatchItemCard(
+                    item = mappedWatchItem,
                     onClick = {
                         onItemClick(item)
                         onDismiss()
-                    }
+                    },
+                    onToggleWatched = {}
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
@@ -210,93 +223,6 @@ fun DiscoverFilterBottomSheet(
                     Text("Suggest Something")
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun DiscoverSuggestionCard(item: DiscoverItem, onClick: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(SurfaceElevated)
-            .clickable(onClick = onClick)
-    ) {
-        if (!item.posterUrl.isNullOrBlank()) {
-            AsyncImage(
-                model = item.posterUrl,
-                contentDescription = item.title,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(240.dp)
-                    .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
-            )
-        } else {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-                    .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
-                    .background(SurfaceHighlight),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = if (item.type.uppercase() == "SERIES") Icons.Filled.Tv else Icons.Filled.Movie,
-                    contentDescription = null,
-                    tint = TextTertiary,
-                    modifier = Modifier.size(48.dp)
-                )
-            }
-        }
-
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                item.title,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextPrimary,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-            Spacer(Modifier.height(6.dp))
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    item.type.lowercase().replaceFirstChar { it.uppercase() },
-                    fontSize = 12.sp,
-                    color = TextSecondary
-                )
-                if (item.year > 0) {
-                    Text("· ${item.year}", fontSize = 12.sp, color = TextTertiary)
-                }
-                if (item.rating > 0f) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            Icons.Filled.Star,
-                            contentDescription = null,
-                            tint = androidx.compose.ui.graphics.Color(0xFFFFC107),
-                            modifier = Modifier.size(12.dp)
-                        )
-                        Spacer(Modifier.width(3.dp))
-                        Text("${"%.1f".format(item.rating)}/5", fontSize = 12.sp, color = TextTertiary)
-                    }
-                }
-            }
-            if (item.genres.isNotBlank()) {
-                Spacer(Modifier.height(4.dp))
-                Text(item.genres, fontSize = 11.sp, color = TextTertiary, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            }
-            Spacer(Modifier.height(12.dp))
-            Text(
-                "Tap to view details →",
-                fontSize = 12.sp,
-                color = AccentBlue,
-                fontWeight = FontWeight.SemiBold
-            )
         }
     }
 }

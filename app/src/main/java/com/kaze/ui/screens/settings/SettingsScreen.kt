@@ -230,7 +230,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                     title = "Export to File",
                     subtitle = "Save watchlist as JSON",
                     onClick = {
-                        val fileName = "Kaze_Backup_${System.currentTimeMillis()}.json"
+                        val fileName = "Wotchy_Backup_${System.currentTimeMillis()}.json"
                         exportLauncher.launch(fileName)
                     }
                 )
@@ -284,7 +284,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("Kaze", color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                        Text("Wotchy", color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                         Text("Track what you watch", color = TextTertiary, fontSize = 12.sp)
                     }
                     Text("v${com.kaze.BuildConfig.VERSION_NAME}", color = TextTertiary, fontSize = 12.sp)

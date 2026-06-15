@@ -139,7 +139,7 @@ class UpdateManager(private val context: Context) {
             if (destination.exists()) destination.delete()
 
             val request = DownloadManager.Request(Uri.parse(url))
-                .setTitle("Kaze Update")
+                .setTitle("Wotchy Update")
                 .setDescription("Downloading latest version")
                 .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
                 .setDestinationUri(Uri.fromFile(destination))
