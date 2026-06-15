@@ -542,7 +542,13 @@ fun DetailScreen(
                                         viewModel.unmarkSeasonWatched()
                                     }
                                 },
-                                onEpisodePlotClick   = viewModel::fetchEpisodePlot
+                                onEpisodePlotClick   = viewModel::fetchEpisodePlot,
+                                onMarkPreviousClick  = { season, episode -> 
+                                    if (!uiState.isPreview) viewModel.markAllPreviousWatched(season, episode) 
+                                },
+                                onUnmarkPreviousClick = { season, episode -> 
+                                    if (!uiState.isPreview) viewModel.unmarkAllPreviousWatched(season, episode) 
+                                }
                             )
                             Spacer(Modifier.height(24.dp))
                             SubtleDivider()
