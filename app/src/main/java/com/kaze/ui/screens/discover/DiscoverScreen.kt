@@ -10,8 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.Forum
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.staggeredgrid.*
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
@@ -468,38 +467,26 @@ fun DiscoverScreen(
                             onRefresh = { viewModel.refresh() },
                             modifier = Modifier.fillMaxSize()
                         ) {
-                            LazyColumn(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(horizontal = 16.dp),
-                                verticalArrangement = Arrangement.spacedBy(12.dp),
-                                contentPadding = PaddingValues(top = 16.dp, bottom = 100.dp)
+                            LazyVerticalStaggeredGrid(
+                                columns = StaggeredGridCells.Fixed(2),
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 12.dp, bottom = 100.dp),
+                                verticalItemSpacing = 10.dp,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
                                 items(activeItems, key = { it.imdbId }) { item ->
-                                    val mappedWatchItem = com.kaze.model.WatchItem(
-                                        title = item.title,
-                                        year = item.year,
-                                        type = if (item.type.uppercase() == "SERIES") com.kaze.model.MediaType.SERIES else com.kaze.model.MediaType.MOVIE,
-                                        rating = item.rating,
-                                        posterUrl = item.posterUrl,
-                                        genres = item.genres,
-                                        imdbId = item.imdbId,
-                                        season = if (item.type.uppercase() == "SERIES") item.season else null,
-                                        episode = if (item.type.uppercase() == "SERIES") item.episode else null
-                                    )
-                                    com.kaze.ui.components.WatchItemCard(
-                                        item = mappedWatchItem,
+                                    DiscoverCard(
+                                        item = item,
                                         onClick = {
                                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                             onItemClick(item)
-                                        },
-                                        onToggleWatched = {}
+                                        }
                                     )
                                 }
 
                                 // Load more (only Global tab uses API)
                                 if (uiState.activeTab == DiscoverTab.GLOBAL) {
-                                    item {
+                                    item(span = StaggeredGridItemSpan.FullLine) {
                                         Box(
                                             modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
                                             contentAlignment = Alignment.Center
