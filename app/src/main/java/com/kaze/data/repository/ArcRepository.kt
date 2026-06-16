@@ -221,6 +221,22 @@ class ArcRepository(private val context: Context) {
         } catch (e: Exception) { e.printStackTrace() }
     }
 
+    suspend fun updateArcItemOrder(arcId: String, items: List<ArcItem>) {
+        withContext(Dispatchers.IO) {
+            try {
+                // Update all items with their new order_index
+                items.forEachIndexed { index, item ->
+                    SupabaseApi.client.from("arc_items").update(
+                        { set("order_index", index.toDouble()) }
+                    ) { filter { eq("id", item.id) } }
+                }
+                arcItemsCache.remove(arcId)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
     suspend fun deleteArcItem(itemId: String, arcId: String) = withContext(Dispatchers.IO) {
         try {
             SupabaseApi.client.from("arc_items").delete { filter { eq("id", itemId) } }

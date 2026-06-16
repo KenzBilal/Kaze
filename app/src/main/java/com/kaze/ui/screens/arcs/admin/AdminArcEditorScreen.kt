@@ -176,6 +176,32 @@ class AdminArcEditorViewModel(
         }
     }
 
+    fun moveItemUp(index: Int) {
+        if (index <= 0) return
+        val currentItems = _items.value.toMutableList()
+        val temp = currentItems[index]
+        currentItems[index] = currentItems[index - 1]
+        currentItems[index - 1] = temp
+        _items.value = currentItems
+        
+        viewModelScope.launch {
+            arcRepository.updateArcItemOrder(arcId, currentItems)
+        }
+    }
+
+    fun moveItemDown(index: Int) {
+        val currentItems = _items.value.toMutableList()
+        if (index >= currentItems.size - 1) return
+        val temp = currentItems[index]
+        currentItems[index] = currentItems[index + 1]
+        currentItems[index + 1] = temp
+        _items.value = currentItems
+        
+        viewModelScope.launch {
+            arcRepository.updateArcItemOrder(arcId, currentItems)
+        }
+    }
+
     fun setCoverUrl(posterUrl: String) {
         viewModelScope.launch {
             val current = _arc.value ?: return@launch
@@ -302,9 +328,14 @@ fun AdminArcEditorScreen(
                         }
                     }
                 } else {
-                    items(items, key = { it.id }) { item ->
+                    items(items.size, key = { items[it].id }) { index ->
+                        val item = items[index]
                         AdminArcItemRow(
                             item = item,
+                            canMoveUp = index > 0,
+                            canMoveDown = index < items.size - 1,
+                            onMoveUp = { vm.moveItemUp(index) },
+                            onMoveDown = { vm.moveItemDown(index) },
                             onDelete = { deleteTarget = item }
                         )
                     }
@@ -411,7 +442,14 @@ fun AdminArcEditorScreen(
 }
 
 @Composable
-private fun AdminArcItemRow(item: ArcItem, onDelete: () -> Unit) {
+private fun AdminArcItemRow(
+    item: ArcItem, 
+    canMoveUp: Boolean,
+    canMoveDown: Boolean,
+    onMoveUp: () -> Unit,
+    onMoveDown: () -> Unit,
+    onDelete: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -443,6 +481,14 @@ private fun AdminArcItemRow(item: ArcItem, onDelete: () -> Unit) {
         }
         IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
             Icon(Icons.Default.Delete, contentDescription = "Remove", tint = TextTertiary, modifier = Modifier.size(16.dp))
+        }
+        Column {
+            IconButton(onClick = onMoveUp, enabled = canMoveUp, modifier = Modifier.size(24.dp)) {
+                Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Move Up", tint = if (canMoveUp) TextSecondary else TextTertiary.copy(alpha=0.3f), modifier = Modifier.size(16.dp))
+            }
+            IconButton(onClick = onMoveDown, enabled = canMoveDown, modifier = Modifier.size(24.dp)) {
+                Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Move Down", tint = if (canMoveDown) TextSecondary else TextTertiary.copy(alpha=0.3f), modifier = Modifier.size(16.dp))
+            }
         }
     }
     HorizontalDivider(color = SurfaceHighlight.copy(alpha = 0.4f), modifier = Modifier.padding(horizontal = 16.dp))
