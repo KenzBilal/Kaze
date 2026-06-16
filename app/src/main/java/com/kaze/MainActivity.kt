@@ -51,6 +51,7 @@ class MainActivity : ComponentActivity() {
         val app = application as WatchLaterApp
         setContent {
             WatchLaterTheme {
+                com.kaze.ui.components.NotificationPermissionHandler()
                 AppContent(app = app)
             }
         }
