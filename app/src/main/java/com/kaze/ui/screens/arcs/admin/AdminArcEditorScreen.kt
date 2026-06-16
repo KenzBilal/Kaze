@@ -118,7 +118,7 @@ class AdminArcEditorViewModel(
         } catch (e: Exception) { 0 }
     }
 
-    fun addMovieItem(omdbItem: OmdbResult, phaseLabel: String, notes: String, isOptional: Boolean) {
+    fun addMovieItem(omdbItem: OmdbResult, notes: String, isOptional: Boolean) {
         viewModelScope.launch {
             val nextIndex = arcRepository.getNextOrderIndex(arcId)
             val item = ArcItem(
@@ -130,7 +130,6 @@ class AdminArcEditorViewModel(
                 year        = omdbItem.displayYear.toString().take(4).toIntOrNull() ?: 0,
                 type        = "MOVIE",
                 poster_url  = omdbItem.posterUrl.takeIf { it != "N/A" },
-                phase_label = phaseLabel.ifBlank { null },
                 notes       = notes.ifBlank { null },
                 is_optional = isOptional
             )
@@ -144,7 +143,7 @@ class AdminArcEditorViewModel(
         startSeason: Int, startEpisode: Int,
         endSeason: Int, endEpisode: Int,
         totalSeasons: Int,
-        phaseLabel: String, notes: String, isOptional: Boolean
+        notes: String, isOptional: Boolean
     ) {
         viewModelScope.launch {
             val nextIndex = arcRepository.getNextOrderIndex(arcId)
@@ -162,7 +161,6 @@ class AdminArcEditorViewModel(
                 start_episode = startEpisode,
                 end_season    = endSeason,
                 end_episode   = endEpisode,
-                phase_label   = phaseLabel.ifBlank { null },
                 notes         = notes.ifBlank { null },
                 is_optional   = isOptional
             )
@@ -227,6 +225,7 @@ fun AdminArcEditorScreen(
 
     var showAddSheet by remember { mutableStateOf(false) }
     var showRangePicker by remember { mutableStateOf<OmdbResult?>(null) }
+    var showMoviePicker by remember { mutableStateOf<OmdbResult?>(null) }
     var deleteTarget by remember { mutableStateOf<ArcItem?>(null) }
     var showMetaEditor by remember { mutableStateOf(false) }
 
@@ -327,10 +326,9 @@ fun AdminArcEditorScreen(
                 isSearching = isSearching,
                 onQueryChange = vm::search,
                 onSelectMovie = { item ->
-                    // Direct add for movies
                     showAddSheet = false
                     vm.clearSearch()
-                    vm.addMovieItem(item, "", "", false)
+                    showMoviePicker = item
                 },
                 onSelectSeries = { item ->
                     showAddSheet = false
@@ -352,11 +350,29 @@ fun AdminArcEditorScreen(
             AdminRangePickerSheet(
                 omdbItem = omdbItem,
                 vm = vm,
-                onConfirm = { startS, startE, endS, endE, totalS, phase, notes, optional ->
-                    vm.addSeriesItem(omdbItem, startS, startE, endS, endE, totalS, phase, notes, optional)
+                onConfirm = { startS, startE, endS, endE, totalS, notes, optional ->
+                    vm.addSeriesItem(omdbItem, startS, startE, endS, endE, totalS, notes, optional)
                     showRangePicker = null
                 },
                 onDismiss = { showRangePicker = null }
+            )
+        }
+    }
+
+    // Movie picker
+    showMoviePicker?.let { omdbItem ->
+        ModalBottomSheet(
+            onDismissRequest = { showMoviePicker = null },
+            containerColor = SurfaceContainer,
+            dragHandle = null
+        ) {
+            AdminMoviePickerSheet(
+                omdbItem = omdbItem,
+                onConfirm = { notes, optional ->
+                    vm.addMovieItem(omdbItem, notes, optional)
+                    showMoviePicker = null
+                },
+                onDismiss = { showMoviePicker = null }
             )
         }
     }
@@ -424,9 +440,6 @@ private fun AdminArcItemRow(item: ArcItem, onDelete: () -> Unit) {
                 "S${item.start_season}E${item.start_episode ?: 1} → S${item.end_season ?: item.start_season}E${item.end_episode ?: "?"}"
             else "Movie · ${item.year}"
             Text(rangeLabel, color = TextTertiary, fontSize = 11.sp)
-            if (!item.phase_label.isNullOrBlank()) {
-                Text(item.phase_label, color = AccentBlue.copy(alpha = 0.7f), fontSize = 11.sp)
-            }
         }
         IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
             Icon(Icons.Default.Delete, contentDescription = "Remove", tint = TextTertiary, modifier = Modifier.size(16.dp))
@@ -447,6 +460,14 @@ fun AdminAddItemSheet(
     onSelectSeries: (OmdbResult) -> Unit,
     onDismiss: () -> Unit
 ) {
+    var localQuery by remember { mutableStateOf(query) }
+    LaunchedEffect(localQuery) {
+        if (localQuery != query) {
+            delay(400)
+            onQueryChange(localQuery)
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -457,8 +478,8 @@ fun AdminAddItemSheet(
         Spacer(Modifier.height(12.dp))
 
         OutlinedTextField(
-            value = query,
-            onValueChange = onQueryChange,
+            value = localQuery,
+            onValueChange = { localQuery = it },
             modifier = Modifier.fillMaxWidth(),
             placeholder = { Text("Search movies & series...", color = TextTertiary) },
             leadingIcon = { Icon(Icons.Default.Search, null, tint = TextTertiary) },
@@ -538,7 +559,7 @@ private fun SearchResultRow(item: OmdbResult, onClick: () -> Unit) {
 fun AdminRangePickerSheet(
     omdbItem: OmdbResult,
     vm: AdminArcEditorViewModel,
-    onConfirm: (Int, Int, Int, Int, Int, String, String, Boolean) -> Unit,
+    onConfirm: (Int, Int, Int, Int, Int, String, Boolean) -> Unit,
     onDismiss: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
@@ -555,7 +576,6 @@ fun AdminRangePickerSheet(
 
     var epsInFromSeason by remember { mutableIntStateOf(1) }
     var epsInEndSeason by remember { mutableIntStateOf(1) }
-    var phaseLabel by remember { mutableStateOf("") }
     var notes by remember { mutableStateOf("") }
     var isOptional by remember { mutableStateOf(false) }
     var isLoadingMeta by remember { mutableStateOf(true) }
@@ -622,75 +642,116 @@ fun AdminRangePickerSheet(
                 CircularProgressIndicator(color = AccentBlue, modifier = Modifier.size(24.dp))
             }
         } else {
-            // FROM row
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("From", color = TextSecondary, fontSize = 13.sp, modifier = Modifier.width(40.dp))
-                Spacer(Modifier.width(12.dp))
-                SeasonEpisodePicker(
-                    label = "Season",
-                    value = fromSeason,
-                    max = totalSeasons,
-                    locked = fromLocked,
-                    onValueChange = { fromSeason = it }
-                )
-                Spacer(Modifier.width(10.dp))
-                SeasonEpisodePicker(
-                    label = "Episode",
-                    value = fromEpisode,
-                    max = epsInFromSeason,
-                    locked = fromLocked,
-                    onValueChange = { fromEpisode = it }
-                )
-                if (fromLocked) {
-                    Spacer(Modifier.width(8.dp))
-                    IconButton(onClick = { fromLocked = false }, modifier = Modifier.size(28.dp)) {
-                        Icon(Icons.Default.Lock, null, tint = TextTertiary, modifier = Modifier.size(14.dp))
+            // To / From section
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // FROM column
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Start At", color = TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                        if (fromLocked) {
+                            Spacer(Modifier.width(6.dp))
+                            Icon(Icons.Default.Lock, null, tint = AccentBlue, modifier = Modifier.size(12.dp).clickable { fromLocked = false })
+                        }
                     }
+                    Spacer(Modifier.height(8.dp))
+                    SeasonEpisodePicker(label = "Season", value = fromSeason, max = totalSeasons, locked = fromLocked, onValueChange = { fromSeason = it })
+                    Spacer(Modifier.height(6.dp))
+                    SeasonEpisodePicker(label = "Episode", value = fromEpisode, max = epsInFromSeason, locked = fromLocked, onValueChange = { fromEpisode = it })
+                }
+                
+                // Vertical divider
+                Box(modifier = Modifier.width(1.dp).height(80.dp).background(SurfaceHighlight).align(Alignment.CenterVertically))
+
+                // TO column
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("End At", color = TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.height(8.dp))
+                    SeasonEpisodePicker(label = "Season", value = endSeason, max = totalSeasons, locked = false, onValueChange = { endSeason = it })
+                    Spacer(Modifier.height(6.dp))
+                    SeasonEpisodePicker(label = "Episode", value = endEpisode, max = epsInEndSeason, locked = false, onValueChange = { endEpisode = it })
                 }
             }
 
-            // TO row
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("To", color = TextSecondary, fontSize = 13.sp, modifier = Modifier.width(40.dp))
-                Spacer(Modifier.width(12.dp))
-                SeasonEpisodePicker(label = "Season", value = endSeason, max = totalSeasons, locked = false,
-                    onValueChange = { endSeason = it })
-                Spacer(Modifier.width(10.dp))
-                SeasonEpisodePicker(label = "Episode", value = endEpisode, max = epsInEndSeason, locked = false,
-                    onValueChange = { endEpisode = it })
-            }
-
             // Preview
-            Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))
-                .background(SurfaceElevated).padding(10.dp)) {
-                Text("Preview: $previewLabel", color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+            Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
+                .background(SurfaceElevated).padding(14.dp), contentAlignment = Alignment.Center) {
+                Text(previewLabel, color = AccentBlue, fontSize = 14.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
             }
 
-            ArcTextField(value = phaseLabel, onValueChange = { phaseLabel = it }, label = "Phase / Chapter label")
             ArcTextField(value = notes, onValueChange = { notes = it }, label = "Notes (optional)")
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Optional entry", color = TextSecondary, fontSize = 13.sp, modifier = Modifier.weight(1f))
+            Row(
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(SurfaceElevated).padding(horizontal = 14.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Optional entry", color = TextPrimary, fontSize = 14.sp, modifier = Modifier.weight(1f))
                 Switch(
                     checked = isOptional,
                     onCheckedChange = { isOptional = it },
-                    colors = SwitchDefaults.colors(
-                        checkedTrackColor = AccentBlue,
-                        checkedThumbColor = Background
-                    )
+                    colors = SwitchDefaults.colors(checkedTrackColor = AccentBlue, checkedThumbColor = Background)
                 )
             }
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f)) {
+                OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp)) {
                     Text("Cancel", color = TextSecondary)
                 }
                 Button(
-                    onClick = { onConfirm(fromSeason, fromEpisode, endSeason, endEpisode, totalSeasons, phaseLabel, notes, isOptional) },
+                    onClick = { onConfirm(fromSeason, fromEpisode, endSeason, endEpisode, totalSeasons, notes, isOptional) },
                     modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = AccentBlue, contentColor = Background)
-                ) { Text("Add to Arc") }
+                ) { Text("Add Series", fontWeight = FontWeight.Bold) }
             }
+        }
+    }
+}
+
+@Composable
+fun AdminMoviePickerSheet(
+    omdbItem: OmdbResult,
+    onConfirm: (String, Boolean) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var notes by remember { mutableStateOf("") }
+    var isOptional by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text("${omdbItem.displayTitle} (${omdbItem.displayYear})", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+        
+        ArcTextField(value = notes, onValueChange = { notes = it }, label = "Notes (optional)")
+
+        Row(
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(SurfaceElevated).padding(horizontal = 14.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Optional entry", color = TextPrimary, fontSize = 14.sp, modifier = Modifier.weight(1f))
+            Switch(
+                checked = isOptional,
+                onCheckedChange = { isOptional = it },
+                colors = SwitchDefaults.colors(checkedTrackColor = AccentBlue, checkedThumbColor = Background)
+            )
+        }
+
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp)) {
+                Text("Cancel", color = TextSecondary)
+            }
+            Button(
+                onClick = { onConfirm(notes, isOptional) },
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = AccentBlue, contentColor = Background)
+            ) { Text("Add Movie", fontWeight = FontWeight.Bold) }
         }
     }
 }
@@ -703,35 +764,37 @@ private fun SeasonEpisodePicker(
     locked: Boolean,
     onValueChange: (Int) -> Unit
 ) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(label, color = TextTertiary, fontSize = 10.sp)
-        Row(verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(SurfaceElevated).padding(horizontal = 8.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(label, color = TextSecondary, fontSize = 13.sp, modifier = Modifier.weight(1f))
+        
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.background(SurfaceHighlight, RoundedCornerShape(8.dp))) {
             IconButton(
                 onClick = { if (!locked && value > 1) onValueChange(value - 1) },
                 enabled = !locked && value > 1,
-                modifier = Modifier.size(28.dp)
+                modifier = Modifier.size(32.dp)
             ) {
-                Icon(Icons.Default.Remove, null, tint = if (!locked && value > 1) AccentBlue else TextTertiary,
-                    modifier = Modifier.size(14.dp))
+                Icon(Icons.Default.Remove, null, tint = if (!locked && value > 1) TextPrimary else TextTertiary, modifier = Modifier.size(16.dp))
             }
             Text(
                 "$value",
                 color = if (locked) TextTertiary else TextPrimary,
                 fontWeight = FontWeight.Bold,
-                fontSize = 15.sp,
-                modifier = Modifier.widthIn(min = 28.dp),
+                fontSize = 14.sp,
+                modifier = Modifier.widthIn(min = 24.dp),
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
             IconButton(
                 onClick = { if (!locked && value < max) onValueChange(value + 1) },
                 enabled = !locked && value < max,
-                modifier = Modifier.size(28.dp)
+                modifier = Modifier.size(32.dp)
             ) {
-                Icon(Icons.Default.Add, null, tint = if (!locked && value < max) AccentBlue else TextTertiary,
-                    modifier = Modifier.size(14.dp))
+                Icon(Icons.Default.Add, null, tint = if (!locked && value < max) TextPrimary else TextTertiary, modifier = Modifier.size(16.dp))
             }
         }
-        Text("/ $max", color = TextTertiary, fontSize = 10.sp)
     }
 }
 

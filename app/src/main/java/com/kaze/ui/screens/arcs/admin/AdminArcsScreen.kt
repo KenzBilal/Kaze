@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
@@ -197,21 +198,18 @@ private fun AdminArcRow(
                 Text(arc.name, color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 14.sp,
                     maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
                 Spacer(Modifier.width(8.dp))
-                // Published badge
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(if (arc.is_published) WatchedGreen.copy(alpha = 0.2f) else SurfaceHighlight)
-                        .clickable { onTogglePublish() }
-                        .padding(horizontal = 8.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        if (arc.is_published) "LIVE" else "DRAFT",
-                        color = if (arc.is_published) WatchedGreen else TextTertiary,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+                // Published switch
+                Switch(
+                    checked = arc.is_published,
+                    onCheckedChange = { onTogglePublish() },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Background,
+                        checkedTrackColor = WatchedGreen,
+                        uncheckedThumbColor = TextSecondary,
+                        uncheckedTrackColor = androidx.compose.ui.graphics.Color.Red.copy(alpha = 0.6f)
+                    ),
+                    modifier = Modifier.scale(0.8f)
+                )
             }
             if (arc.description.isNotBlank()) {
                 Spacer(Modifier.height(2.dp))

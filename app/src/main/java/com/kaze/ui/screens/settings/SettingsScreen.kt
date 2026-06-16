@@ -49,13 +49,10 @@ fun SettingsScreen(onBack: () -> Unit, onManageArcs: () -> Unit = {}) {
     var isAdmin by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        val uid = app.container.userRepository.getLocalUserId()
-        if (uid != null) {
-            val user = app.container.userRepository.getUserById(uid)
-            isAdmin = user?.username.equals("kenzbilal", ignoreCase = true)
-        }
+        val username = app.container.userRepository.getLocalUsername()
+        isAdmin = username.equals("kenzbilal", ignoreCase = true)
     }
-    
+
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
     ) { uri: Uri? ->
