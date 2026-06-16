@@ -3,6 +3,7 @@ package com.kaze.di
 import android.content.Context
 import com.kaze.data.local.WatchLaterDatabase
 import com.kaze.data.remote.OmdbRepository
+import com.kaze.data.repository.ArcRepository
 import com.kaze.data.repository.SeriesRepository
 import com.kaze.data.repository.WatchItemRepository
 import com.kaze.updater.UpdateManager
@@ -19,6 +20,7 @@ class AppContainer(context: Context) {
     val userPreferences = com.kaze.utils.UserPreferences(context)
     val networkMonitor = com.kaze.utils.NetworkMonitor(context)
     val discoverCacheRepository = com.kaze.data.repository.DiscoverCacheRepository(com.kaze.data.remote.SupabaseApi.client)
+    val arcRepository = ArcRepository(context)
 
     val repository = WatchItemRepository(
         dao                = database.watchItemDao(),

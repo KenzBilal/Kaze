@@ -14,6 +14,10 @@ import androidx.navigation.navArgument
 import com.kaze.WatchLaterApp
 import com.kaze.ui.screens.add.AddItemSheet
 import com.kaze.ui.screens.add.AddItemViewModel
+import com.kaze.ui.screens.arcs.ArcDetailScreen
+import com.kaze.ui.screens.arcs.ArcsScreen
+import com.kaze.ui.screens.arcs.admin.AdminArcsScreen
+import com.kaze.ui.screens.arcs.admin.AdminArcEditorScreen
 import com.kaze.ui.screens.detail.DetailScreen
 import com.kaze.ui.screens.detail.DetailViewModel
 import com.kaze.ui.screens.discover.DiscoverScreen
@@ -37,6 +41,7 @@ sealed class Screen(val route: String) {
     object Splash       : Screen("splash")
     object SetUsername  : Screen("setUsername")
     object Home         : Screen("home")
+    object Arcs         : Screen("arcs")
     object Discover     : Screen("discover")
     object Feed         : Screen("feed")
     object Friends      : Screen("friends")
@@ -44,12 +49,19 @@ sealed class Screen(val route: String) {
     object MyProfile    : Screen("myProfile")
     object Settings     : Screen("settings")
     object Search       : Screen("search")
+    object AdminArcs    : Screen("adminArcs")
 
     object Detail : Screen("detail/{itemId}") {
         fun createRoute(id: Long) = "detail/$id"
     }
     object UserProfile : Screen("userProfile/{userId}") {
         fun createRoute(id: String) = "userProfile/$id"
+    }
+    object ArcDetail : Screen("arcDetail/{arcId}") {
+        fun createRoute(id: String) = "arcDetail/$id"
+    }
+    object AdminArcEditor : Screen("adminArcEditor/{arcId}") {
+        fun createRoute(id: String) = "adminArcEditor/$id"
     }
     object DetailPreview : Screen("detail_preview/{imdbId}?title={title}&type={type}&poster={poster}&rating={rating}&notes={notes}&genres={genres}&year={year}&season={season}&episode={episode}") {
         fun createRoute(imdbId: String, title: String, type: String, poster: String?, rating: Float = 0f, notes: String = "", genres: String = "", year: Int = 0, season: Int = 1, episode: Int = 1) =
@@ -126,7 +138,8 @@ fun WatchLaterNavGraph(
                 whatToWatchViewModel = whatToWatchVm,
                 onItemClick  = { id -> navController.navigate(Screen.Detail.createRoute(id)) },
                 onAddClick   = { showAddSheet = true },
-                onSearchClick = { navController.navigate(Screen.Search.route) }
+                onSearchClick = { navController.navigate(Screen.Search.route) },
+                onFriendsClick = { navController.navigate(Screen.Friends.route) }
             )
 
             if (showAddSheet) {
@@ -174,6 +187,53 @@ fun WatchLaterNavGraph(
             FeedScreen()
         }
 
+        // ── Arcs ──────────────────────────────────────────────────────────
+        composable(Screen.Arcs.route) {
+            ArcsScreen(
+                arcRepository  = app.container.arcRepository,
+                userRepository = app.container.userRepository,
+                onArcClick     = { arcId -> navController.navigate(Screen.ArcDetail.createRoute(arcId)) }
+            )
+        }
+
+        composable(
+            route = Screen.ArcDetail.route,
+            arguments = listOf(navArgument("arcId") { type = NavType.StringType })
+        ) { backStack ->
+            val arcId = backStack.arguments!!.getString("arcId") ?: ""
+            ArcDetailScreen(
+                arcId          = arcId,
+                arcRepository  = app.container.arcRepository,
+                watchItemRepo  = app.container.repository,
+                userRepository = app.container.userRepository,
+                activityRepo   = app.container.activityRepository,
+                onBack         = { navController.popBackStack() },
+                onItemClick    = { id -> navController.navigate(Screen.Detail.createRoute(id)) }
+            )
+        }
+
+        // ── Admin Arcs ────────────────────────────────────────────────────
+        composable(Screen.AdminArcs.route) {
+            AdminArcsScreen(
+                arcRepository = app.container.arcRepository,
+                onBack        = { navController.popBackStack() },
+                onEditArc     = { arcId -> navController.navigate(Screen.AdminArcEditor.createRoute(arcId)) }
+            )
+        }
+
+        composable(
+            route = Screen.AdminArcEditor.route,
+            arguments = listOf(navArgument("arcId") { type = NavType.StringType })
+        ) { backStack ->
+            val arcId = backStack.arguments!!.getString("arcId") ?: ""
+            AdminArcEditorScreen(
+                arcId         = arcId,
+                arcRepository = app.container.arcRepository,
+                omdbRepository = app.container.omdbRepository,
+                onBack        = { navController.popBackStack() }
+            )
+        }
+
         // ── Stats ─────────────────────────────────────────────────────────
         composable(Screen.Stats.route) {
             val statsVm: StatsViewModel = viewModel(
@@ -210,7 +270,10 @@ fun WatchLaterNavGraph(
 
         // ── Settings ──────────────────────────────────────────────────────
         composable(Screen.Settings.route) {
-            SettingsScreen(onBack = { navController.popBackStack() })
+            SettingsScreen(
+                onBack        = { navController.popBackStack() },
+                onManageArcs  = { navController.navigate(Screen.AdminArcs.route) }
+            )
         }
 
         // ── User Profile ──────────────────────────────────────────────────

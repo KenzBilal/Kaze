@@ -30,7 +30,8 @@ fun HomeScreen(
     whatToWatchViewModel: WhatToWatchViewModel,
     onItemClick: (Long) -> Unit,
     onAddClick: () -> Unit,
-    onSearchClick: () -> Unit
+    onSearchClick: () -> Unit,
+    onFriendsClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedTab by rememberSaveable { mutableIntStateOf(uiState.selectedTab) }
@@ -40,9 +41,7 @@ fun HomeScreen(
         viewModel.setTab(selectedTab)
     }
     val tabs = listOf("TO WATCH", "WATCHED")
-    var showSortSheet by remember { mutableStateOf(false) }
     var showWhatToWatchSheet by remember { mutableStateOf(false) }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val whatToWatchSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showMarkWatchedDialog by remember { mutableStateOf<WatchItem?>(null) }
 
@@ -61,15 +60,14 @@ fun HomeScreen(
         topBar = {
             HomeTopBar(
                 onSearchClick = onSearchClick,
-                onFilterClick = { 
+                onFriendsClick = {
                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    showSortSheet = true 
+                    onFriendsClick()
                 },
                 onWhatToWatchClick = {
                     haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                     showWhatToWatchSheet = true
                 },
-                hasActiveFilter = uiState.sortFilterState.filter != FilterOption.ALL,
                 showWandIcon = selectedTab == 0
             )
         },
@@ -129,7 +127,7 @@ fun HomeScreen(
                 0 -> WatchItemList(
                     items = uiState.items,
                     isLoading = uiState.isLoading,
-                    isFiltered = uiState.sortFilterState.filter != FilterOption.ALL,
+                    isFiltered = false,
                     emptyIcon = Icons.Outlined.Bookmark,
                     emptyTitle = "Your watchlist is empty",
                     emptySubtitle = "Tap + to add movies and series\nyou want to watch",
@@ -142,7 +140,7 @@ fun HomeScreen(
                 1 -> WatchItemList(
                     items = uiState.items,
                     isLoading = uiState.isLoading,
-                    isFiltered = uiState.sortFilterState.filter != FilterOption.ALL,
+                    isFiltered = false,
                     emptyIcon = Icons.Outlined.CheckCircle,
                     emptyTitle = "Nothing watched yet",
                     emptySubtitle = "Mark items as watched and\nthey'll appear here",
@@ -154,22 +152,6 @@ fun HomeScreen(
                     onToggleFavorite = { item -> viewModel.toggleFavorite(item) }
                 )
             }
-        }
-    }
-
-    if (showSortSheet) {
-        ModalBottomSheet(
-            onDismissRequest = { showSortSheet = false },
-            sheetState = sheetState,
-            containerColor = SurfaceContainer,
-            dragHandle = null
-        ) {
-            SortFilterSheet(
-                state = uiState.sortFilterState,
-                onSortChange = viewModel::updateSort,
-                onFilterChange = viewModel::updateFilter,
-                onDismiss = { showSortSheet = false }
-            )
         }
     }
 
@@ -399,9 +381,8 @@ private fun WatchItemList(
 @Composable
 private fun HomeTopBar(
     onSearchClick: () -> Unit,
-    onFilterClick: () -> Unit,
+    onFriendsClick: () -> Unit,
     onWhatToWatchClick: () -> Unit,
-    hasActiveFilter: Boolean,
     showWandIcon: Boolean
 ) {
     TopAppBar(
@@ -422,12 +403,8 @@ private fun HomeTopBar(
             IconButton(onClick = onSearchClick) {
                 Icon(Icons.Default.Search, contentDescription = "Search", tint = TextSecondary)
             }
-            BadgedBox(
-                badge = { if (hasActiveFilter) Badge(containerColor = AccentBlue) }
-            ) {
-                IconButton(onClick = onFilterClick) {
-                    Icon(Icons.Default.Tune, contentDescription = "Sort & Filter", tint = TextSecondary)
-                }
+            IconButton(onClick = onFriendsClick) {
+                Icon(Icons.Default.People, contentDescription = "Friends", tint = TextSecondary)
             }
         }
     )

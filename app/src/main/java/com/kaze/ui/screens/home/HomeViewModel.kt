@@ -66,7 +66,7 @@ class HomeViewModel(
 
     init {
         val initialSort = try { SortOption.valueOf(userPreferences.sortOption) } catch (e: Exception) { SortOption.DATE_ADDED_DESC }
-        val initialFilter = try { FilterOption.valueOf(userPreferences.filterOption) } catch (e: Exception) { FilterOption.ALL }
+        val initialFilter = try { FilterOption.valueOf(userPreferences.filterOption) } catch (e: Exception) { FilterOption.IN_PROGRESS }
         _sortFilterState.value = SortFilterState(sort = initialSort, filter = initialFilter)
         
         viewModelScope.launch {

@@ -13,13 +13,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.Collections
 import androidx.compose.material.icons.filled.Explore
-import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.outlined.Bookmark
+import androidx.compose.material.icons.outlined.Collections
 import androidx.compose.material.icons.outlined.Explore
-import androidx.compose.material.icons.outlined.People
+import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -66,22 +66,22 @@ fun AppContent(app: WatchLaterApp) {
     val bottomNavItems = listOf(
         BottomNavItem(
             screen = Screen.Home,
-            label = "Watchlist",
-            selectedIcon = Icons.Filled.Bookmark,
-            unselectedIcon = Icons.Outlined.Bookmark
+            label = "Home",
+            selectedIcon = Icons.Filled.Home,
+            unselectedIcon = Icons.Outlined.Home
         ),
         BottomNavItem(
-            screen = Screen.Friends,
-            label = "Friends",
-            selectedIcon = Icons.Filled.People,
-            unselectedIcon = Icons.Outlined.People
+            screen = Screen.Arcs,
+            label = "Arcs",
+            selectedIcon = Icons.Filled.Collections,
+            unselectedIcon = Icons.Outlined.Collections
         ),
         BottomNavItem(
             screen = Screen.Discover,
             label = "Discover",
             selectedIcon = Icons.Filled.Explore,
             unselectedIcon = Icons.Outlined.Explore,
-            isCenter = true   // Slightly larger center icon
+            isCenter = true
         ),
         BottomNavItem(
             screen = Screen.Stats,
@@ -99,7 +99,7 @@ fun AppContent(app: WatchLaterApp) {
 
     val showBottomBar = currentRoute in listOf(
         Screen.Home.route,
-        Screen.Friends.route,
+        Screen.Arcs.route,
         Screen.Discover.route,
         Screen.Stats.route,
         Screen.MyProfile.route

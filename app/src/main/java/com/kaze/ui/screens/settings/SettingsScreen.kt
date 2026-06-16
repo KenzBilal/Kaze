@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
+import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material.icons.filled.CloudDownload
@@ -34,7 +35,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(onBack: () -> Unit) {
+fun SettingsScreen(onBack: () -> Unit, onManageArcs: () -> Unit = {}) {
     val context = LocalContext.current
     val app = context.applicationContext as com.kaze.WatchLaterApp
     val prefs = remember { UserPreferences(context) }
@@ -249,6 +250,24 @@ fun SettingsScreen(onBack: () -> Unit) {
             }
 
 
+
+            // ── Section: Admin ─────────────────────────────────────────────
+            if (isAdmin) {
+                item {
+                    Spacer(Modifier.height(28.dp))
+                    SettingsSectionLabel("ADMIN")
+                    Spacer(Modifier.height(10.dp))
+                }
+                item {
+                    SettingsActionRow(
+                        icon = Icons.Filled.AutoStories,
+                        title = "Manage Arcs",
+                        subtitle = "Create and edit franchise watch orders",
+                        onClick = { onManageArcs() }
+                    )
+                }
+                item { Spacer(Modifier.height(10.dp)) }
+            }
 
             // ── Section: About ────────────────────────────────────────────────
             item {
