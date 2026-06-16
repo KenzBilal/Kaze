@@ -361,9 +361,14 @@ private fun ArcItemRow(
             // Range label
             val rangeLabel = buildString {
                 if (item.type == "SERIES" && item.start_season != null) {
-                    append("S${item.start_season}")
-                    if (item.end_season != null && item.end_season != item.start_season)
-                        append("–S${item.end_season}")
+                    append("S${item.start_season}E${item.start_episode ?: 1}")
+                    val endS = item.end_season ?: item.start_season
+                    val endE = item.end_episode
+                    if (endS != null && endE != null) {
+                        append(" → S${endS}E${endE}")
+                    }
+                } else if (item.type == "MOVIE") {
+                    append("Movie · ${item.year}")
                 }
                 if (item.is_optional) append(if (isNotEmpty()) "  ·  Optional" else "Optional")
             }
