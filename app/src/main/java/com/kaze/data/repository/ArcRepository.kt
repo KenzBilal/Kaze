@@ -3,8 +3,6 @@ package com.kaze.data.repository
 import android.content.Context
 import com.kaze.data.local.ArcItemProgress
 import com.kaze.data.local.WatchLaterDatabase
-import com.kaze.data.remote.OmdbApi
-import com.kaze.data.remote.OmdbRepository
 import com.kaze.data.remote.SupabaseApi
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Order
@@ -21,7 +19,21 @@ data class Arc(
     val description: String = "",
     val aliases: String = "",           // comma-separated aliases for search
     val cover_url: String? = null,
-    val is_published: Boolean = false
+    val is_published: Boolean = false,
+    val owner_id: String? = null
+)
+
+@Serializable
+data class ArcShare(
+    val id: String = "",
+    val arc_id: String,
+    val sender_id: String,
+    val receiver_id: String,
+    val status: String = "pending",
+    val created_at: String = "",
+    // Denormalized display fields (populated locally when possible)
+    val arc_name: String = "",
+    val sender_username: String = ""
 )
 
 @Serializable
@@ -32,7 +44,7 @@ data class ArcItem(
     val imdb_id: String = "",
     val title: String = "",
     val year: Int = 0,
-    val type: String = "MOVIE",         // "MOVIE" or "SERIES"
+    val type: String,         // "MOVIE" or "SERIES" (no default to ensure it serializes)
     val poster_url: String? = null,
     val total_seasons: Int? = null,
     val start_season: Int? = null,
@@ -75,9 +87,16 @@ class ArcRepository(private val context: Context) {
         withContext(Dispatchers.IO) {
             if (!forceRefresh && isCacheValid() && cachedArcs.isNotEmpty()) return@withContext cachedArcs
             try {
-                val arcs = SupabaseApi.client.from("arcs")
+                val userId = UserRepository(context).getLocalUserId()
+                val publishedArcs = SupabaseApi.client.from("arcs")
                     .select { filter { eq("is_published", true) } }
                     .decodeList<Arc>()
+                val personalArcs = if (userId != null) {
+                    SupabaseApi.client.from("arcs")
+                        .select { filter { eq("owner_id", userId) } }
+                        .decodeList<Arc>()
+                } else emptyList()
+                val arcs = (publishedArcs + personalArcs).distinctBy { it.id }
                 cachedArcs = arcs
                 lastFetchTime = System.currentTimeMillis()
                 arcs
@@ -258,5 +277,87 @@ class ArcRepository(private val context: Context) {
         lastFetchTime = 0L
         cachedArcs = emptyList()
         arcItemsCache.clear()
+    }
+
+    // ── Personal Arcs & Sharing ───────────────────────────────────────────────
+
+    suspend fun shareArc(arcId: String, senderId: String, receiverId: String) = withContext(Dispatchers.IO) {
+        try {
+            val share = ArcShare(
+                arc_id = arcId,
+                sender_id = senderId,
+                receiver_id = receiverId
+            )
+            SupabaseApi.client.from("arc_shares").insert(share)
+            
+            val arc = getArcWithItems(arcId, forceRefresh = true).first
+            if (arc != null) {
+                val activityRepo = ActivityRepository(context)
+                activityRepo.postActivity(
+                    ActivityFeedEntry(
+                        user_id = senderId,
+                        action_type = "shared_arc",
+                        item_title = arc.name,
+                        target_user_id = receiverId
+                    )
+                )
+            }
+        } catch (e: Exception) { e.printStackTrace() }
+    }
+
+    suspend fun getPendingShares(userId: String): List<ArcShare> = withContext(Dispatchers.IO) {
+        try {
+            val shares = SupabaseApi.client.from("arc_shares")
+                .select { filter { eq("receiver_id", userId); eq("status", "pending") } }
+                .decodeList<ArcShare>()
+            // Enrich with arc name and sender username for display
+            val userRepo = UserRepository(context)
+            shares.map { share ->
+                val arcName = try {
+                    SupabaseApi.client.from("arcs")
+                        .select { filter { eq("id", share.arc_id) } }
+                        .decodeSingleOrNull<Arc>()?.name ?: ""
+                } catch (e: Exception) { "" }
+                val senderName = try {
+                    userRepo.getUsersByIds(listOf(share.sender_id)).firstOrNull()?.username ?: ""
+                } catch (e: Exception) { "" }
+                share.copy(arc_name = arcName, sender_username = senderName)
+            }
+        } catch (e: Exception) { e.printStackTrace(); emptyList() }
+    }
+
+    suspend fun acceptShare(share: ArcShare) = withContext(Dispatchers.IO) {
+        try {
+            val (originalArc, originalItems) = getArcWithItems(share.arc_id, forceRefresh = true)
+            if (originalArc == null) return@withContext
+
+            val newArcId = java.util.UUID.randomUUID().toString()
+            val clonedArc = originalArc.copy(
+                id = newArcId,
+                owner_id = share.receiver_id,
+                is_published = false
+            )
+            SupabaseApi.client.from("arcs").insert(clonedArc)
+
+            val clonedItems = originalItems.map { it.copy(id = java.util.UUID.randomUUID().toString(), arc_id = newArcId) }
+            if (clonedItems.isNotEmpty()) {
+                SupabaseApi.client.from("arc_items").insert(clonedItems)
+            }
+
+            @Serializable data class StatusUpdate(val status: String)
+            SupabaseApi.client.from("arc_shares").update(StatusUpdate("accepted")) {
+                filter { eq("id", share.id) }
+            }
+            invalidateCache()
+        } catch (e: Exception) { e.printStackTrace() }
+    }
+
+    suspend fun rejectShare(shareId: String) = withContext(Dispatchers.IO) {
+        try {
+            @Serializable data class StatusUpdate(val status: String)
+            SupabaseApi.client.from("arc_shares").update(StatusUpdate("rejected")) {
+                filter { eq("id", shareId) }
+            }
+        } catch (e: Exception) { e.printStackTrace() }
     }
 }

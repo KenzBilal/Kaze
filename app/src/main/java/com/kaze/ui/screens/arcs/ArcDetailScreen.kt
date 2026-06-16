@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -34,8 +35,11 @@ import com.kaze.model.MediaType
 import com.kaze.model.WatchItem
 import com.kaze.ui.theme.*
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 // ── ViewModel ─────────────────────────────────────────────────────────────────
@@ -56,8 +60,16 @@ class ArcDetailViewModel(
     val items: StateFlow<List<ArcItemUiState>> = _items.asStateFlow()
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
+    private val _friends = MutableStateFlow<List<SupabaseUser>>(emptyList())
+    val friends: StateFlow<List<SupabaseUser>> = _friends.asStateFlow()
+
     private var userId: String? = null
     private var localWatchlist: List<WatchItem> = emptyList()
+
+    /** Reactive: true when arc is loaded AND user owns it */
+    val isOwner: StateFlow<Boolean> = _arc.map { arc ->
+        arc?.owner_id != null && arc.owner_id == userId
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     init { load() }
 
@@ -76,7 +88,18 @@ class ArcDetailViewModel(
             _items.value = arcItems.map { item ->
                 ArcItemUiState(item, computeRowState(item, localWatchlist, progressMap))
             }
+            if (userId != null) {
+                _friends.value = userRepository.getFollowingList(userId!!)
+            }
             _isLoading.value = false
+        }
+    }
+
+    fun shareArc(receiverId: String, onComplete: () -> Unit) {
+        val uid = userId ?: return
+        viewModelScope.launch {
+            arcRepository.shareArc(arcId, uid, receiverId)
+            onComplete()
         }
     }
 
@@ -134,11 +157,9 @@ class ArcDetailViewModel(
 
     fun addAllToWatchlist() {
         viewModelScope.launch {
-            _items.value.forEach { uiState ->
-                if (uiState.rowState == ArcRowState.NOT_IN_WATCHLIST) {
-                    addToWatchlist(uiState.arcItem)
-                }
-            }
+            // Snapshot the list before starting to avoid mutation races
+            val toAdd = _items.value.filter { it.rowState == ArcRowState.NOT_IN_WATCHLIST }.map { it.arcItem }
+            toAdd.forEach { addToWatchlist(it) }
         }
     }
 
@@ -148,8 +169,24 @@ class ArcDetailViewModel(
         progress: Map<String, Boolean>
     ): ArcRowState {
         val inWatchlist = watchlist.firstOrNull { it.imdbId == arcItem.imdb_id }
+        
+        var smartWatched = inWatchlist?.isWatched == true
+        if (inWatchlist != null && arcItem.type == "SERIES" && !smartWatched) {
+            val endS = arcItem.end_season
+            val endE = arcItem.end_episode
+            val userS = inWatchlist.season ?: 1
+            val userE = inWatchlist.episode ?: 1
+            if (endS != null && endE != null) {
+                if (userS > endS) {
+                    smartWatched = true
+                } else if (userS == endS && userE > endE) {
+                    smartWatched = true
+                }
+            }
+        }
+
         return when {
-            inWatchlist?.isWatched == true    -> ArcRowState.WATCHED
+            smartWatched                      -> ArcRowState.WATCHED
             progress[arcItem.id] == true      -> ArcRowState.MANUALLY_MARKED
             inWatchlist != null               -> ArcRowState.IN_WATCHLIST
             else                              -> ArcRowState.NOT_IN_WATCHLIST
@@ -188,8 +225,11 @@ fun ArcDetailScreen(
     val arc by vm.arc.collectAsStateWithLifecycle()
     val items by vm.items.collectAsStateWithLifecycle()
     val isLoading by vm.isLoading.collectAsStateWithLifecycle()
+    val friends by vm.friends.collectAsStateWithLifecycle()
+    val isOwner by vm.isOwner.collectAsStateWithLifecycle()
 
     var showAddAllDialog by remember { mutableStateOf(false) }
+    var showShareSheet by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = Background,
@@ -207,6 +247,13 @@ fun ArcDetailScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Filled.ArrowBackIosNew, "Back", tint = TextSecondary, modifier = Modifier.size(18.dp))
+                    }
+                },
+                actions = {
+                    if (isOwner) {
+                        IconButton(onClick = { showShareSheet = true }) {
+                            Icon(Icons.Filled.Share, "Share Arc", tint = TextPrimary)
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Background)
@@ -304,6 +351,41 @@ fun ArcDetailScreen(
                 }
             }
         )
+    }
+
+    if (showShareSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showShareSheet = false },
+            containerColor = SurfaceContainer
+        ) {
+            Column(Modifier.fillMaxWidth().padding(16.dp)) {
+                Text("Share Arc", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Spacer(Modifier.height(16.dp))
+                if (friends.isEmpty()) {
+                    Text("Follow someone to share arcs!", color = TextTertiary, modifier = Modifier.padding(vertical = 24.dp))
+                } else {
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        items(friends) { friend ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(SurfaceHighlight)
+                                    .clickable {
+                                        vm.shareArc(friend.id) { showShareSheet = false }
+                                    }
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(friend.username, color = TextPrimary, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                                Icon(Icons.Default.Share, "Share", tint = AccentBlue)
+                            }
+                        }
+                    }
+                }
+                Spacer(Modifier.height(24.dp))
+            }
+        }
     }
 }
 
