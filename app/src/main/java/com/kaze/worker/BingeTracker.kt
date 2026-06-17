@@ -36,6 +36,7 @@ object BingeTracker {
         }
     }
 
+    @Synchronized
     fun recordWatchEvent(context: Context) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val now = System.currentTimeMillis()

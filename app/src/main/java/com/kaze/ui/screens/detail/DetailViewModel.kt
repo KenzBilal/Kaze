@@ -378,6 +378,7 @@ class DetailViewModel(
         val season = _uiState.value.selectedSeason
 
         viewModelScope.launch {
+            userRepository.recordBingeEvent()
             val validation = seriesRepository.validateEpisodeMarkable(item.id, item.imdbId, season)
             if (validation is EpisodeValidationResult.Blocked) {
                 _uiState.update { it.copy(toastMessage = validation.reason) }
@@ -420,6 +421,7 @@ class DetailViewModel(
     fun markAllPreviousWatched(targetSeason: Int, targetEpisodeNumber: Int) {
         val item  = _uiState.value.item ?: return
         viewModelScope.launch {
+            userRepository.recordBingeEvent()
             for (s in 1 until targetSeason) {
                 seriesRepository.markSeasonWatched(item.id, item.imdbId, s)
             }
@@ -460,6 +462,7 @@ class DetailViewModel(
 
         viewModelScope.launch {
             try {
+                userRepository.recordBingeEvent()
                 seriesRepository.markAllSeriesWatched(
                     watchItemId  = item.id,
                     imdbId       = item.imdbId,
