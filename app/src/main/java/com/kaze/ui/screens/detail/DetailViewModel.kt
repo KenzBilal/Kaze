@@ -347,6 +347,7 @@ class DetailViewModel(
             val newWatched = !currentlyWatched
 
             if (newWatched) {
+                userRepository.recordBingeEvent()
                 // Mark all previous seasons fully, and all previous episodes in this season
                 for (s in 1 until season) {
                     seriesRepository.markSeasonWatched(item.id, item.imdbId, s)
@@ -552,6 +553,9 @@ class DetailViewModel(
             _uiState.update { it.copy(showMarkAllSeriesDialog = true) }
         } else {
             // BUG-04 Fix: Persist immediately for movies or unwatching
+            if (nowWatched) {
+                userRepository.recordBingeEvent()
+            }
             _uiState.update { 
                 it.copy(
                     isWatched = nowWatched, 

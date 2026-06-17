@@ -85,6 +85,10 @@ class UserRepository(private val context: Context) {
         prefs.getString("username", null)
     }
 
+    fun recordBingeEvent() {
+        com.kaze.worker.BingeTracker.recordWatchEvent(context)
+    }
+
     private fun saveLocalUser(id: String, username: String) {
         prefs.edit()
             .putString("user_id", id)

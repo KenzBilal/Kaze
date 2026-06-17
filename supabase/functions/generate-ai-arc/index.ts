@@ -18,40 +18,36 @@ serve(async (req) => {
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
     )
 
-    const { data: { user } } = await supabaseClient.auth.getUser()
-    if (!user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 })
-    }
-
+    const { prompt, username } = await req.json()
+    
     // Only allow admin (kenzbilal)
-    const { data: userData } = await supabaseClient.from('users').select('username').eq('id', user.id).single()
-    if (userData?.username !== 'kenzbilal') {
+    if (username !== 'kenzbilal') {
       return new Response(JSON.stringify({ error: 'Forbidden' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 })
     }
 
-    const { prompt } = await req.json()
     if (!prompt) {
       return new Response(JSON.stringify({ error: 'Missing prompt' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 })
     }
 
     // GEMINI CALL
-    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
-    if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not set')
+    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY') ?? ""
 
     const systemInstruction = `You are a movie and TV franchise expert. The user wants to build a watch order arc. 
 You must return exactly a JSON object matching this schema, no markdown blocks, no conversational text.
 {
-  "arc_name": "Name of the Arc",
-  "arc_description": "Description of the Arc",
-  "arc_aliases": "Comma separated aliases",
+  "arc_name": "Professional name of the franchise/arc (e.g., 'Marvel Cinematic Universe', 'Dexter Universe')",
+  "arc_description": "Short 1-2 line summary.",
+  "arc_aliases": "Extensive, highly powerful comma-separated aliases for search. Include common misspellings, abbreviations, character names, and sub-franchises.",
   "items": [
     {
       "type": "movie",
-      "imdb_id": "tt1234567"
+      "title": "Exact Movie Title",
+      "year": 2008
     },
     {
       "type": "series",
-      "imdb_id": "tt7654321",
+      "title": "Exact Series Title",
+      "year": 2010,
       "start_season": 1,
       "end_season": 3
     }
@@ -59,9 +55,13 @@ You must return exactly a JSON object matching this schema, no markdown blocks, 
 }
 For series, if the whole series is meant, provide start_season 1 and end_season as the final season.
 If it's only a specific episode crossover, you can optionally include start_episode and end_episode.
+CRITICAL RULES:
+1. Focus on MODERN, directly connected movies and series. EXCLUDE very old, disconnected adaptations or unrelated comic spin-offs unless they are part of the modern connected universe.
+2. INCLUDE major modern animated series (e.g., 'What If...?', 'Spider-Verse').
+3. INCLUDE officially announced upcoming titles (e.g., 'Dexter: Resurrection').
 Output ONLY valid JSON.`
 
-    const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+    const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -93,57 +93,70 @@ Output ONLY valid JSON.`
       parsed = JSON.parse(stripped)
     }
 
-    const omdbApiKey = Deno.env.get('OMDB_API_KEY')
-    if (!omdbApiKey) throw new Error("OMDB_API_KEY not set")
+    const omdbApiKey = "73bc2eaa"
 
-    // Fetch OMDB data for each item to validate and build arc_items
+    // Fetch OMDB data for each item in parallel
     const arcItems = []
     let coverUrl = ""
 
-    for (let i = 0; i < parsed.items.length; i++) {
-      const item = parsed.items[i]
-      if (!item.imdb_id) continue
+    const omdbPromises = parsed.items.map(async (item, i) => {
+      if (!item.title) return null
 
-      const omdbRes = await fetch(`https://www.omdbapi.com/?apikey=${omdbApiKey}&i=${item.imdb_id}`)
-      if (!omdbRes.ok) continue
-      const omdbData = await omdbRes.json()
-      
-      if (omdbData.Response === "False") {
-        console.warn(`IMDB ID ${item.imdb_id} not found on OMDB. Skipping.`)
-        continue
+      try {
+        const typeParam = item.type === 'series' ? '&type=series' : '&type=movie'
+        const yearParam = item.year ? `&y=${item.year}` : ''
+        const url = `https://www.omdbapi.com/?apikey=${omdbApiKey}&t=${encodeURIComponent(item.title)}${yearParam}${typeParam}`
+        const omdbRes = await fetch(url)
+        
+        if (!omdbRes.ok) return null
+        const omdbData = await omdbRes.json()
+        
+        if (omdbData.Response === "False") {
+          console.warn(`Title ${item.title} not found on OMDB. Skipping.`)
+          return null
+        }
+
+        let totalSeasons = parseInt(omdbData.totalSeasons) || 1
+        let startS = item.start_season
+        let endS = item.end_season
+
+        if (item.type === 'series') {
+          if (!startS) startS = 1
+          if (!endS) endS = totalSeasons
+          if (endS > totalSeasons) endS = totalSeasons // Auto correct
+        }
+
+        return {
+          id: crypto.randomUUID(),
+          imdb_id: omdbData.imdbID,
+          title: omdbData.Title,
+          type: item.type === 'series' ? 'SERIES' : 'MOVIE',
+          poster_url: omdbData.Poster !== "N/A" ? omdbData.Poster : null,
+          year: parseInt(omdbData.Year) || null,
+          start_season: item.type === 'series' ? startS : null,
+          end_season: item.type === 'series' ? endS : null,
+          start_episode: item.start_episode || null,
+          end_episode: item.end_episode || null,
+          total_seasons: item.type === 'series' ? totalSeasons : null,
+          order_index: i,
+          is_optional: false,
+          notes: item.notes || null
+        }
+      } catch (err) {
+        console.error(`OMDB fetch failed for ${item.title}:`, err)
+        return null
       }
+    })
 
-      // Find cover URL from first item that has a valid poster
-      if (!coverUrl && omdbData.Poster && omdbData.Poster !== "N/A") {
-        coverUrl = omdbData.Poster
+    const results = await Promise.all(omdbPromises)
+    
+    for (const res of results) {
+      if (res) {
+        arcItems.push(res)
+        if (!coverUrl && res.poster_url) {
+          coverUrl = res.poster_url
+        }
       }
-
-      let totalSeasons = parseInt(omdbData.totalSeasons) || 1
-      let startS = item.start_season
-      let endS = item.end_season
-
-      if (item.type === 'series') {
-        if (!startS) startS = 1
-        if (!endS) endS = totalSeasons
-        if (endS > totalSeasons) endS = totalSeasons // Auto correct
-      }
-
-      arcItems.push({
-        id: crypto.randomUUID(),
-        imdb_id: item.imdb_id,
-        title: omdbData.Title,
-        type: item.type === 'series' ? 'series' : 'movie',
-        poster_url: omdbData.Poster !== "N/A" ? omdbData.Poster : null,
-        year: omdbData.Year,
-        start_season: item.type === 'series' ? startS : null,
-        end_season: item.type === 'series' ? endS : null,
-        start_episode: item.start_episode || null,
-        end_episode: item.end_episode || null,
-        total_seasons: item.type === 'series' ? totalSeasons : null,
-        order_index: i,
-        optional: false,
-        notes: item.notes || null
-      })
     }
 
     if (arcItems.length === 0) {
