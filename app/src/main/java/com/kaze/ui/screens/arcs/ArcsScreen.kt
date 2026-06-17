@@ -66,11 +66,7 @@ class ArcsViewModel(
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
     val pendingShares: StateFlow<List<ArcShare>> = _pendingShares.asStateFlow()
 
-    private val _isAIGenerating = MutableStateFlow(false)
-    val isAIGenerating: StateFlow<Boolean> = _isAIGenerating.asStateFlow()
-    
-    private val _aiError = MutableStateFlow<String?>(null)
-    val aiError: StateFlow<String?> = _aiError.asStateFlow()
+
 
     private val _isAdmin = MutableStateFlow(false)
     val isAdmin: StateFlow<Boolean> = _isAdmin.asStateFlow()
@@ -116,21 +112,7 @@ class ArcsViewModel(
         }
     }
 
-    fun generateArcWithAI(prompt: String, onDone: (String) -> Unit) {
-        viewModelScope.launch {
-            _isAIGenerating.value = true
-            _aiError.value = null
-            val username = userRepository.getLocalUsername() ?: ""
-            val result = arcRepository.generateArcWithAI(prompt, username)
-            _isAIGenerating.value = false
-            result.onSuccess { arcId ->
-                load(forceRefresh = true)
-                onDone(arcId)
-            }.onFailure {
-                _aiError.value = it.message ?: "Unknown error"
-            }
-        }
-    }
+
 
     fun createPersonalArc(name: String, description: String, aliases: String, onDone: (String) -> Unit) {
         viewModelScope.launch {
@@ -192,13 +174,9 @@ fun ArcsScreen(
     val query by vm.query.collectAsStateWithLifecycle()
     val isLoading by vm.isLoading.collectAsStateWithLifecycle()
     val isAdmin by vm.isAdmin.collectAsStateWithLifecycle()
-    val isAIGenerating by vm.isAIGenerating.collectAsStateWithLifecycle()
-    val aiError by vm.aiError.collectAsStateWithLifecycle()
-
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     var showCreateDialog by remember { mutableStateOf(false) }
     var showInboxSheet by remember { mutableStateOf(false) }
-    var showAISheet by remember { mutableStateOf(false) }
 
     val currentArcs = if (selectedTabIndex == 0) officialArcs else personalArcs
 
@@ -228,15 +206,7 @@ fun ArcsScreen(
         },
         floatingActionButton = {
             Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                if (isAdmin && selectedTabIndex == 0) {
-                    ExtendedFloatingActionButton(
-                        onClick = { showAISheet = true },
-                        containerColor = AccentBlue,
-                        contentColor = Background,
-                        icon = { Icon(Icons.Filled.AutoAwesome, null) },
-                        text = { Text("AI Auto-Gen") }
-                    )
-                }
+
                 if (selectedTabIndex == 1) {
                     FloatingActionButton(
                         onClick = { showCreateDialog = true },
@@ -350,19 +320,7 @@ fun ArcsScreen(
         )
     }
 
-    if (showAISheet) {
-        AdminAIArcSheet(
-            onDismiss = { showAISheet = false },
-            onGenerate = { prompt ->
-                vm.generateArcWithAI(prompt) { newId ->
-                    showAISheet = false
-                    onArcClick(newId)
-                }
-            },
-            isLoading = isAIGenerating,
-            errorMsg = aiError
-        )
-    }
+
 
     if (showInboxSheet) {
         ModalBottomSheet(

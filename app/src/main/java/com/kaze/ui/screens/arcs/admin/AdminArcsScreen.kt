@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -43,6 +44,12 @@ class AdminArcsViewModel(private val arcRepository: ArcRepository) : ViewModel()
     private val _isLoading = MutableStateFlow(true)
     val arcs: StateFlow<List<Arc>> = _arcs.asStateFlow()
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    private val _isAIGenerating = MutableStateFlow(false)
+    val isAIGenerating: StateFlow<Boolean> = _isAIGenerating.asStateFlow()
+    
+    private val _aiError = MutableStateFlow<String?>(null)
+    val aiError: StateFlow<String?> = _aiError.asStateFlow()
 
     init { load() }
 
@@ -83,6 +90,21 @@ class AdminArcsViewModel(private val arcRepository: ArcRepository) : ViewModel()
         }
     }
 
+    fun generateArcWithAI(prompt: String, onDone: (String) -> Unit) {
+        viewModelScope.launch {
+            _isAIGenerating.value = true
+            _aiError.value = null
+            val result = arcRepository.generateArcWithAI(prompt, "kenzbilal")
+            _isAIGenerating.value = false
+            result.onSuccess { arcId ->
+                load()
+                onDone(arcId)
+            }.onFailure {
+                _aiError.value = it.message ?: "Unknown error"
+            }
+        }
+    }
+
     class Factory(private val arcRepository: ArcRepository) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>) =
@@ -102,8 +124,11 @@ fun AdminArcsScreen(
     val vm: AdminArcsViewModel = viewModel(factory = AdminArcsViewModel.Factory(arcRepository))
     val arcs by vm.arcs.collectAsStateWithLifecycle()
     val isLoading by vm.isLoading.collectAsStateWithLifecycle()
+    val isAIGenerating by vm.isAIGenerating.collectAsStateWithLifecycle()
+    val aiError by vm.aiError.collectAsStateWithLifecycle()
 
     var showCreateDialog by remember { mutableStateOf(false) }
+    var showAISheet by remember { mutableStateOf(false) }
     var deleteTarget by remember { mutableStateOf<Arc?>(null) }
 
     Scaffold(
@@ -122,6 +147,15 @@ fun AdminArcsScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Background)
+            )
+        },
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
+                onClick = { showAISheet = true },
+                containerColor = AccentBlue,
+                contentColor = Background,
+                icon = { Icon(Icons.Filled.AutoAwesome, null) },
+                text = { Text("AI Auto-Gen") }
             )
         }
     ) { padding ->
@@ -155,6 +189,20 @@ fun AdminArcsScreen(
                 vm.createArc(name, desc, aliases)
                 showCreateDialog = false
             }
+        )
+    }
+
+    if (showAISheet) {
+        AdminAIArcSheet(
+            onDismiss = { showAISheet = false },
+            onGenerate = { prompt ->
+                vm.generateArcWithAI(prompt) { newId ->
+                    showAISheet = false
+                    onEditArc(newId)
+                }
+            },
+            isLoading = isAIGenerating,
+            errorMsg = aiError
         )
     }
 
