@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -248,29 +249,44 @@ fun ArcsScreen(
                 )
             )
 
-            when {
-                isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = AccentBlue)
-                }
-                currentArcs.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.Collections, contentDescription = null,
-                            tint = TextTertiary, modifier = Modifier.size(48.dp))
-                        Spacer(Modifier.height(12.dp))
-                        Text(
-                            if (query.isBlank()) "No arcs available yet" else "No results for \"$query\"",
-                            color = TextTertiary, style = MaterialTheme.typography.bodyMedium
-                        )
+            var isRefreshing by remember { mutableStateOf(false) }
+            LaunchedEffect(isLoading) {
+                if (!isLoading) isRefreshing = false
+            }
+
+            PullToRefreshBox(
+                isRefreshing = isRefreshing,
+                onRefresh = {
+                    isRefreshing = true
+                    vm.load(forceRefresh = true)
+                },
+                modifier = Modifier.fillMaxSize()
+            ) {
+                when {
+                    isLoading && !isRefreshing -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = AccentBlue)
                     }
-                }
-                else -> LazyColumn(
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    items(currentArcs, key = { it.id }) { arc ->
-                        ArcCard(arc = arc, onClick = { onArcClick(arc.id) })
+                    currentArcs.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(Icons.Default.Collections, contentDescription = null,
+                                tint = TextTertiary, modifier = Modifier.size(48.dp))
+                            Spacer(Modifier.height(12.dp))
+                            Text(
+                                if (query.isBlank()) "No arcs available yet" else "No results for \"$query\"",
+                                color = TextTertiary, style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
                     }
-                    item { Spacer(Modifier.height(80.dp)) }
+                    else -> LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        items(currentArcs, key = { it.id }) { arc ->
+                            ArcCard(arc = arc, onClick = { onArcClick(arc.id) })
+                        }
+                        item { Spacer(Modifier.height(80.dp)) }
+                    }
                 }
             }
         }

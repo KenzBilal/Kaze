@@ -15,8 +15,8 @@ android {
         applicationId = "com.kaze"
         minSdk = 24
         targetSdk = 35
-        versionCode = 79
-        versionName = "2.13.0"
+        versionCode = 80
+        versionName = "2.14.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -104,6 +104,7 @@ dependencies {
     implementation(libs.androidx.material.icons.extended)
 
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.reorderable)
 
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)

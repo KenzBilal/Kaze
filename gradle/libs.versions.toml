@@ -13,6 +13,7 @@ kotlinxCoroutines = "1.9.0"
 gson = "2.11.0"
 accompanist = "0.36.0"
 splashscreen = "1.0.1"
+reorderable = "0.9.6"
 
 retrofit = "2.11.0"
 okhttp = "4.12.0"
@@ -43,6 +44,7 @@ kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
 androidx-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "splashscreen" }
+reorderable = { group = "org.burnoutcrew.composereorderable", name = "reorderable", version.ref = "reorderable" }
 
 retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
 retrofit-converter-gson = { group = "com.squareup.retrofit2", name = "converter-gson", version.ref = "retrofit" }

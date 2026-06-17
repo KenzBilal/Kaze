@@ -40,6 +40,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import org.burnoutcrew.reorderable.*
 import java.util.UUID
 
 // ── ViewModel ─────────────────────────────────────────────────────────────────
@@ -176,29 +177,17 @@ class AdminArcEditorViewModel(
         }
     }
 
-    fun moveItemUp(index: Int) {
-        if (index <= 0) return
+    fun moveItem(fromIndex: Int, toIndex: Int) {
         val currentItems = _items.value.toMutableList()
-        val temp = currentItems[index]
-        currentItems[index] = currentItems[index - 1]
-        currentItems[index - 1] = temp
+        if (fromIndex !in currentItems.indices || toIndex !in currentItems.indices) return
+        val temp = currentItems.removeAt(fromIndex)
+        currentItems.add(toIndex, temp)
         _items.value = currentItems
-        
-        viewModelScope.launch {
-            arcRepository.updateArcItemOrder(arcId, currentItems)
-        }
     }
-
-    fun moveItemDown(index: Int) {
-        val currentItems = _items.value.toMutableList()
-        if (index >= currentItems.size - 1) return
-        val temp = currentItems[index]
-        currentItems[index] = currentItems[index + 1]
-        currentItems[index + 1] = temp
-        _items.value = currentItems
-        
+    
+    fun syncItemOrder() {
         viewModelScope.launch {
-            arcRepository.updateArcItemOrder(arcId, currentItems)
+            arcRepository.updateArcItemOrder(arcId, _items.value)
         }
     }
 
@@ -284,14 +273,26 @@ fun AdminArcEditorScreen(
             isLoading -> Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = AccentBlue)
             }
-            else -> LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(padding),
-                contentPadding = PaddingValues(bottom = 80.dp)
-            ) {
-                // Cover picker section
-                item {
-                    val posterUrls = items.mapNotNull { it.poster_url }.distinct()
-                    if (posterUrls.isNotEmpty()) {
+            else -> {
+                val reorderableState = rememberReorderableLazyListState(
+                    onMove = { from, to ->
+                        vm.moveItem(from.index - 1, to.index - 1)
+                    },
+                    canDragOver = { draggedOver, _ -> draggedOver.index > 0 }
+                )
+
+                LazyColumn(
+                    state = reorderableState.listState,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                        .reorderable(reorderableState),
+                    contentPadding = PaddingValues(bottom = 80.dp)
+                ) {
+                    // Cover picker section
+                    item {
+                        val posterUrls = items.mapNotNull { it.poster_url }.distinct()
+                        if (posterUrls.isNotEmpty()) {
                         Text("Cover Image", color = TextTertiary, fontSize = 11.sp,
                             letterSpacing = 1.sp, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
                         LazyRow(
@@ -328,20 +329,28 @@ fun AdminArcEditorScreen(
                         }
                     }
                 } else {
-                    items(items.size, key = { items[it].id }) { index ->
-                        val item = items[index]
-                        AdminArcItemRow(
-                            item = item,
-                            canMoveUp = index > 0,
-                            canMoveDown = index < items.size - 1,
-                            onMoveUp = { vm.moveItemUp(index) },
-                            onMoveDown = { vm.moveItemDown(index) },
-                            onDelete = { deleteTarget = item }
-                        )
+                    items(items, key = { it.id }) { item ->
+                        ReorderableItem(reorderableState, key = item.id) { isDragging ->
+                            AdminArcItemRow(
+                                item = item,
+                                modifier = Modifier
+                                    .detectReorderAfterLongPress(reorderableState)
+                                    .then(if (isDragging) Modifier.background(SurfaceContainer.copy(alpha = 0.8f)) else Modifier),
+                                onDelete = { deleteTarget = item }
+                            )
+                        }
+                    }
+                    item {
+                        LaunchedEffect(reorderableState.draggingItemKey) {
+                            if (reorderableState.draggingItemKey == null) {
+                                vm.syncItemOrder()
+                            }
+                        }
                     }
                 }
             }
         }
+    }
     }
 
     // Add item bottom sheet
@@ -444,14 +453,11 @@ fun AdminArcEditorScreen(
 @Composable
 private fun AdminArcItemRow(
     item: ArcItem, 
-    canMoveUp: Boolean,
-    canMoveDown: Boolean,
-    onMoveUp: () -> Unit,
-    onMoveDown: () -> Unit,
+    modifier: Modifier = Modifier,
     onDelete: () -> Unit
 ) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -482,14 +488,8 @@ private fun AdminArcItemRow(
         IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
             Icon(Icons.Default.Delete, contentDescription = "Remove", tint = TextTertiary, modifier = Modifier.size(16.dp))
         }
-        Column {
-            IconButton(onClick = onMoveUp, enabled = canMoveUp, modifier = Modifier.size(24.dp)) {
-                Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Move Up", tint = if (canMoveUp) TextSecondary else TextTertiary.copy(alpha=0.3f), modifier = Modifier.size(16.dp))
-            }
-            IconButton(onClick = onMoveDown, enabled = canMoveDown, modifier = Modifier.size(24.dp)) {
-                Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Move Down", tint = if (canMoveDown) TextSecondary else TextTertiary.copy(alpha=0.3f), modifier = Modifier.size(16.dp))
-            }
-        }
+        Spacer(Modifier.width(8.dp))
+        Icon(Icons.Default.DragHandle, contentDescription = "Drag to reorder", tint = TextTertiary, modifier = Modifier.size(24.dp))
     }
     HorizontalDivider(color = SurfaceHighlight.copy(alpha = 0.4f), modifier = Modifier.padding(horizontal = 16.dp))
 }
