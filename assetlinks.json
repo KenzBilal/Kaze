@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.kaze",
+    "sha256_cert_fingerprints": [
+      "7E:C6:56:62:A8:A9:A4:80:18:F4:51:04:66:B7:E4:B8:C9:CA:C9:B3:32:AE:FD:8F:9D:8C:C7:C5:34:5F:28:0F"
+    ]
+  }
+}]

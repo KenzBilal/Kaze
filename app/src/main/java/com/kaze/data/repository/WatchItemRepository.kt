@@ -4,6 +4,7 @@ import com.kaze.data.local.EpisodeProgress
 import com.kaze.data.local.EpisodeProgressDao
 import com.kaze.data.local.WatchItemDao
 import com.kaze.model.*
+import com.kaze.search.AppSearchManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import androidx.sqlite.db.SimpleSQLiteQuery
@@ -28,13 +29,22 @@ class WatchItemRepository(
 
     suspend fun getItemByImdbId(imdbId: String): WatchItem? = dao.getItemByImdbId(imdbId)
 
-    suspend fun saveItem(item: WatchItem): Long = dao.insertItem(item)
-
-    suspend fun updateItem(item: WatchItem) {
-        dao.updateItem(item.copy(lastUpdated = System.currentTimeMillis()))
+    suspend fun saveItem(item: WatchItem): Long {
+        val newId = dao.insertItem(item)
+        AppSearchManager.indexItem(item.copy(id = newId))
+        return newId
     }
 
-    suspend fun deleteItem(item: WatchItem) = dao.deleteItem(item)
+    suspend fun updateItem(item: WatchItem) {
+        val updated = item.copy(lastUpdated = System.currentTimeMillis())
+        dao.updateItem(updated)
+        AppSearchManager.indexItem(updated)
+    }
+
+    suspend fun deleteItem(item: WatchItem) {
+        dao.deleteItem(item)
+        AppSearchManager.removeItem(item)
+    }
 
     suspend fun deleteItemById(id: Long) = dao.deleteItemById(id)
 

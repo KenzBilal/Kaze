@@ -34,6 +34,7 @@ import com.kaze.ui.screens.friends.FriendsScreen
 import com.kaze.ui.screens.friends.UserProfileScreen
 import com.kaze.ui.screens.onboarding.SetUsernameScreen
 import com.kaze.ui.screens.profile.MyProfileScreen
+import com.kaze.ui.screens.detail.DeepLinkLoadingScreen
 
 import com.kaze.ui.theme.SurfaceContainer
 
@@ -62,6 +63,9 @@ sealed class Screen(val route: String) {
     }
     object AdminArcEditor : Screen("adminArcEditor/{arcId}") {
         fun createRoute(id: String) = "adminArcEditor/$id"
+    }
+    object DeepLinkLoading : Screen("deepLinkLoading/{imdbId}") {
+        fun createRoute(imdbId: String) = "deepLinkLoading/$imdbId"
     }
     object DetailPreview : Screen("detail_preview/{imdbId}?title={title}&type={type}&poster={poster}&rating={rating}&notes={notes}&genres={genres}&year={year}&season={season}&episode={episode}") {
         fun createRoute(imdbId: String, title: String, type: String, poster: String?, rating: Float = 0f, notes: String = "", genres: String = "", year: Int = 0, season: Int = 1, episode: Int = 1) =
@@ -326,6 +330,36 @@ fun WatchLaterNavGraph(
             DetailScreen(
                 viewModel = detailVm,
                 onBack    = { navController.popBackStack() }
+            )
+        }
+
+        // ── Deep Link Loading ─────────────────────────────────────────────
+        composable(
+            route = Screen.DeepLinkLoading.route,
+            arguments = listOf(navArgument("imdbId") { type = NavType.StringType })
+        ) { backStack ->
+            val imdbId = backStack.arguments!!.getString("imdbId") ?: ""
+            DeepLinkLoadingScreen(
+                imdbId = imdbId,
+                omdbRepository = app.container.omdbRepository,
+                onTitleResolved = { title, type, poster, year ->
+                    // Replace loading screen with DetailPreview
+                    navController.navigate(Screen.DetailPreview.createRoute(
+                        imdbId = imdbId,
+                        title = title,
+                        type = type,
+                        poster = poster,
+                        year = year
+                    )) {
+                        popUpTo(Screen.DeepLinkLoading.route) { inclusive = true }
+                    }
+                },
+                onSearchInstead = {
+                    navController.navigate(Screen.Search.route) {
+                        popUpTo(Screen.DeepLinkLoading.route) { inclusive = true }
+                    }
+                },
+                onBack = { navController.popBackStack() }
             )
         }
         

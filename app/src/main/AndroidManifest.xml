@@ -13,6 +13,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:label="@string/app_name"
         android:supportsRtl="true"
+        android:enableOnBackInvokedCallback="true"
         android:theme="@style/Theme.WatchLater">
 
         <activity
@@ -25,15 +26,28 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <!-- Deep links: https://kenzbilal.github.io/Kaze/u/{username} -->
+
+            <!-- AppSearch System Intent -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEARCH" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+
+            <!-- Verified Deep Links (App Links) -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data
-                    android:scheme="https"
-                    android:host="kenzbilal.github.io"
-                    android:pathPrefix="/Kaze/u" />
+                
+                <!-- IMDb Links -->
+                <data android:scheme="https" android:host="imdb.com" android:pathPrefix="/title/" />
+                <data android:scheme="https" android:host="www.imdb.com" android:pathPrefix="/title/" />
+                <data android:scheme="http" android:host="imdb.com" android:pathPrefix="/title/" />
+                <data android:scheme="http" android:host="www.imdb.com" android:pathPrefix="/title/" />
+                
+                <!-- WatchLater Custom Links (Friends + Movie Sharing) -->
+                <data android:scheme="https" android:host="kenzbilal.github.io" android:pathPrefix="/Kaze/u" />
+                <data android:scheme="https" android:host="kenzbilal.github.io" android:pathPrefix="/Kaze/m" />
             </intent-filter>
         </activity>
 

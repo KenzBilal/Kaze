@@ -27,9 +27,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.layout.ContentScale
+import com.kaze.ui.util.rememberHapticManager
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -52,7 +51,7 @@ fun DetailScreen(
 ) {
     val uiState        by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHost   = remember { SnackbarHostState() }
-    val haptic         = LocalHapticFeedback.current
+    val haptic         = rememberHapticManager()
 
     // Snackbar for saves
     LaunchedEffect(Unit) {
@@ -121,7 +120,7 @@ fun DetailScreen(
                     StarRatingSelector(
                         rating = uiState.rating,
                         onRatingChange = { r ->
-                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            haptic.light()
                             viewModel.onRatingChange(r)
                         }
                     )
@@ -130,7 +129,7 @@ fun DetailScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        haptic.confirm()
                         viewModel.saveItem()
                         viewModel.dismissRatingPrompt()
                     },
@@ -139,7 +138,7 @@ fun DetailScreen(
             },
             dismissButton = {
                 TextButton(onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    haptic.light()
                     viewModel.dismissRatingPrompt()
                 }) { Text("Rate Later", color = TextSecondary) }
             }
@@ -209,14 +208,14 @@ fun DetailScreen(
                         if (!uiState.isWatched) {
                             if (uiState.item?.type == MediaType.SERIES && uiState.totalSeasons > 0) {
                                 IconButton(onClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    haptic.confirm()
                                     viewModel.showMarkAllSeriesDialog()
                                 }) {
                                     Icon(Icons.Filled.DoneAll, "Mark all watched", tint = TextSecondary)
                                 }
                             } else if (uiState.item?.type != MediaType.SERIES) {
                                 IconButton(onClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    haptic.confirm()
                                     viewModel.toggleWatched()
                                 }) {
                                     Icon(
@@ -228,7 +227,7 @@ fun DetailScreen(
                             }
                         }
                         IconButton(onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            haptic.light()
                             viewModel.showDeleteDialog()
                         }) {
                             Icon(Icons.Outlined.DeleteOutline, "Delete", tint = TextSecondary)
@@ -249,7 +248,7 @@ fun DetailScreen(
                     ) {
                         Button(
                             onClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                haptic.confirm()
                                 viewModel.saveItem(onSuccess = if (uiState.isPreview) onBack else null)
                             },
                             enabled  = !uiState.isSaving && !uiState.isLoading,
@@ -526,19 +525,19 @@ fun DetailScreen(
                                 onSeasonSelect       = viewModel::selectSeason,
                                 onEpisodeToggle      = { s, ep ->
                                     if (!uiState.isPreview) {
-                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        haptic.confirm()
                                         viewModel.toggleEpisode(s, ep)
                                     }
                                 },
                                 onMarkSeasonWatched  = {
                                     if (!uiState.isPreview) {
-                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        haptic.confirm()
                                         viewModel.markSeasonWatched()
                                     }
                                 },
                                 onUnmarkSeasonWatched = {
                                     if (!uiState.isPreview) {
-                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        haptic.light()
                                         viewModel.unmarkSeasonWatched()
                                     }
                                 },
@@ -562,7 +561,7 @@ fun DetailScreen(
                             StarRatingSelector(
                                 rating = uiState.rating,
                                 onRatingChange = { r ->
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    haptic.light()
                                     viewModel.onRatingChange(r)
                                 }
                             )

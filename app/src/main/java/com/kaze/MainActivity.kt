@@ -25,6 +25,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -34,6 +36,8 @@ import androidx.navigation.compose.rememberNavController
 import com.kaze.ui.Screen
 import com.kaze.ui.WatchLaterNavGraph
 import com.kaze.ui.theme.*
+import android.content.Intent
+import com.kaze.util.DeepLinkHandler
 
 data class BottomNavItem(
     val screen: Screen,
@@ -53,14 +57,14 @@ class MainActivity : ComponentActivity() {
         setContent {
             WatchLaterTheme {
                 com.kaze.ui.components.NotificationPermissionHandler()
-                AppContent(app = app)
+                AppContent(app = app, initialIntent = intent)
             }
         }
     }
 }
 
 @Composable
-fun AppContent(app: WatchLaterApp) {
+fun AppContent(app: WatchLaterApp, initialIntent: Intent?) {
     val navController = rememberNavController()
     val currentEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentEntry?.destination?.route
@@ -127,6 +131,27 @@ fun AppContent(app: WatchLaterApp) {
         wasOnline = isOnline
     }
 
+    LaunchedEffect(initialIntent) {
+        initialIntent?.let { intent ->
+            // Handle Global AppSearch
+            if (intent.action == android.content.Intent.ACTION_SEARCH) {
+                val query = intent.getStringExtra(android.app.SearchManager.QUERY)
+                if (!query.isNullOrBlank()) {
+                    navController.navigate(Screen.Search.route)
+                    // We don't have a direct way to pass initial query yet, 
+                    // but landing on the search screen is correct.
+                }
+            } 
+            // Handle Verified Deep Links
+            else if (DeepLinkHandler.isWatchLaterDeepLink(intent.data)) {
+                val imdbId = DeepLinkHandler.extractImdbId(intent.data)
+                if (imdbId != null) {
+                    navController.navigate(Screen.DeepLinkLoading.createRoute(imdbId))
+                }
+            }
+        }
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = Background,
@@ -139,6 +164,7 @@ fun AppContent(app: WatchLaterApp) {
                 NavigationBar(
                     containerColor = SurfaceContainer
                 ) {
+                    val haptic = LocalHapticFeedback.current
                     bottomNavItems.forEach { item ->
                         val selected = currentEntry?.destination?.hierarchy
                             ?.any { it.route == item.screen.route } == true
@@ -147,6 +173,7 @@ fun AppContent(app: WatchLaterApp) {
                         NavigationBarItem(
                             selected = selected,
                             onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                 navController.navigate(item.screen.route) {
                                     popUpTo(Screen.Home.route) { saveState = true }
                                     launchSingleTop = true

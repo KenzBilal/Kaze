@@ -58,7 +58,10 @@ class OmdbRepository {
         }
     }
 
-    data class SeriesMetadata(val genres: String, val totalSeasons: Int, val isFinished: Boolean, val plot: String = "", val imdbRating: Float = 0f, val cast: String = "", val director: String = "")
+    data class SeriesMetadata(
+        val genres: String, val totalSeasons: Int, val isFinished: Boolean, val plot: String = "", val imdbRating: Float = 0f, val cast: String = "", val director: String = "",
+        val title: String = "", val type: String = "", val poster: String = "", val year: Int = 0
+    )
 
     /**
      * A3 fix: Consolidated fetchGenre + fetchTotalSeasons into a single network call.
@@ -86,11 +89,16 @@ class OmdbRepository {
             val cast = detail.actors?.takeIf { it != "N/A" } ?: ""
             val director = detail.director?.takeIf { it != "N/A" } ?: ""
             
-            SeriesMetadata(genres, seasons, isFinished, plot, imdbRating, cast, director)
+            val title = detail.title ?: ""
+            val type = detail.type ?: ""
+            val posterUrl = detail.poster ?: ""
+            val displayYear = yearStr.take(4).toIntOrNull() ?: 0
+
+            SeriesMetadata(genres, seasons, isFinished, plot, imdbRating, cast, director, title, type, posterUrl, displayYear)
         } catch (e: CancellationException) { throw e
         } catch (e: Exception) {
             if (BuildConfig.DEBUG) Log.e("OmdbRepo", "fetchDetail failed: ${e.message}")
-            SeriesMetadata("", 0, false, "", 0f)
+            SeriesMetadata("", 0, false, "", 0f, "", "", "", "", "", 0)
         }
     }
 

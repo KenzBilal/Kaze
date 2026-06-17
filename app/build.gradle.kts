@@ -15,8 +15,8 @@ android {
         applicationId = "com.kaze"
         minSdk = 24
         targetSdk = 35
-        versionCode = 87
-        versionName = "2.15.6"
+        versionCode = 88
+        versionName = "2.16.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -111,6 +111,7 @@ dependencies {
     ksp(libs.androidx.room.compiler)
 
     implementation(libs.kotlinx.coroutines.android)
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-guava:1.8.0")
     implementation(libs.gson)
     implementation(libs.androidx.splashscreen)
     implementation(libs.retrofit)
@@ -128,6 +129,12 @@ dependencies {
     // Firebase
     implementation(platform("com.google.firebase:firebase-bom:33.1.2"))
     implementation("com.google.firebase:firebase-messaging-ktx")
+
+    // AppSearch — on-device global search
+    implementation("androidx.appsearch:appsearch:1.1.0-alpha04")
+    implementation("androidx.appsearch:appsearch-local-storage:1.1.0-alpha04")
+    annotationProcessor("androidx.appsearch:appsearch-compiler:1.1.0-alpha04")
+    ksp("androidx.appsearch:appsearch-compiler:1.1.0-alpha04")
 
     debugImplementation(libs.androidx.ui.tooling)
 }
