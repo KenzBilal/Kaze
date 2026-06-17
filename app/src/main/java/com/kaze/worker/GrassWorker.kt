@@ -37,13 +37,21 @@ class GrassWorker(
             context, 0, intent, PendingIntent.FLAG_IMMUTABLE
         )
 
+        val largeIcon = android.graphics.BitmapFactory.decodeResource(context.resources, R.mipmap.ic_launcher)
+        val color = androidx.core.content.ContextCompat.getColor(context, R.color.accent_blue)
+
         val builder = NotificationCompat.Builder(context, "BINGE_WARNING_CHANNEL")
-            .setSmallIcon(R.mipmap.ic_launcher)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setLargeIcon(largeIcon)
+            .setColor(color)
             .setContentTitle("Enough touching grass! 🍿")
-            .setContentText("It's been 12 hours since your last watch. Time for the next episode!")
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setContentText("It's been 12 hours since your last watch.")
+            .setStyle(NotificationCompat.BigTextStyle()
+                .bigText("It's been 12 hours since your last watch. Time for the next episode! Grab some popcorn and let's go."))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
+            .addAction(0, "Open App", pendingIntent)
 
         with(NotificationManagerCompat.from(context)) {
             notify(1002, builder.build())

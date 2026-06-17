@@ -84,13 +84,21 @@ object BingeTracker {
             context, 0, intent, PendingIntent.FLAG_IMMUTABLE
         )
 
+        val largeIcon = android.graphics.BitmapFactory.decodeResource(context.resources, R.mipmap.ic_launcher)
+        val color = androidx.core.content.ContextCompat.getColor(context, R.color.accent_blue)
+
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.mipmap.ic_launcher) // Using default icon as placeholder
+            .setSmallIcon(R.drawable.ic_notification)
+            .setLargeIcon(largeIcon)
+            .setColor(color)
             .setContentTitle("Binge Warning! 🚨")
-            .setContentText("You've watched a lot today. Go touch some grass!")
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setContentText("You've watched a lot today. Take a break!")
+            .setStyle(NotificationCompat.BigTextStyle()
+                .bigText("You've watched a lot today. Go touch some grass! Take a break, your watchlist isn't going anywhere."))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
+            .addAction(0, "Open App", pendingIntent)
 
         with(NotificationManagerCompat.from(context)) {
             notify(1001, builder.build())
