@@ -9,6 +9,7 @@ import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
+import io.ktor.client.plugins.timeout
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.contentType
@@ -337,6 +338,7 @@ class ArcRepository(private val context: Context) {
                     header("apikey", com.kaze.BuildConfig.SUPABASE_KEY)
                     contentType(io.ktor.http.ContentType.Application.Json)
                     setBody(GenerateRequest(prompt, username))
+                    timeout { requestTimeoutMillis = 60000 }
                 }
                 
                 val resultText = response.bodyAsText()
