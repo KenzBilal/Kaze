@@ -1108,4 +1108,6 @@ These rules **MUST** be followed by any AI agent working on this repository:
 
 9. **Offline First:** Every Supabase write must have a fallback that queues the action to `pending_actions` and enqueues `SyncWorker`. Never assume network is available.
 
-10. **Gradle Cleanup:** When removing features, remove their dependencies from `build.gradle.kts` and `libs.versions.toml` to keep the dependency tree clean.
+10. **Release Process:** When asked to release a new version, NEVER build the release APK locally or update the update gist manually. You MUST rely on the CI/CD pipeline: bump the version in `app/build.gradle.kts`, commit the changes, create a git tag (e.g., `vX.Y.Z`), and push the tag to origin to trigger `release.yml`.
+
+11. **Gradle Cleanup:** When removing features, remove their dependencies from `build.gradle.kts` and `libs.versions.toml` to keep the dependency tree clean.
