@@ -47,6 +47,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
+        com.kaze.worker.BingeTracker.initChannel(this)
         enableEdgeToEdge()
         val app = application as WatchLaterApp
         setContent {
