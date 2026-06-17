@@ -11,5 +11,6 @@ object SupabaseApi {
         supabaseKey = BuildConfig.SUPABASE_KEY
     ) {
         install(Postgrest)
+        install(io.github.jan.supabase.functions.Functions)
     }
 }

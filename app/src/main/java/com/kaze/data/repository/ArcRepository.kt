@@ -9,6 +9,9 @@ import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.http.contentType
 
 // ── Remote models ─────────────────────────────────────────────────────────────
 
@@ -319,6 +322,37 @@ class ArcRepository(private val context: Context) {
                 )
             }
         } catch (e: Exception) { e.printStackTrace() }
+    }
+
+    suspend fun generateArcWithAI(prompt: String, username: String): Result<String> {
+        return withContext(Dispatchers.IO) {
+            try {
+                @Serializable
+                data class GenerateRequest(val prompt: String, val username: String)
+                @Serializable
+                data class GenerateResponse(val arcId: String? = null, val error: String? = null)
+
+                val response = SupabaseApi.client.httpClient.post("${com.kaze.BuildConfig.SUPABASE_URL}/functions/v1/generate-ai-arc") {
+                    header("Authorization", "Bearer ${com.kaze.BuildConfig.SUPABASE_KEY}")
+                    header("apikey", com.kaze.BuildConfig.SUPABASE_KEY)
+                    contentType(io.ktor.http.ContentType.Application.Json)
+                    setBody(GenerateRequest(prompt, username))
+                }
+                
+                val resultText = response.bodyAsText()
+                val result = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }.decodeFromString<GenerateResponse>(resultText)
+                
+                if (result.error != null) {
+                    Result.failure(Exception(result.error))
+                } else if (result.arcId != null) {
+                    Result.success(result.arcId)
+                } else {
+                    Result.failure(Exception("Unknown error from edge function: $resultText"))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
     }
 
     suspend fun getPendingShares(userId: String): List<ArcShare> = withContext(Dispatchers.IO) {

@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.Collections
 import androidx.compose.material.icons.filled.Inbox
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -39,6 +40,7 @@ import com.kaze.data.repository.ArcRepository
 import com.kaze.data.repository.ArcShare
 import com.kaze.data.repository.UserRepository
 import com.kaze.ui.theme.*
+import com.kaze.ui.screens.arcs.admin.AdminAIArcSheet
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -63,6 +65,15 @@ class ArcsViewModel(
     val query: StateFlow<String> = _query.asStateFlow()
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
     val pendingShares: StateFlow<List<ArcShare>> = _pendingShares.asStateFlow()
+
+    private val _isAIGenerating = MutableStateFlow(false)
+    val isAIGenerating: StateFlow<Boolean> = _isAIGenerating.asStateFlow()
+    
+    private val _aiError = MutableStateFlow<String?>(null)
+    val aiError: StateFlow<String?> = _aiError.asStateFlow()
+
+    private val _isAdmin = MutableStateFlow(false)
+    val isAdmin: StateFlow<Boolean> = _isAdmin.asStateFlow()
 
     /** Arcs filtered by current query — search by name and aliases only (no N+1 item fetch) */
     private val _filteredArcs: StateFlow<List<Arc>> = combine(_arcs, _query) { arcs, q ->
@@ -93,11 +104,31 @@ class ArcsViewModel(
             _isLoading.value = true
             val uid = userRepository.getLocalUserId()
             _userId.value = uid
-            _arcs.value = arcRepository.getPublishedArcs(forceRefresh)
             if (uid != null) {
                 _pendingShares.value = arcRepository.getPendingShares(uid)
+                val dbUser = userRepository.getUserById(uid)
+                if (dbUser != null) {
+                    _isAdmin.value = dbUser.username == "kenzbilal"
+                }
             }
+            _arcs.value = arcRepository.getPublishedArcs(forceRefresh)
             _isLoading.value = false
+        }
+    }
+
+    fun generateArcWithAI(prompt: String, onDone: (String) -> Unit) {
+        viewModelScope.launch {
+            _isAIGenerating.value = true
+            _aiError.value = null
+            val username = userRepository.getLocalUsername() ?: ""
+            val result = arcRepository.generateArcWithAI(prompt, username)
+            _isAIGenerating.value = false
+            result.onSuccess { arcId ->
+                load(forceRefresh = true)
+                onDone(arcId)
+            }.onFailure {
+                _aiError.value = it.message ?: "Unknown error"
+            }
         }
     }
 
@@ -160,10 +191,14 @@ fun ArcsScreen(
     val pendingShares by vm.pendingShares.collectAsStateWithLifecycle()
     val query by vm.query.collectAsStateWithLifecycle()
     val isLoading by vm.isLoading.collectAsStateWithLifecycle()
+    val isAdmin by vm.isAdmin.collectAsStateWithLifecycle()
+    val isAIGenerating by vm.isAIGenerating.collectAsStateWithLifecycle()
+    val aiError by vm.aiError.collectAsStateWithLifecycle()
 
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     var showCreateDialog by remember { mutableStateOf(false) }
     var showInboxSheet by remember { mutableStateOf(false) }
+    var showAISheet by remember { mutableStateOf(false) }
 
     val currentArcs = if (selectedTabIndex == 0) officialArcs else personalArcs
 
@@ -192,13 +227,24 @@ fun ArcsScreen(
             )
         },
         floatingActionButton = {
-            if (selectedTabIndex == 1) {
-                FloatingActionButton(
-                    onClick = { showCreateDialog = true },
-                    containerColor = AccentBlue,
-                    contentColor = Background
-                ) {
-                    Icon(Icons.Default.Add, "New Arc")
+            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                if (isAdmin && selectedTabIndex == 0) {
+                    ExtendedFloatingActionButton(
+                        onClick = { showAISheet = true },
+                        containerColor = AccentBlue,
+                        contentColor = Background,
+                        icon = { Icon(Icons.Filled.AutoAwesome, null) },
+                        text = { Text("AI Auto-Gen") }
+                    )
+                }
+                if (selectedTabIndex == 1) {
+                    FloatingActionButton(
+                        onClick = { showCreateDialog = true },
+                        containerColor = AccentBlue,
+                        contentColor = Background
+                    ) {
+                        Icon(Icons.Default.Add, "New Arc")
+                    }
                 }
             }
         }
@@ -301,6 +347,20 @@ fun ArcsScreen(
                     onArcClick(newId)
                 }
             }
+        )
+    }
+
+    if (showAISheet) {
+        AdminAIArcSheet(
+            onDismiss = { showAISheet = false },
+            onGenerate = { prompt ->
+                vm.generateArcWithAI(prompt) { newId ->
+                    showAISheet = false
+                    onArcClick(newId)
+                }
+            },
+            isLoading = isAIGenerating,
+            errorMsg = aiError
         )
     }
 
