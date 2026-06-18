@@ -7,6 +7,7 @@ import androidx.appsearch.app.PutDocumentsRequest
 import androidx.appsearch.app.RemoveByDocumentIdRequest
 import androidx.appsearch.app.SetSchemaRequest
 import androidx.appsearch.localstorage.LocalStorage
+import androidx.appsearch.platformstorage.PlatformStorage
 import com.kaze.model.WatchItem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.guava.await
@@ -32,14 +33,22 @@ object AppSearchManager {
     suspend fun open(context: Context) = withContext(Dispatchers.IO) {
         if (session != null) return@withContext
         try {
-            val sessionFuture = LocalStorage.createSearchSessionAsync(
-                LocalStorage.SearchContext.Builder(context.applicationContext, DATABASE_NAME).build()
-            )
+            val sessionFuture = if (android.os.Build.VERSION.SDK_INT >= 31) {
+                PlatformStorage.createSearchSessionAsync(
+                    PlatformStorage.SearchContext.Builder(context.applicationContext, DATABASE_NAME).build()
+                )
+            } else {
+                LocalStorage.createSearchSessionAsync(
+                    LocalStorage.SearchContext.Builder(context.applicationContext, DATABASE_NAME).build()
+                )
+            }
             val s = sessionFuture.await()
 
             // Register schema — setForceOverride(false) so existing data is preserved on upgrade
+            // setDocumentClassDisplayedBySystem makes it globally visible in launcher
             val schemaRequest = SetSchemaRequest.Builder()
                 .addDocumentClasses(WatchItemDocument::class.java)
+                .setDocumentClassDisplayedBySystem(WatchItemDocument::class.java, true)
                 .setForceOverride(false)
                 .build()
             s.setSchemaAsync(schemaRequest).await()

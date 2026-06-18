@@ -15,8 +15,8 @@ android {
         applicationId = "com.kaze"
         minSdk = 24
         targetSdk = 35
-        versionCode = 88
-        versionName = "2.16.0"
+        versionCode = 89
+        versionName = "2.16.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -133,6 +133,7 @@ dependencies {
     // AppSearch — on-device global search
     implementation("androidx.appsearch:appsearch:1.1.0-alpha04")
     implementation("androidx.appsearch:appsearch-local-storage:1.1.0-alpha04")
+    implementation("androidx.appsearch:appsearch-platform-storage:1.1.0-alpha04")
     annotationProcessor("androidx.appsearch:appsearch-compiler:1.1.0-alpha04")
     ksp("androidx.appsearch:appsearch-compiler:1.1.0-alpha04")
 
