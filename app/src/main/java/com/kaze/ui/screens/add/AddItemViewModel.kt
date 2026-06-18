@@ -3,7 +3,8 @@ package com.kaze.ui.screens.add
 import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
@@ -39,7 +40,8 @@ data class AddItemUiState(
     val showSuggestions: Boolean = false
 )
 
-class AddItemViewModel(
+@HiltViewModel
+class AddItemViewModel @Inject constructor(
     private val repository: WatchItemRepository,
     private val omdbRepository: OmdbRepository,
     private val activityRepository: ActivityRepository,
@@ -217,16 +219,5 @@ class AddItemViewModel(
         _uiState.update { AddItemUiState() }
     }
 
-    class Factory(
-        private val repository: WatchItemRepository,
-        private val omdbRepository: OmdbRepository,
-        private val activityRepository: ActivityRepository,
-        private val userRepository: UserRepository
-    ) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
-            val savedState = extras.createSavedStateHandle()
-            return AddItemViewModel(repository, omdbRepository, activityRepository, userRepository, savedState) as T
-        }
-    }
+    
 }

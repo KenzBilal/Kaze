@@ -1,4 +1,8 @@
+
 package com.kaze.data.repository
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
 
 import android.content.Context
 import com.kaze.data.local.ArcItemProgress
@@ -71,7 +75,14 @@ data class ArcItemUiState(
 
 // ── Repository ────────────────────────────────────────────────────────────────
 
-class ArcRepository(private val context: Context) {
+
+
+
+
+@Singleton
+class ArcRepository @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
 
     private val db by lazy { WatchLaterDatabase.getInstance(context) }
     private val arcProgressDao by lazy { db.arcProgressDao() }

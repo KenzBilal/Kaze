@@ -6,6 +6,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.*
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -76,9 +77,9 @@ sealed class Screen(val route: String) {
 @Composable
 fun WatchLaterNavGraph(
     navController: NavHostController,
-    app: WatchLaterApp
+    navVm: NavigationViewModel = hiltViewModel()
 ) {
-    val repo   = app.container.repository
+    val repo   = navVm.repository
 
     NavHost(
         navController  = navController,
@@ -91,7 +92,7 @@ fun WatchLaterNavGraph(
         // ── Splash ────────────────────────────────────────────────────────
         composable(Screen.Splash.route) {
             SplashScreen(
-                userRepository = app.container.userRepository,
+                userRepository = navVm.userRepository,
                 onGoHome = {
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Splash.route) { inclusive = true }
@@ -118,22 +119,9 @@ fun WatchLaterNavGraph(
 
         // ── Home ──────────────────────────────────────────────────────────
         composable(Screen.Home.route) {
-            val homeVm: HomeViewModel = viewModel(
-                factory = HomeViewModel.Factory(
-                    repository = repo,
-                    seriesRepository = app.container.seriesRepository,
-                    userRepository = app.container.userRepository,
-                    userPreferences = app.container.userPreferences,
-                    updateManager = app.container.updateManager,
-                    backupManager = app.container.backupManager
-                )
-            )
-            val addVm:  AddItemViewModel = viewModel(factory = AddItemViewModel.Factory(repo, app.container.omdbRepository, app.container.activityRepository, app.container.userRepository))
-            val whatToWatchVm: com.kaze.ui.screens.home.WhatToWatchViewModel = viewModel(
-                factory = com.kaze.ui.screens.home.WhatToWatchViewModel.Factory(
-                    app.container.whatToWatchDao, repo
-                )
-            )
+            val homeVm: HomeViewModel = hiltViewModel()
+            val addVm: AddItemViewModel = hiltViewModel()
+            val whatToWatchVm: com.kaze.ui.screens.home.WhatToWatchViewModel = hiltViewModel()
             var showAddSheet by remember { mutableStateOf(false) }
             val addSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -164,8 +152,8 @@ fun WatchLaterNavGraph(
         composable(Screen.Discover.route) {
             DiscoverScreen(
                 repository = repo,
-                traktRepository = app.container.traktRepository,
-                omdbRepository = app.container.omdbRepository,
+                traktRepository = navVm.traktRepository,
+                omdbRepository = navVm.omdbRepository,
 
                 onItemClick = { item ->
                     if (item.imdbId.isNotBlank()) {
@@ -194,8 +182,8 @@ fun WatchLaterNavGraph(
         // ── Arcs ──────────────────────────────────────────────────────────
         composable(Screen.Arcs.route) {
             ArcsScreen(
-                arcRepository  = app.container.arcRepository,
-                userRepository = app.container.userRepository,
+                arcRepository  = navVm.arcRepository,
+                userRepository = navVm.userRepository,
                 onArcClick     = { arcId -> navController.navigate(Screen.ArcDetail.createRoute(arcId)) }
             )
         }
@@ -207,10 +195,10 @@ fun WatchLaterNavGraph(
             val arcId = backStack.arguments!!.getString("arcId") ?: ""
             ArcDetailScreen(
                 arcId          = arcId,
-                arcRepository  = app.container.arcRepository,
-                watchItemRepo  = app.container.repository,
-                userRepository = app.container.userRepository,
-                activityRepo   = app.container.activityRepository,
+                arcRepository  = navVm.arcRepository,
+                watchItemRepo  = navVm.repository,
+                userRepository = navVm.userRepository,
+                activityRepo   = navVm.activityRepository,
                 onBack         = { navController.popBackStack() },
                 onItemClick    = { id -> navController.navigate(Screen.Detail.createRoute(id)) }
             )
@@ -219,7 +207,7 @@ fun WatchLaterNavGraph(
         // ── Admin Arcs ────────────────────────────────────────────────────
         composable(Screen.AdminArcs.route) {
             AdminArcsScreen(
-                arcRepository = app.container.arcRepository,
+                arcRepository = navVm.arcRepository,
                 onBack        = { navController.popBackStack() },
                 onEditArc     = { arcId -> navController.navigate(Screen.AdminArcEditor.createRoute(arcId)) }
             )
@@ -232,23 +220,21 @@ fun WatchLaterNavGraph(
             val arcId = backStack.arguments!!.getString("arcId") ?: ""
             AdminArcEditorScreen(
                 arcId         = arcId,
-                arcRepository = app.container.arcRepository,
-                omdbRepository = app.container.omdbRepository,
+                arcRepository = navVm.arcRepository,
+                omdbRepository = navVm.omdbRepository,
                 onBack        = { navController.popBackStack() }
             )
         }
 
         // ── Stats ─────────────────────────────────────────────────────────
         composable(Screen.Stats.route) {
-            val statsVm: StatsViewModel = viewModel(
-                factory = StatsViewModel.Factory(repo)
-            )
+            val statsVm: StatsViewModel = hiltViewModel()
             StatsScreen(viewModel = statsVm)
         }
 
         // ── Search ────────────────────────────────────────────────────────
         composable(Screen.Search.route) {
-            val searchVm: SearchViewModel = viewModel(factory = SearchViewModel.Factory(repo))
+            val searchVm: SearchViewModel = hiltViewModel()
             SearchScreen(
                 viewModel   = searchVm,
                 onItemClick = { id -> navController.navigate(Screen.Detail.createRoute(id)) },
@@ -316,17 +302,7 @@ fun WatchLaterNavGraph(
             arguments = listOf(navArgument("itemId") { type = NavType.LongType })
         ) { backStack ->
             val itemId = backStack.arguments!!.getLong("itemId")
-            val detailVm: DetailViewModel = viewModel(
-                factory = DetailViewModel.Factory(
-                    repository       = repo,
-                    seriesRepository = app.container.seriesRepository,
-                    userRepository   = app.container.userRepository,
-                    omdbRepository   = app.container.omdbRepository,
-                    traktRepository  = app.container.traktRepository,
-                    castCacheDao     = app.container.castCacheDao,
-                    itemId           = itemId
-                )
-            )
+            val detailVm: DetailViewModel = hiltViewModel()
             DetailScreen(
                 viewModel = detailVm,
                 onBack    = { navController.popBackStack() }
@@ -341,7 +317,7 @@ fun WatchLaterNavGraph(
             val imdbId = backStack.arguments!!.getString("imdbId") ?: ""
             DeepLinkLoadingScreen(
                 imdbId = imdbId,
-                omdbRepository = app.container.omdbRepository,
+                omdbRepository = navVm.omdbRepository,
                 onTitleResolved = { title, type, poster, year ->
                     // Replace loading screen with DetailPreview
                     navController.navigate(Screen.DetailPreview.createRoute(
@@ -390,27 +366,7 @@ fun WatchLaterNavGraph(
             val season = backStack.arguments!!.getInt("season")
             val episode = backStack.arguments!!.getInt("episode")
 
-            val detailVm: DetailViewModel = viewModel(
-                factory = DetailViewModel.Factory(
-                    repository       = repo,
-                    seriesRepository = app.container.seriesRepository,
-                    userRepository   = app.container.userRepository,
-                    omdbRepository   = app.container.omdbRepository,
-                    traktRepository  = app.container.traktRepository,
-                    castCacheDao     = app.container.castCacheDao,
-                    itemId           = -1L,
-                    previewImdbId    = imdbId,
-                    previewTitle     = title,
-                    previewType      = type,
-                    previewPoster    = poster,
-                    previewRating    = rating,
-                    previewNotes     = notes,
-                    previewGenres    = genres,
-                    previewYear      = year,
-                    previewSeason    = season,
-                    previewEpisode   = episode
-                )
-            )
+            val detailVm: DetailViewModel = hiltViewModel()
             DetailScreen(
                 viewModel = detailVm,
                 onBack    = { navController.popBackStack() }

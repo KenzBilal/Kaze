@@ -9,6 +9,8 @@ import com.kaze.data.local.SeriesCache
 import com.kaze.data.local.SeriesCacheDao
 import com.kaze.data.remote.OmdbRepository
 import kotlinx.coroutines.flow.Flow
+import javax.inject.Inject
+import javax.inject.Singleton
 
 private const val CACHE_TTL_MS = 30L * 24 * 60 * 60 * 1000 // 30 days
 
@@ -29,7 +31,8 @@ sealed class EpisodeValidationResult {
     data class Blocked(val reason: String) : EpisodeValidationResult()
 }
 
-class SeriesRepository(
+@Singleton
+class SeriesRepository @Inject constructor(
     private val seriesCacheDao: SeriesCacheDao,
     private val seasonEpisodeDao: SeasonEpisodeDao,
     private val episodeProgressDao: EpisodeProgressDao,

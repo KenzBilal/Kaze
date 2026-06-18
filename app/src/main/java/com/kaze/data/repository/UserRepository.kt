@@ -8,7 +8,10 @@ import com.kaze.data.local.WatchLaterDatabase
 import com.kaze.data.remote.SupabaseApi
 import com.kaze.model.WatchItem
 import com.kaze.worker.SyncWorker
+import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.jan.supabase.postgrest.from
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
@@ -70,7 +73,10 @@ data class CreateUserResult(
 
 // ── Repository ────────────────────────────────────────────────────────────────
 
-class UserRepository(private val context: Context) {
+@Singleton
+class UserRepository @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
 
     private val prefs: SharedPreferences =
         context.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE)

@@ -8,8 +8,11 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class OmdbRepository {
+@Singleton
+class OmdbRepository @Inject constructor() {
 
     val api: OmdbApi by lazy {
         val clientBuilder = OkHttpClient.Builder()

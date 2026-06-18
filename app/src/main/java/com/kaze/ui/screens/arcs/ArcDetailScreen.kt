@@ -41,16 +41,23 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import androidx.hilt.navigation.compose.hiltViewModel
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+import androidx.lifecycle.SavedStateHandle
 
 // ── ViewModel ─────────────────────────────────────────────────────────────────
 
-class ArcDetailViewModel(
-    private val arcId: String,
+@HiltViewModel
+class ArcDetailViewModel @Inject constructor(
+    private val savedStateHandle: SavedStateHandle,
     private val arcRepository: ArcRepository,
     private val watchItemRepo: WatchItemRepository,
     private val userRepository: UserRepository,
     private val activityRepo: ActivityRepository
 ) : ViewModel() {
+    private val arcId: String = checkNotNull(savedStateHandle.get<String>("arcId"))
+
 
     private val _arc = MutableStateFlow<Arc?>(null)
     private val _items = MutableStateFlow<List<ArcItemUiState>>(emptyList())
@@ -193,20 +200,11 @@ class ArcDetailViewModel(
         }
     }
 
-    class Factory(
-        private val arcId: String,
-        private val arcRepository: ArcRepository,
-        private val watchItemRepo: WatchItemRepository,
-        private val userRepository: UserRepository,
-        private val activityRepo: ActivityRepository
-    ) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>) =
-            ArcDetailViewModel(arcId, arcRepository, watchItemRepo, userRepository, activityRepo) as T
-    }
-}
+    
 
 // ── Screen ────────────────────────────────────────────────────────────────────
+
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -219,9 +217,7 @@ fun ArcDetailScreen(
     onBack: () -> Unit,
     onItemClick: (Long) -> Unit
 ) {
-    val vm: ArcDetailViewModel = viewModel(
-        factory = ArcDetailViewModel.Factory(arcId, arcRepository, watchItemRepo, userRepository, activityRepo)
-    )
+    val vm: ArcDetailViewModel = hiltViewModel()
     val arc by vm.arc.collectAsStateWithLifecycle()
     val items by vm.items.collectAsStateWithLifecycle()
     val isLoading by vm.isLoading.collectAsStateWithLifecycle()

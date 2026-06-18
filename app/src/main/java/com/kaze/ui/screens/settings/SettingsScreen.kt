@@ -35,7 +35,11 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(onBack: () -> Unit, onManageArcs: () -> Unit = {}) {
+fun SettingsScreen(
+    onBack: () -> Unit,
+    onManageArcs: () -> Unit = {},
+    viewModel: SettingsViewModel = androidx.hilt.navigation.compose.hiltViewModel()
+) {
     val context = LocalContext.current
     val app = context.applicationContext as com.kaze.WatchLaterApp
     val prefs = remember { UserPreferences(context) }
@@ -49,7 +53,7 @@ fun SettingsScreen(onBack: () -> Unit, onManageArcs: () -> Unit = {}) {
     var isAdmin by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        val username = app.container.userRepository.getLocalUsername()
+        val username = viewModel.getLocalUsername()
         isAdmin = username.equals("kenzbilal", ignoreCase = true)
     }
 
@@ -59,7 +63,7 @@ fun SettingsScreen(onBack: () -> Unit, onManageArcs: () -> Unit = {}) {
         uri?.let {
             scope.launch {
                 try {
-                    val result = app.container.backupManager.exportToUri(it)
+                    val result = viewModel.exportToUri(it)
                     when (result) {
                         is com.kaze.utils.BackupResult.Success -> snackbarHostState.showSnackbar(result.message)
                         is com.kaze.utils.BackupResult.Error -> snackbarHostState.showSnackbar(result.message)
@@ -81,7 +85,7 @@ fun SettingsScreen(onBack: () -> Unit, onManageArcs: () -> Unit = {}) {
                         reader.readText()
                     } ?: throw Exception("Could not read file")
                     
-                    val result = app.container.backupManager.importFromJson(json)
+                    val result = viewModel.importFromJson(json)
                     when (result) {
                         is com.kaze.utils.RestoreResult.Success -> snackbarHostState.showSnackbar("Restored ${result.count} items successfully")
                         is com.kaze.utils.RestoreResult.Error -> snackbarHostState.showSnackbar("Restore failed: ${result.message}")
@@ -174,9 +178,9 @@ fun SettingsScreen(onBack: () -> Unit, onManageArcs: () -> Unit = {}) {
                         isSyncing = true
                         scope.launch {
                             try {
-                                val userId = app.container.userRepository.getLocalUserId()
+                                val userId = viewModel.getLocalUserId()
                                     ?: throw Exception("Not signed in")
-                                val count = app.container.backupManager.restoreFromCloud(userId)
+                                val count = viewModel.restoreFromCloud(userId)
                                 snackbarHostState.showSnackbar("Restored $count new item(s) from cloud")
                             } catch (e: Exception) {
                                 snackbarHostState.showSnackbar("Restore failed: ${e.message}")
@@ -200,9 +204,9 @@ fun SettingsScreen(onBack: () -> Unit, onManageArcs: () -> Unit = {}) {
                         isBackingUp = true
                         scope.launch {
                             try {
-                                val userId = app.container.userRepository.getLocalUserId()
+                                val userId = viewModel.getLocalUserId()
                                     ?: throw Exception("Not signed in")
-                                val count = app.container.backupManager.uploadToCloud(userId)
+                                val count = viewModel.uploadToCloud(userId)
                                 snackbarHostState.showSnackbar("Backed up $count item(s) to cloud")
                             } catch (e: Exception) {
                                 snackbarHostState.showSnackbar("Backup failed: ${e.message}")

@@ -22,9 +22,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.kaze.data.repository.SupabaseUser
 import com.kaze.data.repository.UserRepository
 import com.kaze.ui.components.UserAvatar
@@ -37,7 +39,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class FriendsViewModel(private val repository: UserRepository) : ViewModel() {
+@HiltViewModel
+class FriendsViewModel @Inject constructor(private val repository: UserRepository) : ViewModel() {
 
     private val _uiState = MutableStateFlow(FriendsUiState())
     val uiState: StateFlow<FriendsUiState> = _uiState.asStateFlow()
@@ -135,12 +138,7 @@ class FriendsViewModel(private val repository: UserRepository) : ViewModel() {
         }
     }
 
-    class Factory(private val context: android.content.Context) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return FriendsViewModel(UserRepository(context)) as T
-        }
-    }
+    
 }
 
 data class FriendsUiState(
@@ -159,7 +157,7 @@ fun FriendsScreen(
 ) {
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
-    val viewModel: FriendsViewModel = viewModel(factory = FriendsViewModel.Factory(context))
+    val viewModel: FriendsViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(

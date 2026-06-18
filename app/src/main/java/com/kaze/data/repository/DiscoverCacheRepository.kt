@@ -7,6 +7,8 @@ import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.Serializable
+import javax.inject.Inject
+import javax.inject.Singleton
 
 @Serializable
 data class DiscoverCacheDto(
@@ -21,7 +23,8 @@ data class DiscoverCacheDto(
     val created_at: String? = null
 )
 
-class DiscoverCacheRepository(
+@Singleton
+class DiscoverCacheRepository @Inject constructor(
     private val supabaseClient: SupabaseClient
 ) {
     suspend fun getCachedItems(imdbIds: List<String>): Map<String, DiscoverItem> {

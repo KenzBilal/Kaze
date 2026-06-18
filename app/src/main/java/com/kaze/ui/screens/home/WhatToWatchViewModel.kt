@@ -1,7 +1,8 @@
 package com.kaze.ui.screens.home
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import androidx.lifecycle.viewModelScope
 import androidx.sqlite.db.SimpleSQLiteQuery
 import com.kaze.data.local.WhatToWatchDao
@@ -13,7 +14,8 @@ import kotlinx.coroutines.launch
 enum class WatchType { MOVIE, SERIES, BOTH }
 enum class WatchLength { SHORT, MID, LONG } // Short 1-2, Mid 3-4, Long 5+
 
-class WhatToWatchViewModel(
+@HiltViewModel
+class WhatToWatchViewModel @Inject constructor(
     private val dao: WhatToWatchDao,
     private val repository: WatchItemRepository
 ) : ViewModel() {
@@ -105,12 +107,5 @@ class WhatToWatchViewModel(
         }
     }
 
-    class Factory(
-        private val dao: WhatToWatchDao,
-        private val repository: WatchItemRepository
-    ) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T =
-            WhatToWatchViewModel(dao, repository) as T
-    }
+    
 }

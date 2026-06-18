@@ -6,21 +6,23 @@ import android.app.NotificationManager
 import android.os.Build
 import com.kaze.di.AppContainer
 import com.kaze.search.AppSearchManager
+import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import javax.inject.Inject
+import com.kaze.data.repository.WatchItemRepository
 
+@HiltAndroidApp
 class WatchLaterApp : Application() {
 
-    lateinit var container: AppContainer
-        private set
+    @Inject lateinit var repository: WatchItemRepository
 
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     override fun onCreate() {
         super.onCreate()
-        container = AppContainer(this)
         createNotificationChannels()
         initAppSearch()
     }
@@ -30,7 +32,7 @@ class WatchLaterApp : Application() {
             // Open the AppSearch session
             AppSearchManager.open(applicationContext)
             // Rebuild index from Room on first launch or after re-install
-            val allItems = container.repository.getAllItemsSnapshot()
+            val allItems = repository.getAllItemsSnapshot()
             AppSearchManager.rebuildIndex(allItems)
         }
     }

@@ -1,7 +1,8 @@
 package com.kaze.ui.screens.home
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import androidx.lifecycle.viewModelScope
 import com.kaze.data.repository.WatchItemRepository
 import com.kaze.data.repository.SeriesRepository
@@ -24,7 +25,8 @@ data class HomeUiState(
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class HomeViewModel(
+@HiltViewModel
+class HomeViewModel @Inject constructor(
     private val repository: WatchItemRepository,
     private val seriesRepository: SeriesRepository,
     private val userRepository: UserRepository,
@@ -192,16 +194,5 @@ class HomeViewModel(
         }
     }
 
-    class Factory(
-        private val repository: WatchItemRepository,
-        private val seriesRepository: SeriesRepository,
-        private val userRepository: UserRepository,
-        private val userPreferences: UserPreferences,
-        private val updateManager: UpdateManager,
-        private val backupManager: com.kaze.utils.BackupManager
-    ) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T =
-            HomeViewModel(repository, seriesRepository, userRepository, userPreferences, updateManager, backupManager) as T
-    }
+    
 }

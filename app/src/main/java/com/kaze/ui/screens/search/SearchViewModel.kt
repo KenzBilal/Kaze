@@ -1,7 +1,8 @@
 package com.kaze.ui.screens.search
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import androidx.lifecycle.viewModelScope
 import com.kaze.data.repository.WatchItemRepository
 import com.kaze.model.WatchItem
@@ -10,7 +11,8 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
 
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
-class SearchViewModel(private val repository: WatchItemRepository) : ViewModel() {
+@HiltViewModel
+class SearchViewModel @Inject constructor(private val repository: WatchItemRepository) : ViewModel() {
 
     private val _query = MutableStateFlow("")
     val query: StateFlow<String> = _query.asStateFlow()
@@ -27,9 +29,5 @@ class SearchViewModel(private val repository: WatchItemRepository) : ViewModel()
     fun onQueryChange(q: String) { _query.value = q }
     fun clearQuery() { _query.value = "" }
 
-    class Factory(private val repository: WatchItemRepository) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T =
-            SearchViewModel(repository) as T
-    }
+    
 }

@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.hilt)
     id("com.google.gms.google-services")
 }
 
@@ -15,8 +16,8 @@ android {
         applicationId = "com.kaze"
         minSdk = 24
         targetSdk = 35
-        versionCode = 89
-        versionName = "2.16.1"
+        versionCode = 90
+        versionName = "2.16.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -137,5 +138,16 @@ dependencies {
     annotationProcessor("androidx.appsearch:appsearch-compiler:1.1.0-alpha04")
     ksp("androidx.appsearch:appsearch-compiler:1.1.0-alpha04")
 
+    // Hilt
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.android.compiler)
+    implementation(libs.androidx.hilt.navigation.compose)
+
+    // Test dependencies
+    testImplementation("junit:junit:4.13.2")
     debugImplementation(libs.androidx.ui.tooling)
+}
+
+hilt {
+    enableAggregatingTask = false
 }

@@ -23,10 +23,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.kaze.data.repository.ActivityFeedItem
 import com.kaze.data.repository.ActivityRepository
@@ -42,7 +44,8 @@ import kotlinx.coroutines.launch
 
 // ── ViewModel ─────────────────────────────────────────────────────────────────
 
-class FeedViewModel(
+@HiltViewModel
+class FeedViewModel @Inject constructor(
     private val activityRepo: ActivityRepository,
     private val userRepo: UserRepository
 ) : ViewModel() {
@@ -95,15 +98,7 @@ class FeedViewModel(
 
     fun refresh() { load() }
 
-    class Factory(private val context: android.content.Context) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return FeedViewModel(
-                ActivityRepository(context),
-                UserRepository(context)
-            ) as T
-        }
-    }
+    
 }
 
 data class FeedUiState(
@@ -119,7 +114,7 @@ data class FeedUiState(
 @Composable
 fun FeedScreen() {
     val context = LocalContext.current
-    val viewModel: FeedViewModel = viewModel(factory = FeedViewModel.Factory(context))
+    val viewModel: FeedViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Scaffold(

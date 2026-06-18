@@ -33,9 +33,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.kaze.data.local.WatchLaterDatabase
 import com.kaze.data.repository.PublicWatchlistItem
@@ -53,12 +55,14 @@ import kotlinx.coroutines.launch
 
 // ── ViewModel ─────────────────────────────────────────────────────────────────
 
-class UserProfileViewModel(
+@HiltViewModel
+class UserProfileViewModel @Inject constructor(
     private val repository: UserRepository,
     private val watchItemRepository: com.kaze.data.repository.WatchItemRepository,
-    private val profileUserId: String
+    private val savedStateHandle: androidx.lifecycle.SavedStateHandle
 ) : ViewModel() {
 
+    private val profileUserId: String = checkNotNull(savedStateHandle["userId"])
     private val _uiState = MutableStateFlow(UserProfileUiState())
     val uiState: StateFlow<UserProfileUiState> = _uiState.asStateFlow()
 
@@ -161,13 +165,7 @@ class UserProfileViewModel(
 
 
 
-    class Factory(private val context: android.content.Context, private val userId: String) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            val app = context.applicationContext as com.kaze.WatchLaterApp
-            return UserProfileViewModel(app.container.userRepository, app.container.repository, userId) as T
-        }
-    }
+    
 }
 
 data class UserProfileUiState(
@@ -198,7 +196,7 @@ fun UserProfileScreen(
 ) {
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
-    val viewModel: UserProfileViewModel = viewModel(factory = UserProfileViewModel.Factory(context, profileUserId))
+    val viewModel: UserProfileViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsState()
 
     // Followers/Following dialog

@@ -1,4 +1,8 @@
+
 package com.kaze.updater
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
 
 import android.app.DownloadManager
 import android.content.BroadcastReceiver
@@ -35,7 +39,14 @@ enum class UpdateState {
     IDLE, CHECKING, AVAILABLE, DOWNLOADING, READY_TO_INSTALL, ERROR, UP_TO_DATE
 }
 
-class UpdateManager(private val context: Context) {
+
+
+
+
+@Singleton
+class UpdateManager @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
 
     private val _updateState = MutableStateFlow(UpdateState.IDLE)
     val updateState: StateFlow<UpdateState> = _updateState.asStateFlow()

@@ -26,9 +26,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.kaze.data.local.WatchLaterDatabase
 import com.kaze.data.repository.UserRepository
 import com.kaze.ui.theme.*
@@ -52,7 +54,8 @@ fun validateUsername(name: String): String? = when {
 
 // ── ViewModel ─────────────────────────────────────────────────────────────────
 
-class SetUsernameViewModel(
+@HiltViewModel
+class SetUsernameViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val dao: com.kaze.data.local.WatchItemDao,
     private val backupManager: com.kaze.utils.BackupManager
@@ -105,16 +108,7 @@ class SetUsernameViewModel(
         }
     }
 
-    class Factory(private val context: android.content.Context) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            val db = WatchLaterDatabase.getInstance(context)
-            val userRepo = UserRepository(context)
-            val repo = com.kaze.data.repository.WatchItemRepository(db.watchItemDao(), db.episodeProgressDao())
-            val backupManager = com.kaze.utils.BackupManager(context, repo, userRepo)
-            return SetUsernameViewModel(userRepo, db.watchItemDao(), backupManager) as T
-        }
-    }
+    
 }
 
 data class SetUsernameUiState(
@@ -129,7 +123,7 @@ data class SetUsernameUiState(
 @Composable
 fun SetUsernameScreen(onAccountCreated: () -> Unit) {
     val context = LocalContext.current
-    val viewModel: SetUsernameViewModel = viewModel(factory = SetUsernameViewModel.Factory(context))
+    val viewModel: SetUsernameViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsState()
     val keyboard = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current

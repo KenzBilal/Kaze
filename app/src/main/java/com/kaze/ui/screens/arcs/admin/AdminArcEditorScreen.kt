@@ -42,14 +42,21 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.burnoutcrew.reorderable.*
 import java.util.UUID
+import androidx.hilt.navigation.compose.hiltViewModel
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+import androidx.lifecycle.SavedStateHandle
 
 // ── ViewModel ─────────────────────────────────────────────────────────────────
 
-class AdminArcEditorViewModel(
-    private val arcId: String,
+@HiltViewModel
+class AdminArcEditorViewModel @Inject constructor(
+    private val savedStateHandle: SavedStateHandle,
     private val arcRepository: ArcRepository,
     private val omdbRepository: OmdbRepository
 ) : ViewModel() {
+    private val arcId: String = checkNotNull(savedStateHandle.get<String>("arcId"))
+
 
     private val _arc = MutableStateFlow<Arc?>(null)
     private val _items = MutableStateFlow<List<ArcItem>>(emptyList())
@@ -207,18 +214,11 @@ class AdminArcEditorViewModel(
         }
     }
 
-    class Factory(
-        private val arcId: String,
-        private val arcRepository: ArcRepository,
-        private val omdbRepository: OmdbRepository
-    ) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>) =
-            AdminArcEditorViewModel(arcId, arcRepository, omdbRepository) as T
-    }
-}
+    
 
 // ── Screen ────────────────────────────────────────────────────────────────────
+
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -228,9 +228,7 @@ fun AdminArcEditorScreen(
     omdbRepository: OmdbRepository,
     onBack: () -> Unit
 ) {
-    val vm: AdminArcEditorViewModel = viewModel(
-        factory = AdminArcEditorViewModel.Factory(arcId, arcRepository, omdbRepository)
-    )
+    val vm: AdminArcEditorViewModel = hiltViewModel()
     val arc by vm.arc.collectAsStateWithLifecycle()
     val items by vm.items.collectAsStateWithLifecycle()
     val isLoading by vm.isLoading.collectAsStateWithLifecycle()

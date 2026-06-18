@@ -1,7 +1,8 @@
 package com.kaze.ui.screens.stats
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import androidx.lifecycle.viewModelScope
 import com.kaze.data.repository.WatchItemRepository
 import com.kaze.model.WatchItem
@@ -19,7 +20,8 @@ data class StatsUiState(
     val isLoading: Boolean = true
 )
 
-class StatsViewModel(
+@HiltViewModel
+class StatsViewModel @Inject constructor(
     private val repository: WatchItemRepository
 ) : ViewModel() {
 
@@ -79,11 +81,5 @@ class StatsViewModel(
         initialValue = StatsUiState()
     )
 
-    class Factory(
-        private val repository: WatchItemRepository
-    ) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T =
-            StatsViewModel(repository) as T
-    }
+    
 }

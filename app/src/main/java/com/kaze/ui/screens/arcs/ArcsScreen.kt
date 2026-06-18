@@ -30,10 +30,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.kaze.data.repository.Arc
 import com.kaze.data.repository.ArcRepository
@@ -51,7 +53,8 @@ import kotlinx.coroutines.launch
 
 // ── ViewModel ─────────────────────────────────────────────────────────────────
 
-class ArcsViewModel(
+@HiltViewModel
+class ArcsViewModel @Inject constructor(
     private val arcRepository: ArcRepository,
     private val userRepository: UserRepository
 ) : ViewModel() {
@@ -148,14 +151,7 @@ class ArcsViewModel(
 
     fun setQuery(q: String) { _query.value = q }
 
-    class Factory(
-        private val arcRepository: ArcRepository,
-        private val userRepository: UserRepository
-    ) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>) =
-            ArcsViewModel(arcRepository, userRepository) as T
-    }
+    
 }
 
 // ── Screen ────────────────────────────────────────────────────────────────────
@@ -167,7 +163,7 @@ fun ArcsScreen(
     userRepository: UserRepository,
     onArcClick: (String) -> Unit
 ) {
-    val vm: ArcsViewModel = viewModel(factory = ArcsViewModel.Factory(arcRepository, userRepository))
+    val vm: ArcsViewModel = hiltViewModel()
     val officialArcs by vm.officialArcs.collectAsStateWithLifecycle()
     val personalArcs by vm.personalArcs.collectAsStateWithLifecycle()
     val pendingShares by vm.pendingShares.collectAsStateWithLifecycle()

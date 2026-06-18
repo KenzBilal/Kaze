@@ -1,4 +1,7 @@
 package com.kaze
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
+import com.kaze.utils.NetworkMonitor
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -23,6 +26,8 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -47,7 +52,9 @@ data class BottomNavItem(
     val isCenter: Boolean = false  // Discover tab is slightly larger
 )
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    @Inject lateinit var networkMonitor: NetworkMonitor
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
@@ -57,14 +64,14 @@ class MainActivity : ComponentActivity() {
         setContent {
             WatchLaterTheme {
                 com.kaze.ui.components.NotificationPermissionHandler()
-                AppContent(app = app, initialIntent = intent)
+                AppContent(networkMonitor = networkMonitor, initialIntent = intent)
             }
         }
     }
 }
 
 @Composable
-fun AppContent(app: WatchLaterApp, initialIntent: Intent?) {
+fun AppContent(networkMonitor: com.kaze.utils.NetworkMonitor, initialIntent: Intent?) {
     val navController = rememberNavController()
     val currentEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentEntry?.destination?.route
@@ -111,7 +118,7 @@ fun AppContent(app: WatchLaterApp, initialIntent: Intent?) {
         Screen.MyProfile.route
     )
 
-    val isOnline by app.container.networkMonitor.isOnline.collectAsState()
+    val isOnline by networkMonitor.isOnline.collectAsState()
     var showNetworkBanner by remember { mutableStateOf(false) }
     var wasOnline by remember { mutableStateOf(true) }
     var bannerIsOnline by remember { mutableStateOf(true) }
@@ -211,7 +218,7 @@ fun AppContent(app: WatchLaterApp, initialIntent: Intent?) {
                 .fillMaxSize()
                 .padding(bottom = padding.calculateBottomPadding())
         ) {
-            WatchLaterNavGraph(navController = navController, app = app)
+            WatchLaterNavGraph(navController = navController)
             
             AnimatedVisibility(
                 visible = showNetworkBanner,

@@ -35,9 +35,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.kaze.data.local.WatchLaterDatabase
 import com.kaze.data.repository.SupabaseUser
@@ -59,7 +61,8 @@ private const val APP_DOWNLOAD_URL = "https://github.com/KenzBilal/Kaze/releases
 
 // ── ViewModel ─────────────────────────────────────────────────────────────────
 
-class MyProfileViewModel(
+@HiltViewModel
+class MyProfileViewModel @Inject constructor(
     private val repository: UserRepository,
     private val dao: com.kaze.data.local.WatchItemDao
 ) : ViewModel() {
@@ -130,13 +133,7 @@ class MyProfileViewModel(
 
     fun cancelEditing() = _uiState.update { it.copy(isEditing = false) }
 
-    class Factory(private val context: android.content.Context) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            val db = WatchLaterDatabase.getInstance(context)
-            return MyProfileViewModel(UserRepository(context), db.watchItemDao()) as T
-        }
-    }
+    
 }
 
 data class MyProfileUiState(
@@ -165,7 +162,7 @@ private val GENRES = listOf(
 @Composable
 fun MyProfileScreen(onSettingsClick: () -> Unit = {}) {
     val context = LocalContext.current
-    val viewModel: MyProfileViewModel = viewModel(factory = MyProfileViewModel.Factory(context))
+    val viewModel: MyProfileViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(

@@ -1,7 +1,9 @@
 package com.kaze.ui.screens.detail
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.SavedStateHandle
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import androidx.lifecycle.viewModelScope
 import com.kaze.data.local.CastCacheDao
 import com.kaze.data.local.CastCacheEntity
@@ -62,25 +64,28 @@ data class CastUiItem(
     val imageUrl: String?
 )
 
-class DetailViewModel(
+@HiltViewModel
+class DetailViewModel @Inject constructor(
     private val repository: WatchItemRepository,
     private val seriesRepository: SeriesRepository,
     private val userRepository: UserRepository,
     private val omdbRepository: OmdbRepository,
     private val traktRepository: TraktRepository,
     private val castCacheDao: CastCacheDao,
-    private val itemId: Long,
-    private val previewImdbId: String? = null,
-    private val previewTitle: String? = null,
-    private val previewType: String? = null,
-    private val previewPoster: String? = null,
-    private val previewRating: Float = 0f,
-    private val previewNotes: String = "",
-    private val previewGenres: String = "",
-    private val previewYear: Int = 0,
-    private val previewSeason: Int = 1,
-    private val previewEpisode: Int = 1
+    private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
+    private val itemId: Long = savedStateHandle.get<Long>("itemId") ?: -1L
+    private val previewImdbId: String? = savedStateHandle.get<String>("imdbId")
+    private val previewTitle: String? = savedStateHandle.get<String>("title")
+    private val previewType: String? = savedStateHandle.get<String>("type")
+    private val previewPoster: String? = savedStateHandle.get<String>("poster")
+    private val previewRating: Float = savedStateHandle.get<Float>("rating") ?: 0f
+    private val previewNotes: String = savedStateHandle.get<String>("notes") ?: ""
+    private val previewGenres: String = savedStateHandle.get<String>("genres") ?: ""
+    private val previewYear: Int = savedStateHandle.get<Int>("year") ?: 0
+    private val previewSeason: Int = savedStateHandle.get<Int>("season") ?: 1
+    private val previewEpisode: Int = savedStateHandle.get<Int>("episode") ?: 1
+
 
     private val _uiState = MutableStateFlow(DetailUiState())
     val uiState: StateFlow<DetailUiState> = _uiState.asStateFlow()
@@ -650,27 +655,5 @@ class DetailViewModel(
         }
     }
 
-    class Factory(
-        private val repository: WatchItemRepository,
-        private val seriesRepository: SeriesRepository,
-        private val userRepository: UserRepository,
-        private val omdbRepository: OmdbRepository,
-        private val traktRepository: TraktRepository,
-        private val castCacheDao: CastCacheDao,
-        private val itemId: Long,
-        private val previewImdbId: String? = null,
-        private val previewTitle: String? = null,
-        private val previewType: String? = null,
-        private val previewPoster: String? = null,
-        private val previewRating: Float = 0f,
-        private val previewNotes: String = "",
-        private val previewGenres: String = "",
-        private val previewYear: Int = 0,
-        private val previewSeason: Int = 1,
-        private val previewEpisode: Int = 1
-    ) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T =
-            DetailViewModel(repository, seriesRepository, userRepository, omdbRepository, traktRepository, castCacheDao, itemId, previewImdbId, previewTitle, previewType, previewPoster, previewRating, previewNotes, previewGenres, previewYear, previewSeason, previewEpisode) as T
-    }
+    
 }

@@ -1,4 +1,8 @@
+
 package com.kaze.data.repository
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
 
 import android.content.Context
 import com.kaze.data.local.ActionType
@@ -61,7 +65,14 @@ data class FeedEvent(
 
 // ── Repository ────────────────────────────────────────────────────────────────
 
-class ActivityRepository(private val context: Context) {
+
+
+
+
+@Singleton
+class ActivityRepository @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
 
     private val db by lazy { WatchLaterDatabase.getInstance(context) }
     private val pendingDao by lazy { db.pendingActionDao() }

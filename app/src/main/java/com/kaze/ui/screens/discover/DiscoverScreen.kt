@@ -10,7 +10,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.Forum
-import androidx.compose.foundation.lazy.staggeredgrid.*
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
@@ -28,10 +27,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.kaze.data.remote.DiscoverItem
 import com.kaze.data.remote.OmdbRepository
@@ -57,7 +58,8 @@ enum class DiscoverTab { FRIENDS, GLOBAL }
 
 // ── ViewModel ─────────────────────────────────────────────────────────────────
 
-class DiscoverViewModel(
+@HiltViewModel
+class DiscoverViewModel @Inject constructor(
     private val repository: WatchItemRepository,
     private val userRepo: UserRepository,
     private val traktRepo: TraktRepository,
@@ -283,22 +285,7 @@ class DiscoverViewModel(
         return list.filter { it.posterUrl != null }.randomOrNull() ?: list.randomOrNull()
     }
 
-    class Factory(
-        private val context: android.content.Context,
-        private val repository: WatchItemRepository,
-        private val traktRepository: TraktRepository,
-        private val omdbRepository: OmdbRepository
-    ) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            val appContainer = (context.applicationContext as com.kaze.WatchLaterApp).container
-            return DiscoverViewModel(
-                repository, UserRepository(context),
-                traktRepository, omdbRepository,
-                appContainer.discoverCacheRepository
-            ) as T
-        }
-    }
+    
 }
 
 data class DiscoverUiState(
@@ -329,9 +316,7 @@ fun DiscoverScreen(
 ) {
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
-    val viewModel: DiscoverViewModel = viewModel(
-        factory = DiscoverViewModel.Factory(context, repository, traktRepository, omdbRepository)
-    )
+    val viewModel: DiscoverViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     var showDiscoverFilterSheet by remember { mutableStateOf(false) }

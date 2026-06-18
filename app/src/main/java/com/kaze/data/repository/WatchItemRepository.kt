@@ -8,8 +8,11 @@ import com.kaze.search.AppSearchManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import androidx.sqlite.db.SimpleSQLiteQuery
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class WatchItemRepository(
+@Singleton
+class WatchItemRepository @Inject constructor(
     private val dao: WatchItemDao,
     private val episodeProgressDao: EpisodeProgressDao
 ) {

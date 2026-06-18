@@ -23,10 +23,12 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.kaze.data.repository.Arc
 import com.kaze.data.repository.ArcRepository
 import com.kaze.ui.theme.*
@@ -38,7 +40,8 @@ import java.util.UUID
 
 // ── ViewModel ─────────────────────────────────────────────────────────────────
 
-class AdminArcsViewModel(private val arcRepository: ArcRepository) : ViewModel() {
+@HiltViewModel
+class AdminArcsViewModel @Inject constructor(private val arcRepository: ArcRepository) : ViewModel() {
 
     private val _arcs = MutableStateFlow<List<Arc>>(emptyList())
     private val _isLoading = MutableStateFlow(true)
@@ -105,11 +108,7 @@ class AdminArcsViewModel(private val arcRepository: ArcRepository) : ViewModel()
         }
     }
 
-    class Factory(private val arcRepository: ArcRepository) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>) =
-            AdminArcsViewModel(arcRepository) as T
-    }
+    
 }
 
 // ── Screen ────────────────────────────────────────────────────────────────────
@@ -121,7 +120,7 @@ fun AdminArcsScreen(
     onBack: () -> Unit,
     onEditArc: (String) -> Unit
 ) {
-    val vm: AdminArcsViewModel = viewModel(factory = AdminArcsViewModel.Factory(arcRepository))
+    val vm: AdminArcsViewModel = hiltViewModel()
     val arcs by vm.arcs.collectAsStateWithLifecycle()
     val isLoading by vm.isLoading.collectAsStateWithLifecycle()
     val isAIGenerating by vm.isAIGenerating.collectAsStateWithLifecycle()

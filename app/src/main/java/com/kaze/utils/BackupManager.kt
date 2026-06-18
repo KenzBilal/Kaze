@@ -14,6 +14,12 @@ import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
+import java.io.File
+import java.io.InputStream
+import java.io.OutputStream
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
 
 import androidx.annotation.Keep
 
@@ -73,10 +79,11 @@ sealed class RestoreResult {
 
 // ─── BackupManager ──────────────────────────────────────────────────────────
 
-class BackupManager(
-    private val context: Context,
+@Singleton
+class BackupManager @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val repository: WatchItemRepository,
-    private val userRepository: UserRepository? = null
+    private val userRepository: UserRepository
 ) {
     private val gson: Gson = GsonBuilder().setPrettyPrinting().create()
 

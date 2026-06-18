@@ -7,7 +7,14 @@ import android.content.SharedPreferences
  * Lightweight SharedPreferences-based settings store for user preferences.
  * Stores: haptic feedback enabled, sound effects enabled, etc.
  */
-class UserPreferences(context: Context) {
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class UserPreferences @Inject constructor(
+    @ApplicationContext context: Context
+) {
 
     private val prefs: SharedPreferences =
         context.getSharedPreferences("kaze_user_prefs", Context.MODE_PRIVATE)
