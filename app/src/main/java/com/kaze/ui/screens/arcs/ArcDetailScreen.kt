@@ -249,11 +249,11 @@ fun ArcDetailScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { showOptional = !showOptional }) {
-                        Icon(
-                            if (showOptional) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
-                            contentDescription = "Toggle Optional Items",
-                            tint = TextPrimary
+                    TextButton(onClick = { showOptional = !showOptional }) {
+                        Text(
+                            text = if (showOptional) "Hide Opt" else "Show Opt",
+                            color = TextPrimary,
+                            fontWeight = FontWeight.SemiBold
                         )
                     }
                     if (isOwner) {
