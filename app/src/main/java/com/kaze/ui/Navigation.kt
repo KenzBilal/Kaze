@@ -200,7 +200,8 @@ fun WatchLaterNavGraph(
                 userRepository = navVm.userRepository,
                 activityRepo   = navVm.activityRepository,
                 onBack         = { navController.popBackStack() },
-                onItemClick    = { id -> navController.navigate(Screen.Detail.createRoute(id)) }
+                onItemClick    = { id -> navController.navigate(Screen.Detail.createRoute(id)) },
+                onEdit         = { navController.navigate(Screen.AdminArcEditor.createRoute(arcId)) }
             )
         }
 

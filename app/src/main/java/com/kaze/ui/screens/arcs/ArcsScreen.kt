@@ -308,8 +308,8 @@ fun ArcsScreen(
         CreatePersonalArcDialog(
             onDismiss = { showCreateDialog = false },
             onCreate = { name, desc, aliases ->
+                showCreateDialog = false
                 vm.createPersonalArc(name, desc, aliases) { newId ->
-                    showCreateDialog = false
                     onArcClick(newId)
                 }
             }

@@ -184,6 +184,21 @@ class AdminArcEditorViewModel @Inject constructor(
         }
     }
 
+    fun updateArcItem(item: ArcItem, notes: String, isOptional: Boolean, startS: Int? = null, startE: Int? = null, endS: Int? = null, endE: Int? = null) {
+        viewModelScope.launch {
+            val updated = item.copy(
+                notes = notes.ifBlank { null },
+                is_optional = isOptional,
+                start_season = startS ?: item.start_season,
+                start_episode = startE ?: item.start_episode,
+                end_season = endS ?: item.end_season,
+                end_episode = endE ?: item.end_episode
+            )
+            arcRepository.updateArcItem(updated)
+            load()
+        }
+    }
+
     fun moveItem(fromIndex: Int, toIndex: Int) {
         val currentItems = _items.value.toMutableList()
         if (fromIndex !in currentItems.indices || toIndex !in currentItems.indices) return
@@ -240,6 +255,7 @@ fun AdminArcEditorScreen(
     var showRangePicker by remember { mutableStateOf<OmdbResult?>(null) }
     var showMoviePicker by remember { mutableStateOf<OmdbResult?>(null) }
     var deleteTarget by remember { mutableStateOf<ArcItem?>(null) }
+    var editTarget by remember { mutableStateOf<ArcItem?>(null) }
     var showMetaEditor by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -334,6 +350,7 @@ fun AdminArcEditorScreen(
                                 modifier = Modifier
                                     .detectReorderAfterLongPress(reorderableState)
                                     .then(if (isDragging) Modifier.background(SurfaceContainer.copy(alpha = 0.8f)) else Modifier),
+                                onEdit = { editTarget = item },
                                 onDelete = { deleteTarget = item }
                             )
                         }
@@ -433,6 +450,24 @@ fun AdminArcEditorScreen(
         )
     }
 
+    // Edit item sheet
+    editTarget?.let { item ->
+        ModalBottomSheet(
+            onDismissRequest = { editTarget = null },
+            containerColor = SurfaceContainer,
+            dragHandle = null
+        ) {
+            ArcItemEditSheet(
+                item = item,
+                onConfirm = { notes, isOptional, startS, startE, endS, endE ->
+                    vm.updateArcItem(item, notes, isOptional, startS, startE, endS, endE)
+                    editTarget = null
+                },
+                onDismiss = { editTarget = null }
+            )
+        }
+    }
+
     // Meta editor
     if (showMetaEditor) {
         arc?.let { a ->
@@ -452,6 +487,7 @@ fun AdminArcEditorScreen(
 private fun AdminArcItemRow(
     item: ArcItem, 
     modifier: Modifier = Modifier,
+    onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
     Row(
@@ -482,6 +518,9 @@ private fun AdminArcItemRow(
                 "S${item.start_season}E${item.start_episode ?: 1} → S${item.end_season ?: item.start_season}E${item.end_episode ?: "?"}"
             else "Movie · ${item.year}"
             Text(rangeLabel, color = TextTertiary, fontSize = 11.sp)
+        }
+        IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
+            Icon(Icons.Default.Edit, contentDescription = "Edit", tint = TextTertiary, modifier = Modifier.size(16.dp))
         }
         IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
             Icon(Icons.Default.Delete, contentDescription = "Remove", tint = TextTertiary, modifier = Modifier.size(16.dp))
@@ -870,4 +909,78 @@ private fun MetaEditorDialog(arc: Arc, onDismiss: () -> Unit, onSave: (String, S
             TextButton(onClick = onDismiss) { Text("Cancel", color = TextSecondary) }
         }
     )
+}
+
+@Composable
+private fun ArcItemEditSheet(
+    item: ArcItem,
+    onConfirm: (String, Boolean, Int?, Int?, Int?, Int?) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var isOptional by remember { mutableStateOf(item.is_optional) }
+
+    // Range state for SERIES
+    var startS by remember { mutableIntStateOf(item.start_season ?: 1) }
+    var startE by remember { mutableIntStateOf(item.start_episode ?: 1) }
+    var endS by remember { mutableIntStateOf(item.end_season ?: item.start_season ?: 1) }
+    var endE by remember { mutableIntStateOf(item.end_episode ?: 1) }
+
+    val totalS = item.total_seasons ?: 100
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text("Edit ${item.title}", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+
+        if (item.type == "SERIES") {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Start At", color = TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.height(8.dp))
+                    SeasonEpisodePicker("Season", startS, totalS, false) { startS = it }
+                    Spacer(Modifier.height(6.dp))
+                    SeasonEpisodePicker("Episode", startE, 100, false) { startE = it }
+                }
+                Box(modifier = Modifier.width(1.dp).height(80.dp).background(SurfaceHighlight).align(Alignment.CenterVertically))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("End At", color = TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.height(8.dp))
+                    SeasonEpisodePicker("Season", endS, totalS, false) { endS = it }
+                    Spacer(Modifier.height(6.dp))
+                    SeasonEpisodePicker("Episode", endE, 100, false) { endE = it }
+                }
+            }
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(SurfaceElevated).padding(horizontal = 14.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Optional entry", color = TextPrimary, fontSize = 14.sp, modifier = Modifier.weight(1f))
+            Switch(
+                checked = isOptional,
+                onCheckedChange = { isOptional = it },
+                colors = SwitchDefaults.colors(checkedTrackColor = AccentBlue, checkedThumbColor = Background)
+            )
+        }
+
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp)) {
+                Text("Cancel", color = TextSecondary)
+            }
+            Button(
+                onClick = { 
+                    if (item.type == "SERIES") onConfirm(item.notes ?: "", isOptional, startS, startE, endS, endE)
+                    else onConfirm(item.notes ?: "", isOptional, null, null, null, null)
+                },
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = AccentBlue, contentColor = Background)
+            ) { Text("Save", fontWeight = FontWeight.Bold) }
+        }
+    }
 }

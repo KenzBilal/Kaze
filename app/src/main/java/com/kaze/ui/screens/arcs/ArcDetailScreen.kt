@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -215,7 +216,8 @@ fun ArcDetailScreen(
     userRepository: UserRepository,
     activityRepo: ActivityRepository,
     onBack: () -> Unit,
-    onItemClick: (Long) -> Unit
+    onItemClick: (Long) -> Unit,
+    onEdit: () -> Unit
 ) {
     val vm: ArcDetailViewModel = hiltViewModel()
     val arc by vm.arc.collectAsStateWithLifecycle()
@@ -247,6 +249,9 @@ fun ArcDetailScreen(
                 },
                 actions = {
                     if (isOwner) {
+                        IconButton(onClick = onEdit) {
+                            Icon(Icons.Filled.Edit, "Edit Arc", tint = TextPrimary)
+                        }
                         IconButton(onClick = { showShareSheet = true }) {
                             Icon(Icons.Filled.Share, "Share Arc", tint = TextPrimary)
                         }
