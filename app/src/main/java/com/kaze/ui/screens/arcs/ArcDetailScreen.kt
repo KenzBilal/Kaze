@@ -228,6 +228,7 @@ fun ArcDetailScreen(
 
     var showAddAllDialog by remember { mutableStateOf(false) }
     var showShareSheet by remember { mutableStateOf(false) }
+    var showOptional by remember { mutableStateOf(true) }
 
     Scaffold(
         containerColor = Background,
@@ -248,6 +249,13 @@ fun ArcDetailScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = { showOptional = !showOptional }) {
+                        Icon(
+                            if (showOptional) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                            contentDescription = "Toggle Optional Items",
+                            tint = TextPrimary
+                        )
+                    }
                     if (isOwner) {
                         IconButton(onClick = onEdit) {
                             Icon(Icons.Filled.Edit, "Edit Arc", tint = TextPrimary)
@@ -306,7 +314,8 @@ fun ArcDetailScreen(
                 }
 
                 // Arc items grouped by phase
-                val grouped = items.groupBy { it.arcItem.phase_label }
+                val displayItems = if (showOptional) items else items.filter { !it.arcItem.is_optional }
+                val grouped = displayItems.groupBy { it.arcItem.phase_label }
                 grouped.forEach { (phase, groupItems) ->
                     if (phase != null) {
                         item(key = "phase_$phase") {
