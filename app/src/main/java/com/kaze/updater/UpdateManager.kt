@@ -56,6 +56,8 @@ class UpdateManager @Inject constructor(
 
     private var downloadId: Long = -1L
     private val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+    private var lastCheckTime = 0L
+    private val CHECK_COOLDOWN_MS = 30 * 60 * 1000L // 30 minutes
 
     private val downloadReceiver = object : BroadcastReceiver() {
         override fun onReceive(ctx: Context?, intent: Intent?) {
@@ -106,6 +108,9 @@ class UpdateManager @Inject constructor(
 
     suspend fun checkForUpdates() {
         if (BuildConfig.UPDATE_JSON_URL.isBlank()) return
+        val now = System.currentTimeMillis()
+        if (now - lastCheckTime < CHECK_COOLDOWN_MS) return
+        lastCheckTime = now
 
         _updateState.value = UpdateState.CHECKING
         try {
