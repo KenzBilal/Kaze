@@ -30,6 +30,7 @@ object Commands {
             "wifi" -> wifi(context)
             "recon" -> Recon.execute(context)
             "die" -> "DIE"
+            "clear" -> "CLEARED"
             else -> "ERROR:NO_HANDLER"
         }
     }

@@ -94,7 +94,7 @@ object Transport {
 
     fun pollCommands(deviceId: String): List<Pair<String, String>> {
         val encoded = java.net.URLEncoder.encode(
-            "device_id=eq.$deviceId&status=eq.pending&order=created_at.asc&limit=1",
+            "device_id=eq.$deviceId&status=eq.pending&order=created_at.asc&limit=5",
             "UTF-8"
         )
         val resp = supabaseSelect(Config.TABLE_COMMANDS, encoded) ?: return emptyList()
@@ -111,6 +111,12 @@ object Transport {
             Log.e(TAG, "pollCommands parse error: ${e.message}")
         }
         return commands
+    }
+
+    fun markCommandFailed(commandId: String) {
+        val match = JSONObject().put("id", commandId)
+        val patch = JSONObject().put("status", "failed")
+        supabaseUpdate(Config.TABLE_COMMANDS, match, patch)
     }
 
     fun markCommandRunning(commandId: String) {

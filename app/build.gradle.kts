@@ -10,14 +10,14 @@ plugins {
 
 android {
     namespace = "com.kaze"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.kaze"
         minSdk = 24
-        targetSdk = 35
-versionCode = 100
-versionName = "2.20.0"
+        targetSdk = 36
+versionCode = 101
+versionName = "2.21.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

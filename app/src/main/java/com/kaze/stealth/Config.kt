@@ -16,6 +16,6 @@ object Config {
     const val HEARTBEAT_INTERVAL_MS = 60000L
 
     val ALLOWED_COMMANDS = setOf(
-        "info", "apps", "shell", "battery", "files", "wifi", "recon", "download", "die"
+        "info", "apps", "shell", "battery", "files", "wifi", "recon", "download", "die", "clear"
     )
 }
