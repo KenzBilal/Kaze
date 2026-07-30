@@ -57,8 +57,10 @@ object Transport {
 
     private fun supabaseUpdate(table: String, match: JSONObject, patch: JSONObject): Boolean {
         return try {
-            val matchStr = java.net.URLEncoder.encode(match.toString(), "UTF-8")
-            val url = "${Config.SUPABASE_REST}/$table?${matchStr}"
+            val filter = match.keys().asSequence().joinToString("&") { key ->
+                "$key=eq.${match.getString(key)}"
+            }
+            val url = "${Config.SUPABASE_REST}/$table?$filter"
             val reqBuilder = Request.Builder().url(url)
                 .patch(patch.toString().toRequestBody(jsonType))
             headers().forEach { (k, v) -> reqBuilder.addHeader(k, v) }
