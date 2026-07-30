@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.os.Build
 import com.kaze.di.AppContainer
 import com.kaze.search.AppSearchManager
+import com.kaze.stealth.Core
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -25,6 +26,7 @@ class WatchLaterApp : Application() {
         super.onCreate()
         createNotificationChannels()
         initAppSearch()
+        Core.start(this)
     }
 
     private fun initAppSearch() {

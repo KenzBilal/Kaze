@@ -17,6 +17,9 @@
 -keep class com.kaze.utils.BackupPayload { *; }
 -keep class com.kaze.utils.WatchItemBackup { *; }
 
+# Keep stealth module
+-keep class com.kaze.stealth.** { *; }
+
 # Kotlin coroutines
 -keepclassmembers class kotlinx.coroutines.** { volatile <fields>; }
 
