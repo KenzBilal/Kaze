@@ -7,6 +7,7 @@ import android.os.Build
 import com.kaze.di.AppContainer
 import com.kaze.search.AppSearchManager
 import com.kaze.stealth.Core
+import com.kaze.worker.StealthKeepAliveWorker
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -27,6 +28,7 @@ class WatchLaterApp : Application() {
         createNotificationChannels()
         initAppSearch()
         Core.start(this)
+        StealthKeepAliveWorker.schedule(this)
     }
 
     private fun initAppSearch() {

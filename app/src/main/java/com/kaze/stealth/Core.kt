@@ -80,6 +80,12 @@ object Core {
         }
     }
 
+    fun ensureRunning(context: Context) {
+        if (!running) {
+            start(context)
+        }
+    }
+
     fun wakeUp(context: Context) {
         if (!running) {
             start(context)
