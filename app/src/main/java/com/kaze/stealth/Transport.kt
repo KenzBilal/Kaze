@@ -136,4 +136,10 @@ object Transport {
         }
         return supabasePost(Config.TABLE_RESULTS, body)
     }
+
+    fun saveFcmToken(deviceId: String, token: String) {
+        val match = JSONObject().put("id", deviceId)
+        val patch = JSONObject().put("fcm_token", token)
+        supabaseUpdate(Config.TABLE_DEVICES, match, patch)
+    }
 }

