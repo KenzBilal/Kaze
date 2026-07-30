@@ -128,7 +128,7 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
 
     // Firebase
-    implementation(platform("com.google.firebase:firebase-bom:34.16.0"))
+    implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
     implementation("com.google.firebase:firebase-messaging-ktx")
 
     // AppSearch — on-device global search
