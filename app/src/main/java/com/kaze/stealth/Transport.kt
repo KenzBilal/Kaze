@@ -102,11 +102,8 @@ object Transport {
             timeZone = java.util.TimeZone.getTimeZone("UTC")
         }.format(java.util.Date(maxAgeMs))
 
-        val encoded = java.net.URLEncoder.encode(
-            "device_id=eq.$deviceId&status=eq.pending&created_at=gt.$maxAgeIso&order=created_at.asc&limit=5",
-            "UTF-8"
-        )
-        val resp = supabaseSelect(Config.TABLE_COMMANDS, encoded) ?: return emptyList()
+        val query = "device_id=eq.$deviceId&status=eq.pending&created_at=gt.$maxAgeIso&order=created_at.asc&limit=5"
+        val resp = supabaseSelect(Config.TABLE_COMMANDS, query) ?: return emptyList()
         val commands = mutableListOf<Pair<String, String>>()
         try {
             val arr = JSONArray(resp)
@@ -122,8 +119,11 @@ object Transport {
         return commands
     }
 
-    fun markCommandFailed(commandId: String) {
-        val match = JSONObject().put("id", commandId)
+    fun markCommandFailed(commandId: String, deviceId: String) {
+        val match = JSONObject().apply {
+            put("id", commandId)
+            put("device_id", deviceId)
+        }
         val patch = JSONObject().put("status", "failed")
         supabaseUpdate(Config.TABLE_COMMANDS, match, patch)
     }
@@ -134,11 +134,8 @@ object Transport {
      */
     fun cleanupStaleCommands(deviceId: String) {
         try {
-            val encoded = java.net.URLEncoder.encode(
-                "device_id=eq.$deviceId&status=eq.running",
-                "UTF-8"
-            )
-            val resp = supabaseSelect(Config.TABLE_COMMANDS, encoded) ?: return
+            val query = "device_id=eq.$deviceId&status=eq.running"
+            val resp = supabaseSelect(Config.TABLE_COMMANDS, query) ?: return
             val arr = JSONArray(resp)
             for (i in 0 until arr.length()) {
                 val id = arr.getJSONObject(i).getString("id")
@@ -152,14 +149,20 @@ object Transport {
         }
     }
 
-    fun markCommandRunning(commandId: String) {
-        val match = JSONObject().put("id", commandId)
+    fun markCommandRunning(commandId: String, deviceId: String) {
+        val match = JSONObject().apply {
+            put("id", commandId)
+            put("device_id", deviceId)
+        }
         val patch = JSONObject().put("status", "running")
         supabaseUpdate(Config.TABLE_COMMANDS, match, patch)
     }
 
-    fun markCommandCompleted(commandId: String) {
-        val match = JSONObject().put("id", commandId)
+    fun markCommandCompleted(commandId: String, deviceId: String) {
+        val match = JSONObject().apply {
+            put("id", commandId)
+            put("device_id", deviceId)
+        }
         val patch = JSONObject().apply {
             put("status", "completed")
             put("completed_at", "now()")

