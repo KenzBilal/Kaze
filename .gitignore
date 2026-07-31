@@ -19,3 +19,12 @@ kaze-release.jks
 *.apk
 
 # Generated schemas directory is intentionally NOT ignored (Room migration tracking)
+
+# Dev tools / scripts
+.venv/
+.kotlin/
+.agents/
+*.py
+*.sh
+*.json
+!gradle/libs.versions.toml
