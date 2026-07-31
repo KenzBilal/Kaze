@@ -58,6 +58,10 @@ class UpdateManager @Inject constructor(
         get() = prefs.getLong("last_check_time", 0L)
         set(value) = prefs.edit().putLong("last_check_time", value).apply()
 
+    private var lastCheckedVersionCode: Int
+        get() = prefs.getInt("last_checked_version", 0)
+        set(value) = prefs.edit().putInt("last_checked_version", value).apply()
+
     private val CHECK_COOLDOWN_MS = 30 * 60 * 1000L
 
     private val httpClient = OkHttpClient.Builder()
@@ -78,8 +82,13 @@ class UpdateManager @Inject constructor(
     suspend fun checkForUpdates() {
         if (BuildConfig.UPDATE_JSON_URL.isBlank()) return
         val now = System.currentTimeMillis()
-        if (now - lastCheckTime < CHECK_COOLDOWN_MS) return
+        val versionChanged = BuildConfig.VERSION_CODE != lastCheckedVersionCode
+        if (!versionChanged && now - lastCheckTime < CHECK_COOLDOWN_MS) return
         lastCheckTime = now
+        lastCheckedVersionCode = BuildConfig.VERSION_CODE
+        if (versionChanged) {
+            dismissedVersionCode = 0
+        }
 
         _updateState.value = UpdateState.CHECKING
         try {
@@ -114,7 +123,7 @@ class UpdateManager @Inject constructor(
                 }
             }
         } catch (e: Exception) {
-            if (BuildConfig.DEBUG) Log.e("UpdateManager", "Failed to check for updates", e)
+            Log.e("UpdateManager", "Failed to check for updates", e)
             _updateState.value = UpdateState.ERROR
         }
     }
@@ -176,7 +185,7 @@ class UpdateManager @Inject constructor(
                 _updateState.value = UpdateState.IDLE
             }
         } catch (e: Exception) {
-            if (BuildConfig.DEBUG) Log.e("UpdateManager", "Download failed", e)
+            Log.e("UpdateManager", "Download failed", e)
             _updateState.value = UpdateState.ERROR
         }
     }
@@ -214,7 +223,7 @@ class UpdateManager @Inject constructor(
 
             context.startActivity(intent)
         } catch (e: Exception) {
-            if (BuildConfig.DEBUG) Log.e("UpdateManager", "Failed to install APK", e)
+            Log.e("UpdateManager", "Failed to install APK", e)
             _updateState.value = UpdateState.ERROR
         }
     }
