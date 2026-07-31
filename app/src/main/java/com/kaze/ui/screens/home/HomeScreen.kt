@@ -251,8 +251,7 @@ fun HomeScreen(
     val updateInfo by viewModel.updateInfo.collectAsStateWithLifecycle()
 
     var hideDownloadDialog by remember { mutableStateOf(false) }
-    var showUpdateDialog by remember { mutableStateOf(true) }
-    // Reset hide flag only when a new download starts (user taps Update Now again)
+    var showUpdateDialog by remember { mutableStateOf(false) }
     LaunchedEffect(updateState) {
         if (updateState == com.kaze.updater.UpdateState.AVAILABLE) {
             hideDownloadDialog = false

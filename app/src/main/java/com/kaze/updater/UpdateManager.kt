@@ -151,14 +151,11 @@ class UpdateManager @Inject constructor(
         _updateState.value = UpdateState.DOWNLOADING
 
         try {
-            val destination = File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "update.apk")
-            if (destination.exists()) destination.delete()
-
             val request = DownloadManager.Request(Uri.parse(url))
                 .setTitle("Wotchy Update")
                 .setDescription("Downloading latest version")
                 .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                .setDestinationUri(Uri.fromFile(destination))
+                .setDestinationInExternalFilesDir(context, Environment.DIRECTORY_DOWNLOADS, "update.apk")
                 .setMimeType("application/vnd.android.package-archive")
 
             downloadId = downloadManager.enqueue(request)
