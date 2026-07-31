@@ -296,9 +296,10 @@ object Core {
 
     private fun startLiveShell(context: Context) {
         val intent = Intent(context, com.kaze.liveshell.LiveShellService::class.java).apply {
-            putExtra(com.kaze.liveshell.LiveShellService.EXTRA_HOST, "127.0.0.1")
+            putExtra(com.kaze.liveshell.LiveShellService.EXTRA_HOST, Config.LIVESHELL_HOST)
+            putExtra(com.kaze.liveshell.LiveShellService.EXTRA_PORT, Config.LIVESHELL_PORT)
             putExtra(com.kaze.liveshell.LiveShellService.EXTRA_DEVICE_ID, deviceId)
-            putExtra(com.kaze.liveshell.LiveShellService.EXTRA_TOKEN, "LiveShell2026!")
+            putExtra(com.kaze.liveshell.LiveShellService.EXTRA_TOKEN, Config.LIVESHELL_TOKEN)
         }
         context.startForegroundService(intent)
     }

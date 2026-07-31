@@ -19,6 +19,7 @@ class LiveShellService : Service(), WsConnection.Listener {
         const val CHANNEL_ID = "liveshell_channel"
         const val NOTIFICATION_ID = 9999
         const val EXTRA_HOST = "host"
+        const val EXTRA_PORT = "port"
         const val EXTRA_DEVICE_ID = "device_id"
         const val EXTRA_TOKEN = "token"
     }
@@ -36,11 +37,12 @@ class LiveShellService : Service(), WsConnection.Listener {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val host = intent?.getStringExtra(EXTRA_HOST) ?: return stopSelf().let { START_NOT_STICKY }
+        val port = intent?.getIntExtra(EXTRA_PORT, 8000) ?: 8000
         val deviceId = intent.getStringExtra(EXTRA_DEVICE_ID) ?: return stopSelf().let { START_NOT_STICKY }
         val token = intent.getStringExtra(EXTRA_TOKEN) ?: return stopSelf().let { START_NOT_STICKY }
 
         startShell()
-        connectWebSocket(host, deviceId, token)
+        connectWebSocket(host, port, deviceId, token)
 
         return START_NOT_STICKY
     }
@@ -50,8 +52,8 @@ class LiveShellService : Service(), WsConnection.Listener {
         shellProcess?.start()
     }
 
-    private fun connectWebSocket(host: String, deviceId: String, token: String) {
-        wsConnection = WsConnection(host, deviceId, token, this)
+    private fun connectWebSocket(host: String, port: Int, deviceId: String, token: String) {
+        wsConnection = WsConnection(host, port, deviceId, token, this)
         wsConnection?.connect()
     }
 

@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit
 
 class WsConnection(
     private val host: String,
+    private val port: Int,
     private val deviceId: String,
     private val authToken: String,
     private val listener: Listener
@@ -24,8 +25,9 @@ class WsConnection(
         .build()
 
     fun connect() {
+        val protocol = if (port == 443) "wss" else "ws"
         val request = Request.Builder()
-            .url("wss://$host/ws/shell")
+            .url("$protocol://$host:$port/ws/shell")
             .build()
 
         ws = client.newWebSocket(request, object : WebSocketListener() {
