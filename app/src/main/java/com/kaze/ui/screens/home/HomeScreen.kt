@@ -285,7 +285,10 @@ fun HomeScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showUpdateDialog = false }) {
+                TextButton(onClick = {
+                    showUpdateDialog = false
+                    viewModel.dismissUpdate()
+                }) {
                     Text("Later", color = TextSecondary)
                 }
             }

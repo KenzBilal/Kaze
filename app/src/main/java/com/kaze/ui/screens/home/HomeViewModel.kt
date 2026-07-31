@@ -119,8 +119,11 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun downloadUpdate() = updateManager.downloadUpdate()
+    fun downloadUpdate() {
+        viewModelScope.launch { updateManager.downloadUpdate() }
+    }
     fun installUpdate()  = updateManager.installApk()
+    fun dismissUpdate()  = updateManager.dismissUpdate()
 
     fun updateSort(sort: SortOption) {
         userPreferences.sortOption = sort.name

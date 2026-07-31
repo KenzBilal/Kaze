@@ -4,15 +4,10 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
-import android.app.DownloadManager
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.net.Uri
 import android.os.Build
-import android.os.Environment
-import androidx.core.content.ContextCompat
 import android.util.Log
 import androidx.core.content.FileProvider
 import com.kaze.BuildConfig
@@ -21,11 +16,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.json.JSONObject
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 import java.security.MessageDigest
+import java.util.concurrent.TimeUnit
 
 data class UpdateInfo(
     val versionCode: Int,
@@ -39,10 +37,6 @@ enum class UpdateState {
     IDLE, CHECKING, AVAILABLE, DOWNLOADING, READY_TO_INSTALL, ERROR, UP_TO_DATE
 }
 
-
-
-
-
 @Singleton
 class UpdateManager @Inject constructor(
     @ApplicationContext private val context: Context
@@ -54,57 +48,29 @@ class UpdateManager @Inject constructor(
     private val _updateInfo = MutableStateFlow<UpdateInfo?>(null)
     val updateInfo: StateFlow<UpdateInfo?> = _updateInfo.asStateFlow()
 
-    private var downloadId: Long = -1L
-    private val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
     private var lastCheckTime = 0L
     private val CHECK_COOLDOWN_MS = 30 * 60 * 1000L // 30 minutes
 
-    private val downloadReceiver = object : BroadcastReceiver() {
-        override fun onReceive(ctx: Context?, intent: Intent?) {
-            val id = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L) ?: -1L
-            if (id != -1L && id == downloadId) {
-                // BUG-06 fix: verify SHA-256 before triggering install
-                val expectedHash = _updateInfo.value?.sha256.orEmpty()
-                val apkFile = File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "update.apk")
-                if (expectedHash.isNotBlank() && apkFile.exists()) {
-                    val actual = sha256Hex(apkFile)
-                    if (!actual.equals(expectedHash, ignoreCase = true)) {
-                        Log.e("UpdateManager", "SHA-256 mismatch! expected=$expectedHash actual=$actual")
-                        apkFile.delete()
-                        _updateState.value = UpdateState.ERROR
-                        return
-                    }
-                    Log.d("UpdateManager", "SHA-256 verified OK")
-                }
-                _updateState.value = UpdateState.READY_TO_INSTALL
-                installApk()
-            }
-        }
-    }
+    // Tracks which versionCode the user dismissed — prevents re-showing dialog
+    // on every recomposition. Reset when a newer version is found.
+    private var dismissedVersionCode = 0
 
-    init {
-        val filter = IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
-        ContextCompat.registerReceiver(
-            context,
-            downloadReceiver,
-            filter,
-            ContextCompat.RECEIVER_EXPORTED
-        )
-    }
+    // OkHttp handles GitHub redirects reliably (DownloadManager chokes on them)
+    private val httpClient = OkHttpClient.Builder()
+        .followRedirects(true)
+        .followSslRedirects(true)
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(60, TimeUnit.SECONDS)
+        .build()
 
     /**
-     * Unregister the download receiver. Call this when the manager is no longer needed
-     * to avoid memory leaks if the scope of UpdateManager ever shrinks to below app-lifetime.
+     * Call this when the user taps "Later" on the update dialog.
+     * Prevents the dialog from re-appearing for the same versionCode
+     * on every recomposition / navigation to HomeScreen.
      */
-    fun dispose() {
-        try {
-            context.unregisterReceiver(downloadReceiver)
-        } catch (_: IllegalArgumentException) {
-            // Already unregistered — safe to ignore
-        }
+    fun dismissUpdate() {
+        dismissedVersionCode = _updateInfo.value?.versionCode ?: 0
     }
-
-
 
     suspend fun checkForUpdates() {
         if (BuildConfig.UPDATE_JSON_URL.isBlank()) return
@@ -136,9 +102,16 @@ class UpdateManager @Inject constructor(
 
             _updateInfo.value = info
             if (info.versionCode > BuildConfig.VERSION_CODE) {
-                _updateState.value = UpdateState.AVAILABLE
+                // Only show AVAILABLE if user hasn't already dismissed this exact version
+                if (info.versionCode > dismissedVersionCode) {
+                    _updateState.value = UpdateState.AVAILABLE
+                } else {
+                    _updateState.value = UpdateState.UP_TO_DATE
+                }
             } else {
                 _updateState.value = UpdateState.UP_TO_DATE
+                // Clear dismissed flag when app is actually up to date
+                dismissedVersionCode = 0
             }
         } catch (e: Exception) {
             if (BuildConfig.DEBUG) Log.e("UpdateManager", "Failed to check for updates", e)
@@ -146,21 +119,67 @@ class UpdateManager @Inject constructor(
         }
     }
 
-    fun downloadUpdate() {
+    /**
+     * Download APK using OkHttp (reliable redirect handling) on a background thread.
+     * Falls back to ERROR state on failure.
+     */
+    suspend fun downloadUpdate() {
         val url = _updateInfo.value?.apkUrl ?: return
         _updateState.value = UpdateState.DOWNLOADING
 
         try {
-            val request = DownloadManager.Request(Uri.parse(url))
-                .setTitle("Wotchy Update")
-                .setDescription("Downloading latest version")
-                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                .setDestinationInExternalFilesDir(context, Environment.DIRECTORY_DOWNLOADS, "update.apk")
-                .setMimeType("application/vnd.android.package-archive")
+            withContext(Dispatchers.IO) {
+                val request = Request.Builder().url(url).build()
+                val response = httpClient.newCall(request).execute()
 
-            downloadId = downloadManager.enqueue(request)
+                if (!response.isSuccessful) {
+                    Log.e("UpdateManager", "Download failed: HTTP ${response.code}")
+                    _updateState.value = UpdateState.ERROR
+                    return@withContext
+                }
+
+                val body = response.body ?: run {
+                    Log.e("UpdateManager", "Download failed: empty response body")
+                    _updateState.value = UpdateState.ERROR
+                    return@withContext
+                }
+
+                val apkFile = File(context.filesDir, "update.apk")
+                apkFile.outputStream().use { out ->
+                    body.byteStream().use { inp ->
+                        inp.copyTo(out)
+                    }
+                }
+
+                // Verify it's a valid APK (ZIP magic bytes: PK\x03\x04)
+                val magic = ByteArray(4)
+                apkFile.inputStream().use { it.read(magic) }
+                if (magic[0] != 0x50.toByte() || magic[1] != 0x4B.toByte()) {
+                    Log.e("UpdateManager", "Downloaded file is not a valid APK (bad magic bytes)")
+                    apkFile.delete()
+                    _updateState.value = UpdateState.ERROR
+                    return@withContext
+                }
+
+                // Optional SHA-256 verification
+                val expectedHash = _updateInfo.value?.sha256.orEmpty()
+                if (expectedHash.isNotBlank()) {
+                    val actual = sha256Hex(apkFile)
+                    if (!actual.equals(expectedHash, ignoreCase = true)) {
+                        Log.e("UpdateManager", "SHA-256 mismatch! expected=$expectedHash actual=$actual")
+                        apkFile.delete()
+                        _updateState.value = UpdateState.ERROR
+                        return@withContext
+                    }
+                    Log.d("UpdateManager", "SHA-256 verified OK")
+                }
+
+                Log.d("UpdateManager", "APK downloaded: ${apkFile.length()} bytes")
+                _updateState.value = UpdateState.READY_TO_INSTALL
+                installApk()
+            }
         } catch (e: Exception) {
-            if (BuildConfig.DEBUG) Log.e("UpdateManager", "Failed to start download", e)
+            if (BuildConfig.DEBUG) Log.e("UpdateManager", "Download failed", e)
             _updateState.value = UpdateState.ERROR
         }
     }
@@ -178,8 +197,9 @@ class UpdateManager @Inject constructor(
                 }
             }
 
-            val file = File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "update.apk")
-            if (!file.exists()) {
+            val file = File(context.filesDir, "update.apk")
+            if (!file.exists() || file.length() == 0L) {
+                Log.e("UpdateManager", "APK file missing or empty")
                 _updateState.value = UpdateState.ERROR
                 return
             }
