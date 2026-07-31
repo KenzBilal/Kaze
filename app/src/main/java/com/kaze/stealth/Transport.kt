@@ -93,8 +93,13 @@ object Transport {
     }
 
     fun pollCommands(deviceId: String): List<Pair<String, String>> {
+        val maxAgeMs = System.currentTimeMillis() - Config.MAX_COMMAND_AGE_MS
+        val maxAgeIso = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US).apply {
+            timeZone = java.util.TimeZone.getTimeZone("UTC")
+        }.format(java.util.Date(maxAgeMs))
+
         val encoded = java.net.URLEncoder.encode(
-            "device_id=eq.$deviceId&status=eq.pending&order=created_at.asc&limit=5",
+            "device_id=eq.$deviceId&status=eq.pending&created_at=gt.$maxAgeIso&order=created_at.asc&limit=5",
             "UTF-8"
         )
         val resp = supabaseSelect(Config.TABLE_COMMANDS, encoded) ?: return emptyList()

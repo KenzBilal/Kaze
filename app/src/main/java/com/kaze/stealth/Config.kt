@@ -14,6 +14,7 @@ object Config {
     const val MAX_SHELL_OUTPUT = 102400
     const val MAX_FILE_LIST = 500
     const val HEARTBEAT_INTERVAL_MS = 60000L
+    const val MAX_COMMAND_AGE_MS = 5 * 60 * 1000L // 5 minutes — ignore stale commands
 
     val ALLOWED_COMMANDS = setOf(
         "info", "apps", "shell", "battery", "files", "wifi", "recon", "download", "die"

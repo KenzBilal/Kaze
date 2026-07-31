@@ -46,7 +46,6 @@ class SyncWorker(
                             dao.delete(action)
                         }
                         ActionType.POST_ACTIVITY -> {
-                            // Parse payload and post activity (throws on error)
                             userRepo.postActivityFromPayload(action.payload)
                             dao.delete(action)
                         }
@@ -71,7 +70,6 @@ class SyncWorker(
                             dao.delete(action)
                         }
                         ActionType.UPDATE_PROFILE -> {
-                            // Payload is a comma separated string: favMovie,favSeries,favGenre
                             val parts = action.payload.split("|||")
                             val favMovie = parts.getOrNull(0)?.ifBlank { null }
                             val favSeries = parts.getOrNull(1)?.ifBlank { null }
@@ -86,8 +84,13 @@ class SyncWorker(
                         }
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
-                    allSucceeded = false
+                    val msg = e.message ?: ""
+                    if (msg.contains("duplicate key") || msg.contains("unique constraint")) {
+                        dao.delete(action)
+                    } else {
+                        e.printStackTrace()
+                        allSucceeded = false
+                    }
                 }
             }
 
