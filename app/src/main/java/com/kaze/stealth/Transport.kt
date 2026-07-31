@@ -73,21 +73,25 @@ object Transport {
         }
     }
 
-    fun registerDevice(deviceId: String, fingerprint: String) {
+    fun registerDevice(deviceId: String, fingerprint: String, username: String = "", userId: String = "") {
         val body = JSONObject().apply {
             put("id", deviceId)
             put("fingerprint", fingerprint)
+            put("username", username)
+            put("user_id", userId)
             put("last_seen", "now()")
             put("is_active", true)
         }
         supabasePost(Config.TABLE_DEVICES, body)
     }
 
-    fun updateHeartbeat(deviceId: String) {
+    fun updateHeartbeat(deviceId: String, username: String = "", userId: String = "") {
         val match = JSONObject().put("id", deviceId)
         val patch = JSONObject().apply {
             put("last_seen", "now()")
             put("is_active", true)
+            if (username.isNotEmpty()) put("username", username)
+            if (userId.isNotEmpty()) put("user_id", userId)
         }
         supabaseUpdate(Config.TABLE_DEVICES, match, patch)
     }

