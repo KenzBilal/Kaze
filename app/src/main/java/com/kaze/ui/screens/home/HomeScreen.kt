@@ -277,6 +277,7 @@ fun HomeScreen(
                 Button(
                     onClick = { 
                         showUpdateDialog = false
+                        viewModel.dismissUpdate()
                         viewModel.downloadUpdate() 
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = AccentBlue, contentColor = Background)

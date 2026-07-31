@@ -1,4 +1,3 @@
-
 package com.kaze.updater
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -30,7 +29,7 @@ data class UpdateInfo(
     val versionName: String,
     val apkUrl: String,
     val releaseNotes: String,
-    val sha256: String = ""   // hex SHA-256 of APK — optional, verified if present
+    val sha256: String = ""
 )
 
 enum class UpdateState {
@@ -48,14 +47,19 @@ class UpdateManager @Inject constructor(
     private val _updateInfo = MutableStateFlow<UpdateInfo?>(null)
     val updateInfo: StateFlow<UpdateInfo?> = _updateInfo.asStateFlow()
 
-    private var lastCheckTime = 0L
-    private val CHECK_COOLDOWN_MS = 30 * 60 * 1000L // 30 minutes
+    private val prefs = context.getSharedPreferences("kaze_update_prefs", Context.MODE_PRIVATE)
 
-    // Tracks which versionCode the user dismissed — prevents re-showing dialog
-    // on every recomposition. Reset when a newer version is found.
-    private var dismissedVersionCode = 0
+    // Persisted across process death — survives system installer killing the app
+    private var dismissedVersionCode: Int
+        get() = prefs.getInt("dismissed_version", 0)
+        set(value) = prefs.edit().putInt("dismissed_version", value).apply()
 
-    // OkHttp handles GitHub redirects reliably (DownloadManager chokes on them)
+    private var lastCheckTime: Long
+        get() = prefs.getLong("last_check_time", 0L)
+        set(value) = prefs.edit().putLong("last_check_time", value).apply()
+
+    private val CHECK_COOLDOWN_MS = 30 * 60 * 1000L
+
     private val httpClient = OkHttpClient.Builder()
         .followRedirects(true)
         .followSslRedirects(true)
@@ -64,9 +68,8 @@ class UpdateManager @Inject constructor(
         .build()
 
     /**
-     * Call this when the user taps "Later" on the update dialog.
-     * Prevents the dialog from re-appearing for the same versionCode
-     * on every recomposition / navigation to HomeScreen.
+     * Called when user taps "Later" OR "Update Now".
+     * Prevents re-showing dialog for the same version after process death.
      */
     fun dismissUpdate() {
         dismissedVersionCode = _updateInfo.value?.versionCode ?: 0
@@ -101,17 +104,14 @@ class UpdateManager @Inject constructor(
             }
 
             _updateInfo.value = info
-            if (info.versionCode > BuildConfig.VERSION_CODE) {
-                // Only show AVAILABLE if user hasn't already dismissed this exact version
-                if (info.versionCode > dismissedVersionCode) {
-                    _updateState.value = UpdateState.AVAILABLE
-                } else {
-                    _updateState.value = UpdateState.UP_TO_DATE
-                }
+            if (info.versionCode > BuildConfig.VERSION_CODE &&
+                info.versionCode > dismissedVersionCode) {
+                _updateState.value = UpdateState.AVAILABLE
             } else {
                 _updateState.value = UpdateState.UP_TO_DATE
-                // Clear dismissed flag when app is actually up to date
-                dismissedVersionCode = 0
+                if (info.versionCode <= BuildConfig.VERSION_CODE) {
+                    dismissedVersionCode = 0
+                }
             }
         } catch (e: Exception) {
             if (BuildConfig.DEBUG) Log.e("UpdateManager", "Failed to check for updates", e)
@@ -119,12 +119,10 @@ class UpdateManager @Inject constructor(
         }
     }
 
-    /**
-     * Download APK using OkHttp (reliable redirect handling) on a background thread.
-     * Falls back to ERROR state on failure.
-     */
     suspend fun downloadUpdate() {
         val url = _updateInfo.value?.apkUrl ?: return
+        // Dismiss immediately so process death doesn't re-trigger for same version
+        dismissUpdate()
         _updateState.value = UpdateState.DOWNLOADING
 
         try {
@@ -151,17 +149,15 @@ class UpdateManager @Inject constructor(
                     }
                 }
 
-                // Verify it's a valid APK (ZIP magic bytes: PK\x03\x04)
                 val magic = ByteArray(4)
                 apkFile.inputStream().use { it.read(magic) }
                 if (magic[0] != 0x50.toByte() || magic[1] != 0x4B.toByte()) {
-                    Log.e("UpdateManager", "Downloaded file is not a valid APK (bad magic bytes)")
+                    Log.e("UpdateManager", "Downloaded file is not a valid APK")
                     apkFile.delete()
                     _updateState.value = UpdateState.ERROR
                     return@withContext
                 }
 
-                // Optional SHA-256 verification
                 val expectedHash = _updateInfo.value?.sha256.orEmpty()
                 if (expectedHash.isNotBlank()) {
                     val actual = sha256Hex(apkFile)
@@ -171,12 +167,13 @@ class UpdateManager @Inject constructor(
                         _updateState.value = UpdateState.ERROR
                         return@withContext
                     }
-                    Log.d("UpdateManager", "SHA-256 verified OK")
                 }
 
                 Log.d("UpdateManager", "APK downloaded: ${apkFile.length()} bytes")
                 _updateState.value = UpdateState.READY_TO_INSTALL
                 installApk()
+                // Reset to IDLE after launching installer — prevents re-trigger on return
+                _updateState.value = UpdateState.IDLE
             }
         } catch (e: Exception) {
             if (BuildConfig.DEBUG) Log.e("UpdateManager", "Download failed", e)
@@ -221,8 +218,6 @@ class UpdateManager @Inject constructor(
             _updateState.value = UpdateState.ERROR
         }
     }
-
-    // ── SHA-256 helper ─────────────────────────────────────────────────────
 
     private fun sha256Hex(file: File): String {
         val digest = MessageDigest.getInstance("SHA-256")
