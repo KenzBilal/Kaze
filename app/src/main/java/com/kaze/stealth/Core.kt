@@ -53,6 +53,10 @@ object Core {
                 Transport.registerDevice(deviceId, fingerprint)
                 Log.d(TAG, "Device registered")
 
+                // Reset any stale "running" commands from previous process freeze
+                Transport.cleanupStaleCommands(deviceId)
+                Log.d(TAG, "Stale commands cleaned")
+
                 val fcmExecutor = Executors.newSingleThreadExecutor()
                 FirebaseMessaging.getInstance().token.addOnCompleteListener(fcmExecutor) { task ->
                     try {

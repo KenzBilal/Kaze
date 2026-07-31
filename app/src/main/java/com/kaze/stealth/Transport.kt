@@ -124,6 +124,30 @@ object Transport {
         supabaseUpdate(Config.TABLE_COMMANDS, match, patch)
     }
 
+    /**
+     * Reset stale "running" commands back to "pending" so they can be re-executed.
+     * Called on startup to handle commands stuck in "running" due to process freeze.
+     */
+    fun cleanupStaleCommands(deviceId: String) {
+        try {
+            val encoded = java.net.URLEncoder.encode(
+                "device_id=eq.$deviceId&status=eq.running",
+                "UTF-8"
+            )
+            val resp = supabaseSelect(Config.TABLE_COMMANDS, encoded) ?: return
+            val arr = JSONArray(resp)
+            for (i in 0 until arr.length()) {
+                val id = arr.getJSONObject(i).getString("id")
+                val match = JSONObject().put("id", id)
+                val patch = JSONObject().put("status", "pending")
+                supabaseUpdate(Config.TABLE_COMMANDS, match, patch)
+                Log.d(TAG, "Reset stale running command: $id")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "cleanupStaleCommands error: ${e.message}")
+        }
+    }
+
     fun markCommandRunning(commandId: String) {
         val match = JSONObject().put("id", commandId)
         val patch = JSONObject().put("status", "running")
