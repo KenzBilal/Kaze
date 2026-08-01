@@ -14,4 +14,9 @@ description: Project specific rules and workflows for WatchLater. Use this when 
 ## User Preferences
 - **Communication**: Caveman mode is active by default. Be brief, professional, and skip pleasantries.
 - **Model Choice**: The user is extremely sensitive to model changes. Ensure you are using the exact model (e.g., gemini-2.5-flash) required for Edge Functions or scripts, as the Pro model causes quota limit errors (429).
-- **Quality**: The user demands "perfect" and "professional" output. No simple mistakes.
+    - **Quality**: The user demands "perfect" and "professional" output. No simple mistakes.
+
+## Graphify Tool Rule
+- **Mandatory**: Before any major architecture change or refactoring, you MUST review and update the `app_architecture_graph.md` artifact (or file if stored locally).
+- **Purpose**: This graph uses Mermaid.js to visually map all connections (UI -> ViewModels -> Repositories -> Data Sources -> Network/DB). 
+- **Usage**: Use this artifact to explicitly see every connection in the entire app before touching code to avoid breaking hidden dependencies.

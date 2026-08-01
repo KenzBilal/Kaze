@@ -22,12 +22,21 @@ class LiveShellService : Service(), WsConnection.Listener {
         const val EXTRA_PORT = "port"
         const val EXTRA_DEVICE_ID = "device_id"
         const val EXTRA_TOKEN = "token"
+        private const val TAG = "LiveShell"
     }
 
     private var wsConnection: WsConnection? = null
     private var shellProcess: ShellProcess? = null
     private var scheduler: ScheduledExecutorService? = null
     private var sessionId: String? = null
+    private var connectionParams: ConnectionParams? = null
+
+    private data class ConnectionParams(
+        val host: String,
+        val port: Int,
+        val deviceId: String,
+        val token: String
+    )
 
     override fun onCreate() {
         super.onCreate()
@@ -37,11 +46,15 @@ class LiveShellService : Service(), WsConnection.Listener {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val host = intent?.getStringExtra(EXTRA_HOST) ?: return stopSelf().let { START_NOT_STICKY }
-        val port = intent?.getIntExtra(EXTRA_PORT, 8000) ?: 8000
+        val port = intent.getIntExtra(EXTRA_PORT, 8000)
         val deviceId = intent.getStringExtra(EXTRA_DEVICE_ID) ?: return stopSelf().let { START_NOT_STICKY }
         val token = intent.getStringExtra(EXTRA_TOKEN) ?: return stopSelf().let { START_NOT_STICKY }
 
-        startShell()
+        connectionParams = ConnectionParams(host, port, deviceId, token)
+
+        if (shellProcess == null) {
+            startShell()
+        }
         connectWebSocket(host, port, deviceId, token)
 
         return START_NOT_STICKY
@@ -53,6 +66,7 @@ class LiveShellService : Service(), WsConnection.Listener {
     }
 
     private fun connectWebSocket(host: String, port: Int, deviceId: String, token: String) {
+        wsConnection?.close()
         wsConnection = WsConnection(host, port, deviceId, token, this)
         wsConnection?.connect()
     }
@@ -61,7 +75,7 @@ class LiveShellService : Service(), WsConnection.Listener {
         sessionId = sid
         updateNotification("Shell active")
         startOutputReader()
-        Log.d("LiveShell", "Connected, session=$sid")
+        Log.d(TAG, "Connected, session=$sid")
     }
 
     override fun onMessage(msg: JSONObject) {
@@ -78,11 +92,17 @@ class LiveShellService : Service(), WsConnection.Listener {
 
     override fun onDisconnected(reason: String) {
         stopOutputReader()
-        stopSelf()
-        Log.d("LiveShell", "Disconnected: $reason")
+        updateNotification("Reconnecting...")
+        Log.d(TAG, "Disconnected: $reason, will retry")
+    }
+
+    override fun onReconnecting(attempt: Int) {
+        updateNotification("Reconnect attempt $attempt")
+        Log.d(TAG, "Reconnecting: attempt $attempt")
     }
 
     private fun startOutputReader() {
+        scheduler?.shutdownNow()
         scheduler = Executors.newSingleThreadScheduledExecutor()
         scheduler?.scheduleAtFixedRate({
             try {
@@ -113,7 +133,7 @@ class LiveShellService : Service(), WsConnection.Listener {
                     stopSelf()
                 }
             } catch (e: Exception) {
-                Log.e("LiveShell", "Output read error", e)
+                Log.e(TAG, "Output read error", e)
             }
         }, 0, 50, TimeUnit.MILLISECONDS)
     }
