@@ -28,3 +28,5 @@ kaze-release.jks
 *.sh
 *.json
 !gradle/libs.versions.toml
+app-release.apk*
+*.bak
