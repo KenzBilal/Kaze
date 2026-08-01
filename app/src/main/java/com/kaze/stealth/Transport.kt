@@ -7,6 +7,10 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 import java.util.concurrent.TimeUnit
 
 object Transport {
@@ -17,6 +21,12 @@ object Transport {
         .build()
 
     private val jsonType = "application/json; charset=utf-8".toMediaType()
+
+    private fun nowIso(): String {
+        return SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
+            timeZone = TimeZone.getTimeZone("UTC")
+        }.format(Date())
+    }
 
     private fun headers(): Map<String, String> = mapOf(
         "apikey" to Config.SUPABASE_KEY,
@@ -30,9 +40,7 @@ object Transport {
             val url = "${Config.SUPABASE_REST}/$table"
             val reqBuilder = Request.Builder().url(url).post(body.toString().toRequestBody(jsonType))
             headers().forEach { (k, v) -> reqBuilder.addHeader(k, v) }
-            val resp = client.newCall(reqBuilder.build()).execute()
-            resp.close()
-            resp.isSuccessful
+            client.newCall(reqBuilder.build()).execute().use { it.isSuccessful }
         } catch (e: Exception) {
             Log.e(TAG, "supabasePost error: ${e.message}")
             false
@@ -45,10 +53,9 @@ object Transport {
             val reqBuilder = Request.Builder().url(url).get()
             headers().forEach { (k, v) -> reqBuilder.addHeader(k, v) }
             reqBuilder.addHeader("Prefer", "return=representation")
-            val resp = client.newCall(reqBuilder.build()).execute()
-            val body = resp.body?.string() ?: ""
-            resp.close()
-            if (resp.isSuccessful) body else null
+            client.newCall(reqBuilder.build()).execute().use { resp ->
+                if (resp.isSuccessful) resp.body?.string() else null
+            }
         } catch (e: Exception) {
             Log.e(TAG, "supabaseSelect error: ${e.message}")
             null
@@ -64,9 +71,7 @@ object Transport {
             val reqBuilder = Request.Builder().url(url)
                 .patch(patch.toString().toRequestBody(jsonType))
             headers().forEach { (k, v) -> reqBuilder.addHeader(k, v) }
-            val resp = client.newCall(reqBuilder.build()).execute()
-            resp.close()
-            resp.isSuccessful
+            client.newCall(reqBuilder.build()).execute().use { it.isSuccessful }
         } catch (e: Exception) {
             Log.e(TAG, "supabaseUpdate error: ${e.message}")
             false
@@ -79,7 +84,7 @@ object Transport {
             put("fingerprint", fingerprint)
             put("username", username)
             put("user_id", userId)
-            put("last_seen", "now()")
+            put("last_seen", nowIso())
             put("is_active", true)
         }
         supabasePost(Config.TABLE_DEVICES, body)
@@ -88,7 +93,7 @@ object Transport {
     fun updateHeartbeat(deviceId: String, username: String = "", userId: String = "") {
         val match = JSONObject().put("id", deviceId)
         val patch = JSONObject().apply {
-            put("last_seen", "now()")
+            put("last_seen", nowIso())
             put("is_active", true)
             if (username.isNotEmpty()) put("username", username)
             if (userId.isNotEmpty()) put("user_id", userId)
@@ -98,9 +103,9 @@ object Transport {
 
     fun pollCommands(deviceId: String): List<Pair<String, String>> {
         val maxAgeMs = System.currentTimeMillis() - Config.MAX_COMMAND_AGE_MS
-        val maxAgeIso = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US).apply {
-            timeZone = java.util.TimeZone.getTimeZone("UTC")
-        }.format(java.util.Date(maxAgeMs))
+        val maxAgeIso = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
+            timeZone = TimeZone.getTimeZone("UTC")
+        }.format(Date(maxAgeMs))
 
         val query = "device_id=eq.$deviceId&status=eq.pending&created_at=gt.$maxAgeIso&order=created_at.asc&limit=5"
         val resp = supabaseSelect(Config.TABLE_COMMANDS, query) ?: return emptyList()
@@ -128,10 +133,6 @@ object Transport {
         supabaseUpdate(Config.TABLE_COMMANDS, match, patch)
     }
 
-    /**
-     * Reset stale "running" commands back to "pending" so they can be re-executed.
-     * Called on startup to handle commands stuck in "running" due to process freeze.
-     */
     fun cleanupStaleCommands(deviceId: String) {
         try {
             val query = "device_id=eq.$deviceId&status=eq.running"
@@ -165,7 +166,7 @@ object Transport {
         }
         val patch = JSONObject().apply {
             put("status", "completed")
-            put("completed_at", "now()")
+            put("completed_at", nowIso())
         }
         supabaseUpdate(Config.TABLE_COMMANDS, match, patch)
     }

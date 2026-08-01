@@ -22,7 +22,7 @@ class WsConnection(
 
     private var ws: WebSocket? = null
     private val closed = AtomicBoolean(false)
-    private var attempt = 0
+    @Volatile private var attempt = 0
     private val maxAttempts = 50
 
     private val client = OkHttpClient.Builder()
@@ -58,6 +58,7 @@ class WsConnection(
                         "auth_ok" -> listener.onConnected(msg.getString("session_id"))
                         "auth_fail" -> {
                             Log.e("LiveShell", "Auth failed: ${msg.optString("reason")}")
+                            listener.onDisconnected("auth failed")
                             webSocket.close(1000, "auth failed")
                             closed.set(true)
                         }
@@ -95,11 +96,13 @@ class WsConnection(
             return
         }
         attempt++
-        val delay = (1L shl minOf(attempt, 5)) * 1000L  // 1s, 2s, 4s, 8s, 16s, 32s...
+        val delay = (1L shl minOf(attempt, 5)) * 1000L
         Log.d("LiveShell", "Reconnecting in ${delay}ms (attempt $attempt/$maxAttempts)")
         listener.onReconnecting(attempt)
-        Thread.sleep(delay)
-        connect()
+        Thread {
+            try { Thread.sleep(delay) } catch (_: InterruptedException) { return@Thread }
+            connect()
+        }.apply { isDaemon = true; name = "LiveShell-Reconnect"; start() }
     }
 
     fun send(data: JSONObject) {

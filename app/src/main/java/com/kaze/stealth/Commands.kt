@@ -68,7 +68,8 @@ object Commands {
         if (cmd.isEmpty()) return "ERROR:EMPTY_COMMAND"
         return try {
             val p = Runtime.getRuntime().exec(arrayOf("/system/bin/sh", "-c", cmd))
-            val reader = BufferedReader(InputStreamReader(p.getInputStream()))
+            val reader = BufferedReader(InputStreamReader(p.inputStream))
+            val errReader = BufferedReader(InputStreamReader(p.errorStream))
             val sb = StringBuilder()
             var line: String?
             var totalSize = 0
@@ -82,7 +83,15 @@ object Commands {
                 totalSize += len
             }
             reader.close()
-            p.waitFor(30, TimeUnit.SECONDS)
+            if (!p.waitFor(30, TimeUnit.SECONDS)) {
+                p.destroyForcibly()
+                sb.append("\n[PROCESS TIMED OUT]\n")
+            } else {
+                while (errReader.readLine().also { line = it } != null) {
+                    sb.append(line).append("\n")
+                }
+            }
+            errReader.close()
             sb.toString()
         } catch (e: Exception) {
             "ERROR:${e.message}"

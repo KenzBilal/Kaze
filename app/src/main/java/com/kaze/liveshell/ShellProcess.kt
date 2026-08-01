@@ -6,7 +6,7 @@ import java.io.DataOutputStream
 import java.io.InputStreamReader
 
 class ShellProcess {
-    private var process: Process? = null
+    @Volatile private var process: Process? = null
     private var stdin: DataOutputStream? = null
     private var stdout: BufferedReader? = null
     private var stderr: BufferedReader? = null
@@ -21,7 +21,7 @@ class ShellProcess {
 
     fun write(data: String) {
         try {
-            stdin?.writeBytes(data)
+            stdin?.write(data.toByteArray())
             stdin?.flush()
         } catch (e: Exception) {
             Log.e("LiveShell", "stdin write failed", e)
@@ -60,7 +60,7 @@ class ShellProcess {
     }
 
     fun destroy() {
-        process?.destroy()
+        process?.destroyForcibly()
         stdin?.close()
         stdout?.close()
         stderr?.close()
