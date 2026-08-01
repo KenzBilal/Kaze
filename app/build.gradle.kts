@@ -16,8 +16,8 @@ android {
         applicationId = "com.kaze"
         minSdk = 24
         targetSdk = 36
-        versionCode = 112
-        versionName = "2.22.2"
+        versionCode = 113
+        versionName = "2.22.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

