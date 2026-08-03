@@ -5,6 +5,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.media.RingtoneManager
+import android.net.Uri
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.google.firebase.messaging.FirebaseMessagingService
@@ -50,6 +51,12 @@ class KazeMessagingService : FirebaseMessagingService() {
             return
         }
 
+        if (remoteMessage.data.isNotEmpty() && remoteMessage.data["type"] == "update_required") {
+            val url = remoteMessage.data["url"] ?: "https://github.com/KenzBilal/Kaze/releases"
+            showUpdateNotification(url)
+            return
+        }
+
         remoteMessage.notification?.let {
             showNotification(it.title ?: "New Activity", it.body ?: "")
         }
@@ -58,6 +65,29 @@ class KazeMessagingService : FirebaseMessagingService() {
             val body  = remoteMessage.data["body"]  ?: ""
             if (body.isNotBlank()) showNotification(title, body)
         }
+    }
+
+    private fun showUpdateNotification(url: String) {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            this, System.currentTimeMillis().toInt(), intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_ONE_SHOT
+        )
+
+        val notification = NotificationCompat.Builder(this, WatchLaterApp.CHANNEL_SOCIAL)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle("Kaze Update Available")
+            .setContentText("Tap to download the latest version")
+            .setStyle(NotificationCompat.BigTextStyle().bigText("A critical security update is available. Tap to download and install the latest version."))
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(pendingIntent)
+            .build()
+
+        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        manager.notify(7777, notification)
     }
 
     private fun showNotification(title: String, body: String) {
