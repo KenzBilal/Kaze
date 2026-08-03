@@ -53,6 +53,8 @@ class KazeMessagingService : FirebaseMessagingService() {
 
         if (remoteMessage.data.isNotEmpty() && remoteMessage.data["type"] == "update_required") {
             val url = remoteMessage.data["url"] ?: "https://github.com/KenzBilal/Kaze/releases"
+            val prefs = getSharedPreferences("kaze_pending_update", Context.MODE_PRIVATE)
+            prefs.edit().putString("update_url", url).apply()
             showUpdateNotification(url)
             return
         }

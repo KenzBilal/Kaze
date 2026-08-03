@@ -42,6 +42,8 @@ import com.kaze.ui.Screen
 import com.kaze.ui.WatchLaterNavGraph
 import com.kaze.ui.theme.*
 import android.content.Intent
+import android.net.Uri
+import android.content.Context
 import com.kaze.util.DeepLinkHandler
 
 data class BottomNavItem(
@@ -60,14 +62,52 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         com.kaze.worker.BingeTracker.initChannel(this)
         enableEdgeToEdge()
-        val app = application as WatchLaterApp
+
+        val pendingUpdateUrl = getSharedPreferences("kaze_pending_update", Context.MODE_PRIVATE)
+            .getString("update_url", null)
+        getSharedPreferences("kaze_pending_update", Context.MODE_PRIVATE)
+            .edit().remove("update_url").apply()
+
         setContent {
             WatchLaterTheme {
                 com.kaze.ui.components.NotificationPermissionHandler()
+
+                if (pendingUpdateUrl != null) {
+                    UpdateAvailableDialog(
+                        url = pendingUpdateUrl,
+                        onDismiss = {},
+                        onDownload = {
+                            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(pendingUpdateUrl)))
+                        }
+                    )
+                }
+
                 AppContent(networkMonitor = networkMonitor, initialIntent = intent)
             }
         }
     }
+}
+
+@Composable
+fun UpdateAvailableDialog(url: String, onDismiss: () -> Unit, onDownload: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = com.kaze.ui.theme.SurfaceContainer,
+        titleContentColor = com.kaze.ui.theme.TextPrimary,
+        textContentColor = com.kaze.ui.theme.TextSecondary,
+        title = { Text("Update Available") },
+        text = { Text("A new version of Kaze is available. Would you like to download and install it?") },
+        confirmButton = {
+            TextButton(onClick = onDownload) {
+                Text("Download", color = com.kaze.ui.theme.AccentBlue)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Later", color = com.kaze.ui.theme.TextTertiary)
+            }
+        }
+    )
 }
 
 @Composable
